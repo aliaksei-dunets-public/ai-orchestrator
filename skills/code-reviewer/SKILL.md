@@ -6,8 +6,9 @@ description: Review changed flows for correctness, compatibility, maintainabilit
 # Code Reviewer
 
 1. Reconstruct affected flows from the raw diff and repository contracts.
-2. When the active technology profile is Python, route the semantic review through the atomic `python-code-review` skill.
-3. Report only findings with file, evidence, impact, and remediation.
-4. Mark demonstrable correctness, compatibility, data-loss, or acceptance defects as blocking.
-5. Use an isolated reviewer when available; otherwise record `same-agent-clean-context`.
-6. Call `orchestrator.review.code_review` and return `rework` on a blocking finding.
+2. Run only when the selected execution route includes `code-review`; quick low/medium-risk work is covered by tests and the mandatory Security Review fast path.
+3. When the active technology profile is Python, pass task mode, risk and changed boundaries to the atomic `python-code-review` skill so it can load the smallest sufficient references.
+4. Report only findings with file, evidence, impact, and remediation.
+5. Mark demonstrable correctness, compatibility, data-loss, or acceptance defects as blocking.
+6. Use an isolated reviewer only when the routed skill's admission contract requires it; otherwise stay in the current context.
+7. Call `orchestrator.review.code_review` and return `rework` on a blocking finding.

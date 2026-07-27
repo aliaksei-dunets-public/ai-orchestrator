@@ -1,0 +1,2 @@
+# Release artifacts duplicate canonical sources and are searched only explicitly.
+releases/

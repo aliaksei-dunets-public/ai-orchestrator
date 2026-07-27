@@ -84,6 +84,8 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 
 Каталог `skills/` является каноническим source переносимых навыков. Platform-каталоги, включая `.codex/skills/`, являются устанавливаемыми проекциями: installer создаёт или обновляет их из `skills/`, а Health Check обнаруживает drift. Ручное редактирование platform-копий после появления канонического source запрещено.
 
+Skill entrypoint содержит только назначение, routing, обязательные invariants и компактный output contract. Подробные процедуры и platform/technology-specific знания загружаются через references только после классификации задачи; независимый reviewer запускается только при явной границе риска или необходимости изоляции.
+
 ### 3.5. Registries
 
 Реестры skills, workflows, capabilities, platform profiles, technology profiles, templates и policies являются единым каталогом доступных компонентов.
@@ -210,6 +212,20 @@ orchestrator health --scope tasks
 
 Health Check сообщает о проблемах; автоматическое исправление допускается только для безопасных, детерминированных операций.
 
+### 7.1. Execution Telemetry
+
+Execution runtime может писать числовые события в локальный JSONL sink `.orchestrator/telemetry/events.jsonl`. Telemetry содержит duration, attempts, retries, tool calls, agent handoffs и provider-reported token usage, но не сохраняет prompts, tool output или evidence payload. Файл является operational state, исключается из Git и не заменяет Task Context или Execution Record.
+
+Команды:
+
+```bash
+orchestrator telemetry
+orchestrator telemetry --json
+orchestrator telemetry --path <events.jsonl>
+```
+
+Отсутствующие provider counters остаются неизвестными и не подменяются оценками. Ошибка telemetry sink отражается в execution result, но не отменяет успешно сохранённый checkpoint.
+
 ## 8. Orchestrator Audit
 
 Audit — глубокий смысловой анализ, отличный от Health Check. Он ищет противоречия инструкций, дублирование навыков, недостижимые workflow, устаревшую документацию, архитектурный drift, недостаток тестов и повторяющиеся проблемы из Session Reports.
@@ -227,8 +243,8 @@ User request
 → Task Context freshness validation
 → Implementation
 → Tests
-→ Task Review
-→ Code Review
+→ Task Review when required by mode/risk
+→ Code Review when required by mode/risk
 → Security Review
 → User Review when required
 → Documentation
@@ -238,7 +254,9 @@ User request
 → Session Report (на уровне сессии)
 ```
 
-Security Review выполняется до передачи изменений пользователю. Статус `done` устанавливается Task Manager только по команде execution workflow после завершения всех обязательных gates; Task Manager не интерпретирует их содержание. Session Report формируется после остановки execution/backlog loop и не является условием перехода отдельной задачи в `done`.
+Freshness validation, implementation, tests и Security Review обязательны во всех маршрутах. Quick low/medium-risk task использует детерминированный security fast path и не запускает semantic Task/Code Review; finding, sensitive change или high/critical risk повышает глубину проверки. Standard включает Task Review и Code Review, а deep/high-risk — независимый review. Approval и documentation steps добавляются только при соответствующем impact.
+
+Security Review выполняется до передачи изменений пользователю. Статус `done` устанавливается Task Manager только по команде execution workflow после завершения всех выбранных обязательных gates; Task Manager не интерпретирует их содержание. Session Report формируется после остановки execution/backlog loop и не является условием перехода отдельной задачи в `done`.
 
 ## 10. Память и знания
 
@@ -260,6 +278,8 @@ Security Review выполняется до передачи изменений 
 5. sandbox projects для разных стеков;
 6. cross-platform acceptance tests;
 7. dogfooding на реальных проектах.
+
+Repository-wide retrieval по умолчанию работает только с каноническими sources и исключает `releases/`, поскольку release artifacts дублируют проверенные snapshots. Release validation всегда указывает release path явно.
 
 ## 12. Roadmap
 

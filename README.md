@@ -10,3 +10,9 @@
 ## Статус
 
 Реализован контракт версии 1.0.0: создание и выполнение задач, проверки, approval gates, документация, память, аудит, backlog loop и профили адаптации. Ограничения и порядок обновления описаны в [руководстве миграции](docs/migrations/1.0.md).
+
+Текущая ветка дополнительно поддерживает risk-based execution routing, bounded evidence и локальную telemetry:
+
+```powershell
+python -m orchestrator telemetry --json
+```

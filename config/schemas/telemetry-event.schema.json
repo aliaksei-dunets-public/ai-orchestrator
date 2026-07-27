@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/telemetry-event.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event",
+    "run_id",
+    "status",
+    "recorded_at",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "event": {"enum": ["step_attempt", "run_completed"]},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "step_id": {"type": "string", "minLength": 1},
+    "attempt": {"type": "integer", "minimum": 1},
+    "metrics": {
+      "type": "object",
+      "required": [
+        "duration_ms",
+        "attempts",
+        "retries",
+        "tool_calls",
+        "agent_handoffs",
+        "usage"
+      ],
+      "properties": {
+        "duration_ms": {"type": "integer", "minimum": 0},
+        "attempts": {"type": "integer", "minimum": 0},
+        "retries": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "agent_handoffs": {"type": "integer", "minimum": 0},
+        "usage": {
+          "type": "object",
+          "properties": {
+            "static_prompt_tokens": {"type": "integer", "minimum": 0},
+            "dynamic_context_tokens": {"type": "integer", "minimum": 0},
+            "retrieved_context_tokens": {"type": "integer", "minimum": 0},
+            "tool_result_tokens": {"type": "integer", "minimum": 0},
+            "subagent_input_tokens": {"type": "integer", "minimum": 0},
+            "subagent_output_tokens": {"type": "integer", "minimum": 0},
+            "final_output_tokens": {"type": "integer", "minimum": 0},
+            "total_tokens": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"event": {"const": "step_attempt"}},
+        "required": ["event"]
+      },
+      "then": {
+        "required": ["step_id", "attempt"]
+      }
+    }
+  ],
+  "additionalProperties": false
+}

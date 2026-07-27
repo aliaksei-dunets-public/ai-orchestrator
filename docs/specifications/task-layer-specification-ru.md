@@ -469,8 +469,8 @@ claim-next
 → validate context freshness
 → implement plan
 → design/run tests
-→ task review
-→ code review
+→ task review when required by mode/risk
+→ code review when required by mode/risk
 → security review
 → user review when required
 → documentation
@@ -479,7 +479,11 @@ claim-next
 → complete
 ```
 
-При замечании review выполнение возвращается к реализации. При необходимости решения пользователя ставится `waiting_user`. При невозможности продолжать — `blocked` с причиной. Execution Record финализируется до commit; после успешного commit `complete` изменяет только незатреканный Task Registry.
+Freshness, implementation, tests и Security Review обязательны для каждого маршрута. `quick` low/medium-risk task не запускает semantic Task Review и Code Review, если нет security-sensitive или другого escalation signal; `standard` запускает оба review, а `deep` и high/critical-risk task требуют независимого review. Approval и documentation добавляются только при соответствующем impact.
+
+При замечании review выполнение возвращается к реализации. При необходимости решения пользователя ставится `waiting_user`. При невозможности продолжать — `blocked` с причиной. Execution evidence каждой попытки ограничивается по размеру, а число попыток шага имеет жёсткий верхний предел; полный диагностический output хранится отдельным artifact с source pointer, а checkpoint сохраняет компактные head/tail, длину и digest. Execution Record финализируется до commit; после успешного commit `complete` изменяет только незатреканный Task Registry.
+
+Числовая execution telemetry является локальным operational state и не является источником статуса, определения задачи или review evidence. Она не хранит prompt/evidence payload и может отсутствовать, если platform provider не сообщает usage counters.
 
 ## 11. Backlog Loop
 
@@ -564,6 +568,8 @@ Health Check проверяет:
 - повреждённый JSON;
 - отсутствующий context;
 - полный small workflow до `done`.
+- quick/standard/deep route selection с обязательным Security Review;
+- bounded evidence и telemetry без payload leakage.
 
 Каждая найденная ошибка превращается в regression test.
 

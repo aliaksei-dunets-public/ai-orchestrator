@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Added payload-free execution telemetry with JSONL storage and CLI summaries.
+- Added deterministic evidence bounds with diagnostic tails, digests and artifact pointers.
+- Added quick/standard/deep execution routing while keeping Security Review mandatory.
+- Excluded release snapshots from default repository retrieval.
+- Reduced the Python review entrypoint through progressive disclosure and bounded independent-review admission.
+- Added a reproducible [token-efficiency validation report](docs/validation/token-efficiency-optimization-report.md).
+
 ## 1.0.0 — 2026-07-28
 
 - Added portable task creation, execution, testing, review, approval, documentation, memory, audit, and backlog workflows.

@@ -1,35 +1,28 @@
 schema_version: 1
 id: task-execution
-steps:
-  - id: freshness
-    capability: execution.validate_freshness
-  - id: implement
-    skill: implementation-runner
-    depends_on: [freshness]
-  - id: design-tests
-    skill: test-designer
-    depends_on: [implement]
-  - id: run-tests
-    skill: test-runner
-    depends_on: [design-tests]
-  - id: task-review
-    skill: task-reviewer
-    depends_on: [run-tests]
-    on_failure: implement
-  - id: code-review
-    skill: code-reviewer
-    depends_on: [task-review]
-    on_failure: implement
-  - id: security-review
-    skill: security-reviewer
-    depends_on: [code-review]
-    on_failure: implement
-  - id: approvals
-    capability: approvals.resolve
-    depends_on: [security-review]
-  - id: documentation
-    skill: documentation-manager
-    depends_on: [approvals]
+selector: orchestrator.workflow.select_execution_route
+policy_inputs:
+  mode: [quick, standard, deep]
+  risk: [low, medium, high, critical]
+  security_sensitive: boolean
+  test_design_required: boolean
+  approval_required: boolean
+  documentation_impact: boolean
+mandatory_steps:
+  - freshness
+  - implement
+  - run-tests
+  - security-review
+conditional_steps:
+  design-tests: mode != quick or test_design_required
+  task-review: mode != quick
+  code-review: mode != quick or security_sensitive or risk in [high, critical]
+  independent-review: mode == deep or security_sensitive or risk in [high, critical]
+  approvals: approval_required
+  documentation: documentation_impact
+security_depth:
+  deterministic: mode != deep and not security_sensitive and risk in [low, medium]
+  semantic: mode == deep or security_sensitive or risk in [high, critical]
 stop_conditions:
   - scope_change
   - waiting_user

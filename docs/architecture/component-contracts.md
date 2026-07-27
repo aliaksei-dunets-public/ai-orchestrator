@@ -21,8 +21,14 @@
 ## Task Execution Workflow
 
 - Входы: claimed Task Context, capabilities и limits.
-- Выходы: Execution Record, test/review evidence и запрос status transition.
+- Выходы: Execution Record, bounded test/review evidence, optional numeric telemetry и запрос status transition.
 - Не владеет: правила переходов Task Manager.
+
+## Telemetry
+
+- Входы: числовые runtime counters и identifiers без prompt/tool/evidence payload.
+- Выходы: project-local JSONL events и агрегированный CLI summary.
+- Не владеет: Task Registry status, Task Context, review verdict и постоянная память.
 
 ## Workflow Engine
 

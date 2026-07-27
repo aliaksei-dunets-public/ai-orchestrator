@@ -1,4 +1,13 @@
 schema_version: 1
+context:
+  default_excludes:
+    - releases/**
+  explicit_release_search: true
+telemetry:
+  enabled_by_default: false
+  path: .orchestrator/telemetry/events.jsonl
+  capture_payloads: false
+  evidence_max_chars: 2048
 backlog:
   max_tasks: 10
   max_seconds: 3600

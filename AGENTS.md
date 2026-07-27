@@ -15,6 +15,7 @@
 - Never weaken immutable security policies through local configuration.
 - Do not edit generated platform skill projections after canonical `skills/` sources exist.
 - Do not commit `.orchestrator/tasks/tasks.json`, temporary files or lock files.
+- Search canonical sources by default; `releases/` is excluded through `.rgignore` and must be searched explicitly for release validation.
 - Preserve unrelated user changes and avoid destructive Git operations.
 
 ## Completion evidence

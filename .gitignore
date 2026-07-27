@@ -9,3 +9,4 @@ __pycache__/
 .orchestrator/tasks/tasks.json
 .orchestrator/tasks/*.tmp
 .orchestrator/tasks/*.lock
+.orchestrator/telemetry/

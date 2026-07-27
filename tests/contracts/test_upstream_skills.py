@@ -37,3 +37,17 @@ class UpstreamSkillContractTests(unittest.TestCase):
         profile = json.loads((ROOT / "profiles/technologies/python.yaml").read_text(encoding="utf-8"))
         self.assertEqual(profile["skills"]["review"], ["python-code-review"])
         self.assertEqual(profile["skills"]["security"], ["security-gate"])
+
+    def test_python_review_entrypoint_routes_detail_and_bounds_subagents(self) -> None:
+        skill_root = ROOT / "skills/python-code-review"
+        entrypoint = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (skill_root / "references/review-workflow.md").read_text(encoding="utf-8")
+        self.assertLess(len(entrypoint.encode("utf-8")), 6_000)
+        self.assertGreater(len(workflow.encode("utf-8")), len(entrypoint.encode("utf-8")))
+        for mode in ("quick", "standard", "deep"):
+            self.assertIn(f"`{mode}`", entrypoint)
+        self.assertIn("Dispatch at most one independent reviewer only for:", entrypoint)
+        self.assertIn("Do not dispatch for quick reviews", entrypoint)
+        self.assertNotIn("raw command results", entrypoint)
+        provenance = (ROOT / "docs/architecture/upstream-skills.md").read_text(encoding="utf-8")
+        self.assertIn("references/review-workflow.md", provenance)
