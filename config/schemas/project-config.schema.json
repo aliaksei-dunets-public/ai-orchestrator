@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-orchestrator/project-config.schema.json",
+  "title": "AI Orchestrator Project Configuration",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "core_path",
+    "core_mode",
+    "core_version",
+    "platform_profile",
+    "technology_profiles"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "core_path": {"type": "string", "minLength": 1},
+    "core_mode": {"const": "in_place"},
+    "core_version": {"type": "string", "minLength": 1},
+    "platform_profile": {"type": "string", "minLength": 1},
+    "technology_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "additionalProperties": false
+}

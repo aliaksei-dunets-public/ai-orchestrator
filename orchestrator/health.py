@@ -129,21 +129,24 @@ def _skill_projection_checks(root: Path) -> Iterable[Finding]:
     installed_root = root / ".codex" / "skills"
     if not installed_root.exists():
         return
-    registry = root / "registries" / "skills.json"
-    payload, error = _load_json(registry)
-    if error or not isinstance(payload, dict) or not isinstance(payload.get("entries"), list):
-        return
     try:
-        from .skill_installer import check_skill_drift
+        from .skill_installer import check_skill_drift, resolve_skill_sources
 
-        for entry in payload["entries"]:
-            if not isinstance(entry, dict) or not entry.get("enabled", False):
-                continue
-            skill_id = entry.get("id")
-            relative = entry.get("path")
-            if not isinstance(skill_id, str) or not isinstance(relative, str):
-                continue
-            source = (root / relative).parent
+        sources = resolve_skill_sources(root, project_root=root)
+        installed_ids = {
+            path.name
+            for path in installed_root.iterdir()
+            if path.is_dir()
+        }
+        extra = sorted(installed_ids - set(sources))
+        if extra:
+            yield _finding(
+                "SKILL_PROJECTION_EXTRA",
+                "ERROR",
+                f"Workspace projection contains unselected skills: {extra}",
+                installed_root,
+            )
+        for skill_id, source in sources.items():
             installed = installed_root / skill_id
             drift = check_skill_drift(source, installed)
             if drift.clean:
@@ -161,6 +164,13 @@ def _skill_projection_checks(root: Path) -> Iterable[Finding]:
                 f"Workspace skill {skill_id} differs from canonical source: {', '.join(details)}",
                 installed,
             )
+    except ValueError as exc:
+        yield _finding(
+            "SKILL_SELECTION_INVALID",
+            "ERROR",
+            f"Skill selection is invalid: {exc}",
+            root / ".orchestrator" / "skills.json",
+        )
     except Exception as exc:  # defensive boundary: health must remain diagnostic
         yield _finding(
             "SKILL_PROJECTION_CHECK_FAILED",

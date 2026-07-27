@@ -14,6 +14,12 @@
       "enabled": true
     },
     {
+      "id": "project-onboarding",
+      "path": "workflows/project-onboarding.yaml",
+      "kind": "workflow",
+      "enabled": true
+    },
+    {
       "id": "task-creation-standard",
       "path": "workflows/task-creation-standard.yaml",
       "kind": "workflow",

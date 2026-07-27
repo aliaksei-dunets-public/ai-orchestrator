@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -14,17 +15,31 @@ UNITTEST_RE = re.compile(r"`python -m unittest ([^`\r\n]+)`")
 
 class RoadmapCompletionAcceptanceTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.plans = sorted((ROOT / "docs/plans").glob("2026-07-27-phase-*.md"))
+        self.plans = sorted((ROOT / "docs/plans").glob("2026-*-phase-*.md"))
 
-    def test_all_24_plans_have_acceptance_and_all_named_artifacts_exist(self) -> None:
-        self.assertEqual(len(self.plans), 24)
+    def test_all_25_plans_have_acceptance_and_all_named_artifacts_exist(self) -> None:
+        self.assertEqual(len(self.plans), 25)
+        registry = json.loads((ROOT / "registries/skills.json").read_text(encoding="utf-8"))
+        current_skill_roots = {
+            entry["id"]: Path(entry["path"]).parent
+            for entry in registry["entries"]
+        }
         missing: list[str] = []
         for plan in self.plans:
             text = plan.read_text(encoding="utf-8")
             self.assertIn("## Acceptance Criteria", text, plan.name)
             self.assertIn("## Testing Strategy", text, plan.name)
             for relative in ARTIFACT_RE.findall(text):
-                if "*" not in relative and "?" not in relative and not (ROOT / relative).exists():
+                target = ROOT / relative
+                parts = Path(relative).parts
+                if (
+                    not target.exists()
+                    and len(parts) >= 3
+                    and parts[0] == "skills"
+                    and parts[1] in current_skill_roots
+                ):
+                    target = ROOT / current_skill_roots[parts[1]].joinpath(*parts[2:])
+                if "*" not in relative and "?" not in relative and not target.exists():
                     missing.append(f"{plan.name}: {relative}")
         self.assertEqual(missing, [])
 
@@ -51,7 +66,7 @@ class RoadmapCompletionAcceptanceTests(unittest.TestCase):
         self.assertEqual(failures, [])
 
     def test_task_creator_validator_accepts_every_plan(self) -> None:
-        validator = ROOT / "skills/task-creator/scripts/validate_plan.py"
+        validator = ROOT / "skills/system/task-creator/scripts/validate_plan.py"
         completed = subprocess.run(
             [sys.executable, str(validator), *(str(plan) for plan in self.plans)],
             cwd=ROOT,

@@ -32,6 +32,7 @@ def load_platform_profile(path: Path | str) -> dict[str, object]:
         "maturity",
         "validation",
         "capabilities",
+        "onboarding",
     }
     missing = required - set(profile)
     if missing or profile.get("schema_version") != 1:
@@ -74,7 +75,39 @@ def load_platform_profile(path: Path | str) -> dict[str, object]:
             raise PlatformProfileError(f"Invalid capability {name}")
         if entry["mode"] in {"native", "fallback"} and not entry.get("adapter"):
             raise PlatformProfileError(f"Capability {name} requires an adapter")
+    onboarding = profile["onboarding"]
+    if not isinstance(onboarding, dict):
+        raise PlatformProfileError("onboarding must be an object")
+    onboarding_required = {
+        "instruction_target",
+        "skill_projection_target",
+        "interaction_adapter",
+        "approval_adapter",
+    }
+    onboarding_missing = onboarding_required - set(onboarding)
+    if onboarding_missing:
+        raise PlatformProfileError(
+            f"Invalid onboarding metadata, missing={sorted(onboarding_missing)}"
+        )
+    instruction_target = onboarding["instruction_target"]
+    if instruction_target is not None and not _safe_relative_path(instruction_target):
+        raise PlatformProfileError("onboarding instruction_target must be repository-relative")
+    if not _safe_relative_path(onboarding["skill_projection_target"]):
+        raise PlatformProfileError(
+            "onboarding skill_projection_target must be repository-relative"
+        )
+    for field in ("interaction_adapter", "approval_adapter"):
+        if not isinstance(onboarding[field], str) or not onboarding[field].strip():
+            raise PlatformProfileError(f"onboarding {field} must be a non-empty string")
     return profile
+
+
+def _safe_relative_path(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    normalized = value.replace("\\", "/")
+    parts = [part for part in normalized.split("/") if part]
+    return not normalized.startswith("/") and ":" not in parts[0] and ".." not in parts
 
 
 def resolve_capability(profile: Mapping[str, object], capability: str) -> CapabilityResolution:

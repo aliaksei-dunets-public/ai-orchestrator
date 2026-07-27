@@ -14,7 +14,7 @@ class SpecificationContractTests(unittest.TestCase):
     def test_normative_versions_and_sources_of_truth(self) -> None:
         orchestrator = ORCHESTRATOR_SPEC.read_text(encoding="utf-8")
         task = TASK_SPEC.read_text(encoding="utf-8")
-        self.assertIn("**Версия:** 0.4", orchestrator)
+        self.assertIn("**Версия:** 0.5", orchestrator)
         self.assertIn("**Версия:** 0.3", task)
         self.assertIn("источником истины", orchestrator)
         self.assertIn("источником истины", task)

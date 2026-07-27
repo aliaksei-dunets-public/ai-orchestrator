@@ -1,6 +1,0 @@
-required:
-  - competing canonical sources
-  - semantic inconsistency risk
-  - consolidate into one source with precedence
-forbidden:
-  - invent runtime failures

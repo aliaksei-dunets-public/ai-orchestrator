@@ -26,7 +26,7 @@
 
 `skills/` является каноническим source. Platform-каталоги, включая `.codex/skills/`, являются устанавливаемыми проекциями, не редактируются вручную и проверяются на drift.
 
-Текущий `.codex/skills/task-creator` остаётся bootstrap-установкой; в фазе 5 его source переносится в `skills/task-creator`, после чего Codex-копия создаётся installer.
+Текущий `.codex/skills/task-creator` остаётся bootstrap-установкой; после Phase 24 его канонический source находится в `skills/system/task-creator`, а Codex-копия создаётся installer.
 
 ## DEC-004 — Хранение Task Registry вне Git
 

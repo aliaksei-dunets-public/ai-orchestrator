@@ -15,5 +15,6 @@
     "review": ["python-code-review"],
     "security": ["security-gate"]
   },
+  "recommended_optional_skills": ["python-code-review"],
   "directories": {"source": ["src", "orchestrator"], "tests": ["tests"]}
 }

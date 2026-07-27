@@ -2,7 +2,7 @@
 
 ## Архитектурная спецификация и roadmap
 
-**Версия:** 0.4
+**Версия:** 0.5
 **Статус:** нормативная архитектурная спецификация
 **Язык:** русский
 
@@ -82,13 +82,23 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 - orchestrator-auditor;
 - improvement-designer.
 
-Каталог `skills/` является каноническим source переносимых навыков. Platform-каталоги, включая `.codex/skills/`, являются устанавливаемыми проекциями: installer создаёт или обновляет их из `skills/`, а Health Check обнаруживает drift. Ручное редактирование platform-копий после появления канонического source запрещено.
+Каталог `skills/` является каноническим source переносимых навыков и разделяется на три категории:
+
+- `system` — обязательные для корректной работы core навыки; устанавливаются всегда и не могут быть отключены project override;
+- `bundled` — универсальный поставляемый набор; устанавливается по умолчанию;
+- `optional` — специализированные technology/domain навыки; устанавливаются только после явного approval пользователя.
+
+Категория каждого навыка задаётся полем `distribution` в skills registry. Release artifact содержит полную библиотеку, но platform-каталоги, включая `.codex/skills/`, являются выборочными устанавливаемыми проекциями: installer создаёт их из system, bundled, явно выбранных optional и project-owned skills. Выбор optional хранится в версионируемом `.orchestrator/skills.json`; отсутствие файла эквивалентно пустому выбору.
+
+Project-owned skills находятся в `.orchestrator/project-skills/<id>/`, обязаны иметь новый уникальный ID и `SKILL.md` и не изменяют поставляемый source. Для первой версии не поддерживаются inheritance, overlay, automatic rebase, отдельные версии skill packages, удалённые registries или dependency solver.
+
+Installer публикует полную projection атомарно. Ошибка system, bundled, optional или project-owned skill не должна повреждать предыдущую рабочую projection. Health Check обнаруживает отсутствие обязательных skills, невалидный optional selection, коллизии ID и drift. Ручное редактирование platform-копий после появления канонического source запрещено.
 
 Skill entrypoint содержит только назначение, routing, обязательные invariants и компактный output contract. Подробные процедуры и platform/technology-specific знания загружаются через references только после классификации задачи; независимый reviewer запускается только при явной границе риска или необходимости изоляции.
 
 ### 3.5. Registries
 
-Реестры skills, workflows, capabilities, platform profiles, technology profiles, templates и policies являются единым каталогом доступных компонентов.
+Реестры skills, workflows, capabilities, platform profiles, technology profiles, templates и policies являются единым каталогом доступных компонентов. Skills registry описывает библиотеку, а не локально установленный набор: `enabled` сохраняет release-level доступность, `distribution` управляет правилами поставки, а фактически выбранные optional skills принадлежат project configuration.
 
 ### 3.6. Platform Profiles
 
@@ -100,7 +110,7 @@ Skill entrypoint содержит только назначение, routing, о
 
 ### 3.7. Technology Profiles
 
-Описывают способ работы со стеком: структуру каталогов, build/test commands, review rules, security tools, документацию и технологические overrides.
+Описывают способ работы со стеком: структуру каталогов, build/test commands, review rules, security tools, документацию, технологические overrides и read-only рекомендации optional skills. Detection не устанавливает рекомендованный skill автоматически.
 
 Примеры: Python, TypeScript, ABAP, ABAP RAP, Java, .NET и composite profiles.
 
@@ -110,7 +120,7 @@ Skill entrypoint содержит только назначение, routing, о
 
 ### 3.9. Project Overrides
 
-Позволяют локально включать и отключать навыки, заменять шаблоны и шаги workflow, изменять quality gates и задавать platform fallback, не редактируя ядро.
+Позволяют локально выбирать optional skills, заменять providers из разрешённых категорий, изменять шаблоны и шаги workflow, quality gates и platform fallback, не редактируя ядро. System skills и immutable security policies нельзя отключить или ослабить project override.
 
 ### 3.10. Memory and Knowledge
 
@@ -170,18 +180,36 @@ ai-orchestrator/
 
 ## 6. Project Onboarding
 
-Onboarding знакомит оркестратор с целевым проектом без изменения ядра:
+Onboarding — agent-led workflow для подключения оркестратора к целевому
+проекту. Пользователь добавляет core как Git submodule или скопированный пакет
+и передаёт агенту путь к
+`skills/system/project-onboarding/SKILL.md`. Подключённый каталог используется
+как активный core на месте и не копируется в `.orchestrator/core`.
 
-1. определяет платформу и инструменты;
-2. распознаёт технологический стек;
-3. изучает структуру, код и документацию;
-4. находит build/test commands, conventions, ADR и security constraints;
-5. предлагает technology profiles;
-6. создаёт project context и начальный knowledge graph;
-7. показывает diff пользователю;
-8. активирует профиль после подтверждения.
+Workflow:
 
-Повторный onboarding обновляет только изменившиеся части и сохраняет ручные правки.
+1. без записи находит и проверяет core;
+2. исследует платформу, технологический стек, структуру, документацию,
+   build/test commands, conventions, ADR и security constraints;
+3. задаёт структурированные вопросы только при неоднозначности;
+4. создаёт Project Context и полный preview затрагиваемых файлов;
+5. привязывает approval к `plan_hash` и fingerprint исходного состояния;
+6. непосредственно перед записью получает единое подтверждение, включающее
+   разрешение на автоматический rollback;
+7. атомарно публикует `.orchestrator/config.json`, Project Context, platform
+   bootstrap, repository skill projection и Git ignores;
+8. проверяет контракты, Health Check, Task Registry и идемпотентность;
+9. при `ERROR` или `CRITICAL` восстанавливает состояние по backup manifest.
+
+Core не реализует UI и не ветвится по именам платформ. Platform profile
+объявляет instruction target, skill projection target, interaction adapter и
+approval adapter. Agent-facing script возвращает JSON и не использует
+интерактивный `input()`.
+
+Согласие действительно только для показанного preview. Изменение планируемого
+входного файла приводит к `stale_preview` до первой записи. Повторный
+onboarding обновляет только изменившиеся managed blocks и сохраняет ручные
+правки вне ownership-маркеров.
 
 ## 7. Orchestrator Health Check
 
@@ -393,7 +421,7 @@ Roadmap этого документа является каноническим.
 | T8 — Backlog Loop | 19 |
 | T9 — Platform Validation | 15–16 и 22 |
 
-Планы реализации создаются отдельно для фаз `0–23`; один план может ссылаться на несколько этапов Task Layer, но не должен дублировать их как самостоятельный backlog.
+Планы реализации создаются отдельно для фаз `0–24`; один план может ссылаться на несколько этапов Task Layer, но не должен дублировать их как самостоятельный backlog.
 
 ## 13. Definition of Done фазы
 

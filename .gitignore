@@ -10,3 +10,7 @@ __pycache__/
 .orchestrator/tasks/*.tmp
 .orchestrator/tasks/*.lock
 .orchestrator/telemetry/
+.orchestrator/releases/
+
+# Generated release artifacts are reproducible from canonical sources.
+releases/

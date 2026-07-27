@@ -8,7 +8,8 @@
     "adapter_order",
     "maturity",
     "validation",
-    "capabilities"
+    "capabilities",
+    "onboarding"
   ],
   "properties": {
     "schema_version": {"const": 1},
@@ -41,6 +42,25 @@
         },
         "additionalProperties": false
       }
+    },
+    "onboarding": {
+      "type": "object",
+      "required": [
+        "instruction_target",
+        "skill_projection_target",
+        "interaction_adapter",
+        "approval_adapter"
+      ],
+      "properties": {
+        "instruction_target": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "skill_projection_target": {"type": "string", "minLength": 1},
+        "interaction_adapter": {"type": "string", "minLength": 1},
+        "approval_adapter": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [

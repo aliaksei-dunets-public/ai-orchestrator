@@ -44,7 +44,7 @@ class HealthTests(unittest.TestCase):
     def test_existing_codex_projection_drift_is_an_error(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            source = root / "skills/example"
+            source = root / "skills/system/example"
             installed = root / ".codex/skills/example"
             registry = root / "registries"
             schemas = root / "config/schemas"
@@ -61,9 +61,10 @@ class HealthTests(unittest.TestCase):
                         "entries": [
                             {
                                 "id": "example",
-                                "path": "skills/example/SKILL.md",
+                                "path": "skills/system/example/SKILL.md",
                                 "kind": "skill",
                                 "enabled": True,
+                                "distribution": "system",
                             }
                         ],
                     }
@@ -75,3 +76,75 @@ class HealthTests(unittest.TestCase):
             self.assertEqual(len(drift), 1)
             self.assertEqual(drift[0].severity, "ERROR")
             self.assertIn("changed", drift[0].message)
+
+    def test_unselected_optional_projection_is_reported_as_extra(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "skills/optional/example"
+            installed = root / ".codex/skills/example"
+            registry = root / "registries"
+            source.mkdir(parents=True)
+            installed.mkdir(parents=True)
+            registry.mkdir()
+            (source / "SKILL.md").write_text("canonical", encoding="utf-8")
+            (installed / "SKILL.md").write_text("canonical", encoding="utf-8")
+            (registry / "skills.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "entries": [
+                            {
+                                "id": "example",
+                                "path": "skills/optional/example/SKILL.md",
+                                "kind": "skill",
+                                "enabled": True,
+                                "distribution": "optional",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            report = run_health_checks(root)
+            self.assertTrue(
+                any(item.code == "SKILL_PROJECTION_EXTRA" for item in report.findings)
+            )
+
+    def test_invalid_optional_selection_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "skills/system/example"
+            installed = root / ".codex/skills/example"
+            registry = root / "registries"
+            selection = root / ".orchestrator/skills.json"
+            source.mkdir(parents=True)
+            installed.mkdir(parents=True)
+            registry.mkdir()
+            selection.parent.mkdir(parents=True)
+            (source / "SKILL.md").write_text("canonical", encoding="utf-8")
+            (installed / "SKILL.md").write_text("canonical", encoding="utf-8")
+            (registry / "skills.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "entries": [
+                            {
+                                "id": "example",
+                                "path": "skills/system/example/SKILL.md",
+                                "kind": "skill",
+                                "enabled": True,
+                                "distribution": "system",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            selection.write_text(
+                '{"schema_version": 1, "optional_skills": ["example"]}',
+                encoding="utf-8",
+            )
+            report = run_health_checks(root)
+            self.assertTrue(
+                any(item.code == "SKILL_SELECTION_INVALID" for item in report.findings)
+            )

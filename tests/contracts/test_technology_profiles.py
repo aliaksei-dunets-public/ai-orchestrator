@@ -9,6 +9,7 @@ from orchestrator.technologies import (
     detect_technology,
     load_technology_profile,
     merge_profiles,
+    recommend_optional_skills,
 )
 
 
@@ -41,3 +42,47 @@ class TechnologyProfileContractTests(unittest.TestCase):
         self.assertTrue(command_is_automatic(python["commands"]["test"]))
         self.assertFalse(command_is_automatic(abap["commands"]["unit-test"]))
         self.assertFalse(command_is_automatic({"argv": ["unknown"]}))
+
+    def test_optional_recommendations_are_explicit_profile_metadata(self) -> None:
+        python = load_technology_profile(ROOT / "profiles/technologies/python.yaml")
+        abap = load_technology_profile(ROOT / "profiles/technologies/abap-rap.yaml")
+        self.assertEqual(python["recommended_optional_skills"], ["python-code-review"])
+        self.assertEqual(abap.get("recommended_optional_skills", []), [])
+        self.assertEqual(
+            recommend_optional_skills([abap, python], {"python-code-review", "optimizer"}),
+            ("python-code-review",),
+        )
+
+    def test_unknown_optional_recommendation_is_rejected(self) -> None:
+        profile = {
+            "schema_version": 1,
+            "id": "invalid",
+            "precedence": 1,
+            "detection": {},
+            "commands": {},
+            "recommended_optional_skills": ["missing"],
+        }
+        with self.assertRaisesRegex(TechnologyProfileError, "Unknown optional skill"):
+            recommend_optional_skills([profile], {"optimizer"})
+
+    def test_duplicate_optional_recommendations_are_rejected_on_load(self) -> None:
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "profile.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "id": "invalid",
+                        "precedence": 1,
+                        "detection": {},
+                        "commands": {},
+                        "recommended_optional_skills": ["optimizer", "optimizer"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(TechnologyProfileError, "unique skill ids"):
+                load_technology_profile(path)

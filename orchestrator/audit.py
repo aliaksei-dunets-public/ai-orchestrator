@@ -137,7 +137,7 @@ def audit_repository(root: Path | str, *, known_fingerprints: Iterable[str] = ()
                 )
         canonical_skills = project / "skills"
         if canonical_skills.exists():
-            for skill_file in sorted(canonical_skills.glob("*/SKILL.md")):
+            for skill_file in sorted(canonical_skills.rglob("SKILL.md")):
                 relative = skill_file.relative_to(project).as_posix()
                 name = SKILL_NAME_RE.search(skill_file.read_text(encoding="utf-8"))
                 if name and name.group(1) not in registered_skills:

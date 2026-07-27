@@ -1,7 +1,0 @@
-required:
-  - delegation lacks admission control
-  - repeated context and analysis
-  - compact state and handoff recommended
-  - bounded fan-out or role consolidation
-forbidden:
-  - recommend more subagents without unique value

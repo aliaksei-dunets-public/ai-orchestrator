@@ -1,8 +1,8 @@
 # Roadmap Completion Report
 
 Date: 2026-07-28<br>
-Implementation version: 1.0.0<br>
-Normative specifications: Orchestrator 0.4 and Task Layer 0.3
+Implementation version: 1.1.0<br>
+Normative specifications: Orchestrator 0.5 and Task Layer 0.3
 
 ## Phase traceability
 
@@ -32,16 +32,17 @@ Normative specifications: Orchestrator 0.4 and Task Layer 0.3
 | 21 | Approval-only controlled improvement proposals | exact diff/revision, rollback and regression requirements |
 | 22 | 16-cell portability matrix | strict workspace and release-artifact matrix runs |
 | 23 | Reproducible 1.0.0 release artifact | checksum, install, upgrade and rollback acceptance tests |
+| 24 | Selective system/bundled/optional skill distribution | selection, rollback, project-owned, onboarding recommendation and 1.1.0 release tests |
 
 ## Final verification
 
-- Full discovery: 110 tests pass, including every named phase test artifact and the DEC-005 maturity invariants.
+- Full discovery: 168 tests pass, covering every named phase test artifact, skill-distribution contract and the DEC-005 maturity invariants.
 - Release acceptance: complete-artifact manifest reproduction, internal link validation, managed/standalone install, migration and rollback pass.
-- Strict matrix: 16 of 16 cells pass for the 1.0.0 artifact.
+- Strict matrix: 16 of 16 cells pass for both workspace and the 1.1.0 artifact.
 - Health Check: `ok: true`; only the expected informational finding for an uninitialized operational Task Registry remains.
-- All 24 implementation plans pass the `task-creator` plan validator.
+- All 25 implementation plans pass the `task-creator` plan validator.
 - Every declared `Create`/`Modify`/`Test` artifact exists and every declared unittest target is importable.
-- All 22 enabled canonical skills are installed in `.codex/skills` with zero drift.
+- All 20 system/bundled canonical skills are installed in `.codex/skills` with zero drift; two optional skills remain available in the release library.
 - Four compatible skills from `aliaksei-dunets-public/ai-agent-skills` are pinned, registered and routed through orchestrator coordinators; the upstream `optimizer` validator reports no error or warning across 61 files and 14 behavioral fixtures.
 - Documentation has no broken local links or Unicode replacement characters.
 - The repository audit reports no evidenced contradiction, registry drift, dangling skill/workflow reference, schema-draft drift, untested runtime module or declared missing test.

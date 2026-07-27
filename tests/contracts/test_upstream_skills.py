@@ -19,10 +19,10 @@ class UpstreamSkillContractTests(unittest.TestCase):
         registry = json.loads((ROOT / "registries/skills.json").read_text(encoding="utf-8"))
         registered = {entry["id"]: entry["path"] for entry in registry["entries"]}
         for skill, coordinator in INTEGRATED.items():
-            self.assertEqual(registered[skill], f"skills/{skill}/SKILL.md")
+            self.assertTrue(registered[skill].endswith(f"/{skill}/SKILL.md"))
             content = (ROOT / registered[skill]).read_text(encoding="utf-8")
             self.assertIn(f"name: {skill}", content)
-            coordinator_text = (ROOT / f"skills/{coordinator}/SKILL.md").read_text(encoding="utf-8")
+            coordinator_text = (ROOT / registered[coordinator]).read_text(encoding="utf-8")
             self.assertIn(f"`{skill}`", coordinator_text)
 
     def test_provenance_is_pinned_and_legacy_conflicts_are_not_registered(self) -> None:
@@ -39,7 +39,7 @@ class UpstreamSkillContractTests(unittest.TestCase):
         self.assertEqual(profile["skills"]["security"], ["security-gate"])
 
     def test_python_review_entrypoint_routes_detail_and_bounds_subagents(self) -> None:
-        skill_root = ROOT / "skills/python-code-review"
+        skill_root = ROOT / "skills/optional/python-code-review"
         entrypoint = (skill_root / "SKILL.md").read_text(encoding="utf-8")
         workflow = (skill_root / "references/review-workflow.md").read_text(encoding="utf-8")
         self.assertLess(len(entrypoint.encode("utf-8")), 6_000)

@@ -9,6 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from orchestrator import __version__
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -62,7 +64,7 @@ class RepositoryScaffoldScenarioTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(imported.returncode, 0, imported.stderr)
-            self.assertEqual(imported.stdout.strip(), "1.0.0")
+            self.assertEqual(imported.stdout.strip(), __version__)
 
     def test_registries_reference_existing_artifacts_and_agents_is_safe(self) -> None:
         for registry_name in ("skills.json", "workflows.json"):

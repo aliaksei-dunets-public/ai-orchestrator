@@ -29,8 +29,31 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "distribution": {
+            "enum": ["system", "bundled", "optional"]
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "skill"
+                }
+              },
+              "required": ["kind"]
+            },
+            "then": {
+              "required": ["distribution"]
+            },
+            "else": {
+              "not": {
+                "required": ["distribution"]
+              }
+            }
+          }
+        ]
       }
     }
   }

@@ -1,7 +1,0 @@
-required:
-  - duplicated canonical workflow across platform adapters
-  - always-on context waste
-  - one canonical source with thin platform adapters
-  - explicit precedence and versioning
-forbidden:
-  - recommend maintaining four independent full copies

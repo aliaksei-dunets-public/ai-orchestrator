@@ -1,0 +1,43 @@
+schema_version: 1
+id: project-onboarding
+steps:
+  - id: discover-core
+    skill: project-onboarding
+  - id: inspect-target
+    skill: project-onboarding
+    depends_on: [discover-core]
+  - id: resolve-platform
+    capability: interaction.choose
+    depends_on: [inspect-target]
+  - id: resolve-technologies
+    capability: interaction.choose
+    depends_on: [resolve-platform]
+  - id: prepare-preview
+    skill: project-onboarding
+    depends_on: [resolve-technologies]
+  - id: request-approval
+    capability: approvals.resolve
+    depends_on: [prepare-preview]
+  - id: apply-project-integration
+    skill: project-onboarding
+    depends_on: [request-approval]
+    on_failure: rollback
+  - id: validate-health
+    capability: health.run
+    depends_on: [apply-project-integration]
+    on_failure: rollback
+  - id: validate-idempotency
+    skill: project-onboarding
+    depends_on: [validate-health]
+    on_failure: rollback
+  - id: finalize-report
+    skill: project-onboarding
+    depends_on: [validate-idempotency]
+recovery:
+  - id: rollback
+    skill: project-onboarding
+terminal_results: [completed, cancelled, blocked, rolled_back, rollback_failed]
+interaction_policy:
+  ask_only_when_ambiguous: true
+  approval_before_first_write: true
+  rollback_on_error_or_critical: true

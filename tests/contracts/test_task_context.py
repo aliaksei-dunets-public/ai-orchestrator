@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-VALIDATOR_PATH = ROOT / "skills" / "task-creator" / "scripts" / "validate_task_context.py"
+VALIDATOR_PATH = ROOT / "skills" / "system" / "task-creator" / "scripts" / "validate_task_context.py"
 SPEC = importlib.util.spec_from_file_location("canonical_task_context_validator", VALIDATOR_PATH)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("Cannot load task context validator")

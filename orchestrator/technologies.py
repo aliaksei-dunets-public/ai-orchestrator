@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Iterable, Mapping, Sequence
 
 
 class TechnologyProfileError(ValueError):
@@ -29,6 +29,13 @@ def load_technology_profile(path: Path | str) -> dict[str, object]:
     for name, command in commands.items():
         if not isinstance(command, dict) or not command.get("argv") or command.get("approval") not in {"allowlisted", "required"}:
             raise TechnologyProfileError(f"Invalid command declaration: {name}")
+    recommendations = profile.get("recommended_optional_skills", [])
+    if (
+        not isinstance(recommendations, list)
+        or any(not isinstance(skill_id, str) or not skill_id for skill_id in recommendations)
+        or len(recommendations) != len(set(recommendations))
+    ):
+        raise TechnologyProfileError("recommended_optional_skills must contain unique skill ids")
     return profile
 
 
@@ -74,3 +81,26 @@ def merge_profiles(profiles: Sequence[Mapping[str, object]]) -> dict[str, object
 
 def command_is_automatic(command: Mapping[str, object]) -> bool:
     return command.get("approval") == "allowlisted"
+
+
+def recommend_optional_skills(
+    profiles: Sequence[Mapping[str, object]],
+    available_optional_skills: Iterable[str],
+) -> tuple[str, ...]:
+    available = set(available_optional_skills)
+    ordered = sorted(profiles, key=lambda item: (int(item["precedence"]), str(item["id"])))
+    recommendations: list[str] = []
+    for profile in ordered:
+        declared = profile.get("recommended_optional_skills", [])
+        if not isinstance(declared, list) or any(not isinstance(item, str) for item in declared):
+            raise TechnologyProfileError(
+                f"Invalid recommended_optional_skills in profile {profile['id']}"
+            )
+        for skill_id in declared:
+            if skill_id not in available:
+                raise TechnologyProfileError(
+                    f"Unknown optional skill recommendation {skill_id} in profile {profile['id']}"
+                )
+            if skill_id not in recommendations:
+                recommendations.append(skill_id)
+    return tuple(recommendations)

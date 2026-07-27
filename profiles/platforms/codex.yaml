@@ -12,6 +12,13 @@
     "shell": {"mode": "native", "adapter": "workspace-shell"},
     "virtual_uri": {"mode": "fallback", "adapter": "materialize-readonly"},
     "review_isolation": {"mode": "native", "adapter": "sub-agent"},
-    "approval": {"mode": "native", "adapter": "interactive-approval"}
+    "approval": {"mode": "native", "adapter": "interactive-approval"},
+    "interaction": {"mode": "native", "adapter": "native-choice"}
+  },
+  "onboarding": {
+    "instruction_target": "AGENTS.md",
+    "skill_projection_target": ".agents/skills/project-onboarding",
+    "interaction_adapter": "native-choice",
+    "approval_adapter": "interactive-approval"
   }
 }

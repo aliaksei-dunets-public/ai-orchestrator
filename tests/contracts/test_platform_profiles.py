@@ -34,7 +34,13 @@ class PlatformProfileContractTests(unittest.TestCase):
             for pointer in profile["validation"]["evidence"]:
                 relative = pointer.split("#", 1)[0]
                 self.assertTrue((ROOT / relative).is_file(), pointer)
-            for capability in ("shell", "virtual_uri", "review_isolation", "approval"):
+            for capability in (
+                "shell",
+                "virtual_uri",
+                "review_isolation",
+                "approval",
+                "interaction",
+            ):
                 resolution = resolve_capability(profile, capability)
                 self.assertIn(resolution.mode, {"native", "fallback", "blocked"})
                 if resolution.mode != "blocked":

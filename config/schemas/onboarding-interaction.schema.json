@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-orchestrator/onboarding-interaction.schema.json",
+  "title": "Agent-led Onboarding Interaction",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "core_root",
+    "target_root",
+    "core_version",
+    "facts",
+    "platform_profile",
+    "technology_profiles",
+    "questions"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"const": "needs_input"},
+    "core_root": {"type": "string", "minLength": 1},
+    "target_root": {"type": "string", "minLength": 1},
+    "core_version": {"type": "string", "minLength": 1},
+    "facts": {
+      "type": "object",
+      "required": ["root_name", "markers", "source_directories"],
+      "properties": {
+        "root_name": {"type": "string", "minLength": 1},
+        "markers": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "source_directories": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "platform_profile": {"type": ["string", "null"]},
+    "technology_profiles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "prompt", "choices"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "prompt": {"type": "string", "minLength": 1},
+          "choices": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["id", "label", "description", "recommended"],
+              "properties": {
+                "id": {"type": "string", "minLength": 1},
+                "label": {"type": "string", "minLength": 1},
+                "description": {"type": "string", "minLength": 1},
+                "recommended": {"type": "boolean"}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

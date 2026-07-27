@@ -3,135 +3,157 @@
   "entries": [
     {
       "id": "code-reviewer",
-      "path": "skills/code-reviewer/SKILL.md",
+      "path": "skills/bundled/code-reviewer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "coding-discipline",
-      "path": "skills/coding-discipline/SKILL.md",
+      "path": "skills/bundled/coding-discipline/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "documentation-manager",
-      "path": "skills/documentation-manager/SKILL.md",
+      "path": "skills/bundled/documentation-manager/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "implementation-runner",
-      "path": "skills/implementation-runner/SKILL.md",
+      "path": "skills/bundled/implementation-runner/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "improvement-designer",
-      "path": "skills/improvement-designer/SKILL.md",
+      "path": "skills/bundled/improvement-designer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "knowledge-curator",
-      "path": "skills/knowledge-curator/SKILL.md",
+      "path": "skills/bundled/knowledge-curator/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "memory-manager",
-      "path": "skills/memory-manager/SKILL.md",
+      "path": "skills/bundled/memory-manager/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "orchestrator-auditor",
-      "path": "skills/orchestrator-auditor/SKILL.md",
+      "path": "skills/bundled/orchestrator-auditor/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "optimizer",
-      "path": "skills/optimizer/SKILL.md",
+      "path": "skills/optional/optimizer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "optional"
     },
     {
       "id": "plan-reviewer",
-      "path": "skills/plan-reviewer/SKILL.md",
+      "path": "skills/bundled/plan-reviewer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "plan-writer",
-      "path": "skills/plan-writer/SKILL.md",
+      "path": "skills/bundled/plan-writer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "project-onboarding",
-      "path": "skills/project-onboarding/SKILL.md",
+      "path": "skills/system/project-onboarding/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "system"
     },
     {
       "id": "python-code-review",
-      "path": "skills/python-code-review/SKILL.md",
+      "path": "skills/optional/python-code-review/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "optional"
     },
     {
       "id": "session-reporter",
-      "path": "skills/session-reporter/SKILL.md",
+      "path": "skills/bundled/session-reporter/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "security-reviewer",
-      "path": "skills/security-reviewer/SKILL.md",
+      "path": "skills/system/security-reviewer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "system"
     },
     {
       "id": "security-gate",
-      "path": "skills/security-gate/SKILL.md",
+      "path": "skills/bundled/security-gate/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "task-analyzer",
-      "path": "skills/task-analyzer/SKILL.md",
+      "path": "skills/bundled/task-analyzer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "task-context-validator",
-      "path": "skills/task-context-validator/SKILL.md",
+      "path": "skills/system/task-context-validator/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "system"
     },
     {
       "id": "task-creator",
-      "path": "skills/task-creator/SKILL.md",
+      "path": "skills/system/task-creator/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "system"
     },
     {
       "id": "task-reviewer",
-      "path": "skills/task-reviewer/SKILL.md",
+      "path": "skills/bundled/task-reviewer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "test-designer",
-      "path": "skills/test-designer/SKILL.md",
+      "path": "skills/bundled/test-designer/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     },
     {
       "id": "test-runner",
-      "path": "skills/test-runner/SKILL.md",
+      "path": "skills/bundled/test-runner/SKILL.md",
       "kind": "skill",
-      "enabled": true
+      "enabled": true,
+      "distribution": "bundled"
     }
   ]
 }

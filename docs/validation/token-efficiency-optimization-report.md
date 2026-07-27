@@ -11,7 +11,7 @@ Mode: `$optimizer` `optimize`
 | OPT-001 | Platform-neutral numeric telemetry, optional JSONL sink and CLI summary | `orchestrator/telemetry.py`, `orchestrator telemetry --json` |
 | OPT-002 | Default canonical-source retrieval excludes release snapshots | `.rgignore`, `config/defaults.yaml` |
 | OPT-003 | Task mode/risk/impact selects the smallest execution route | `orchestrator/workflow.py`, `workflows/task-execution.yaml` |
-| OPT-004 | Python review uses a thin router and bounded subagent admission | `skills/python-code-review/SKILL.md` |
+| OPT-004 | Python review uses a thin router and bounded subagent admission | `skills/optional/python-code-review/SKILL.md` |
 | OPT-005 | Checkpoint evidence has a deterministic bound, tail, digest and optional pointer | `orchestrator/execution.py` |
 
 ## Static before/after metrics

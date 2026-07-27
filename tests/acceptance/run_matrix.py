@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from orchestrator.onboarding import onboard
+from orchestrator import __version__
 from orchestrator.platforms import load_platform_profile
 from orchestrator.release import install_artifact
 from orchestrator.technologies import detect_technology, load_technology_profile
@@ -64,7 +65,7 @@ def run_cell(cell: dict[str, str], artifact: Path) -> dict[str, object]:
         command = [
             sys.executable,
             "-c",
-            "import orchestrator; assert orchestrator.__version__ == '1.0.0'",
+            f"import orchestrator; assert orchestrator.__version__ == {__version__!r}",
         ]
         completed = subprocess.run(
             command,

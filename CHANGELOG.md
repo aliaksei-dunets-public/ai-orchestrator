@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.1.0 — 2026-07-28
+
+- Split canonical skills into system, bundled and optional distribution groups.
+- Installed system and bundled skills by default while keeping optional skills behind explicit project approval.
+- Added versioned optional selection and independent project-owned skill sources.
+- Added atomic platform-projection synchronization with rollback, collision detection and Health Check coverage.
+- Added technology-profile recommendations for optional skills without automatic installation.
 - Added payload-free execution telemetry with JSONL storage and CLI summaries.
 - Added deterministic evidence bounds with diagnostic tails, digests and artifact pointers.
 - Added quick/standard/deep execution routing while keeping Security Review mandatory.

@@ -3,12 +3,25 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
 
 class ReleaseError(ValueError):
     pass
+
+
+ARTIFACT_DIRECTORIES = (
+    "orchestrator",
+    "profiles",
+    "config",
+    "skills",
+    "workflows",
+    "registries",
+    "docs",
+)
+ARTIFACT_FILES = ("pyproject.toml", "README.md", "CHANGELOG.md", "ROADMAP.md")
 
 
 def file_checksum(path: Path | str) -> str:
@@ -79,6 +92,45 @@ def write_artifact_manifest(
     return target
 
 
+def build_release_artifact(root: Path | str, destination: Path | str) -> Path:
+    repository = Path(root).resolve()
+    target = Path(destination).resolve()
+    if target == repository:
+        raise ReleaseError("Release artifact cannot replace repository root")
+    try:
+        repository.relative_to(target)
+    except ValueError:
+        pass
+    else:
+        raise ReleaseError("Release artifact cannot contain repository root")
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix=f".{target.name}-build-",
+        dir=target.parent,
+    ) as temporary:
+        staged = Path(temporary) / target.name
+        staged.mkdir()
+        for name in ARTIFACT_DIRECTORIES:
+            source_item = repository / name
+            if source_item.exists():
+                shutil.copytree(
+                    source_item,
+                    staged / name,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store"),
+                )
+        for name in ARTIFACT_FILES:
+            source_item = repository / name
+            if source_item.is_file():
+                shutil.copy2(source_item, staged / name)
+        if not (staged / "orchestrator/__init__.py").is_file():
+            raise ReleaseError("Built artifact has no orchestrator package")
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.copytree(staged, target)
+    return target
+
+
 def install_artifact(
     artifact: Path | str,
     destination: Path | str,
@@ -91,7 +143,7 @@ def install_artifact(
         raise ReleaseError("Release artifact has no orchestrator package")
     target = target_root / ".orchestrator/core" if managed else target_root
     target.mkdir(parents=True, exist_ok=True)
-    for name in ("orchestrator", "profiles", "config", "skills", "workflows", "registries", "docs"):
+    for name in ARTIFACT_DIRECTORIES:
         source_item = source / name
         if not source_item.exists():
             continue
@@ -99,7 +151,7 @@ def install_artifact(
         if destination_item.exists():
             shutil.rmtree(destination_item)
         shutil.copytree(source_item, destination_item)
-    for name in ("pyproject.toml", "README.md", "CHANGELOG.md", "ROADMAP.md"):
+    for name in ARTIFACT_FILES:
         if (source / name).is_file():
             shutil.copy2(source / name, target / name)
     return target

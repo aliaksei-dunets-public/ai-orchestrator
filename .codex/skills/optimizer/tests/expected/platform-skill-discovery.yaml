@@ -1,6 +1,0 @@
-required:
-  - discovery paths differ by platform and surface
-  - verify installation path for each target
-  - require platform smoke tests
-forbidden:
-  - claim one folder is universally discovered

@@ -1,7 +1,0 @@
-required:
-  - contaminated baseline
-  - record executable version and active configuration
-  - read-only or plan mode
-  - bounded persistence and full execution evidence
-forbidden:
-  - compare only final answer length

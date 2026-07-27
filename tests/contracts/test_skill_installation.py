@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class SkillInstallationContractTests(unittest.TestCase):
     def test_install_is_idempotent_and_detects_drift(self) -> None:
-        source = ROOT / "skills" / "task-creator"
+        source = ROOT / "skills" / "system" / "task-creator"
         with tempfile.TemporaryDirectory() as temporary:
             installed = Path(temporary) / ".codex" / "skills" / "task-creator"
             self.assertTrue(install_skill(source, installed).clean)
@@ -39,7 +39,11 @@ class SkillInstallationContractTests(unittest.TestCase):
 
     def test_registry_driven_workspace_projection_is_complete_and_idempotent(self) -> None:
         registry = json.loads((ROOT / "registries/skills.json").read_text(encoding="utf-8"))
-        expected = {entry["id"] for entry in registry["entries"] if entry["enabled"]}
+        expected = {
+            entry["id"]
+            for entry in registry["entries"]
+            if entry["enabled"] and entry["distribution"] in {"system", "bundled"}
+        }
         with tempfile.TemporaryDirectory() as temporary:
             installed = Path(temporary) / ".codex/skills"
             first = install_registered_skills(ROOT, installed)
@@ -51,8 +55,19 @@ class SkillInstallationContractTests(unittest.TestCase):
 
     def test_checked_in_codex_workspace_projection_has_zero_drift(self) -> None:
         registry = json.loads((ROOT / "registries/skills.json").read_text(encoding="utf-8"))
+        expected = {
+            entry["id"]
+            for entry in registry["entries"]
+            if entry["enabled"] and entry["distribution"] in {"system", "bundled"}
+        }
+        installed_ids = {
+            path.name
+            for path in (ROOT / ".codex/skills").iterdir()
+            if path.is_dir()
+        }
+        self.assertEqual(installed_ids, expected)
         for entry in registry["entries"]:
-            if not entry["enabled"]:
+            if not entry["enabled"] or entry["distribution"] == "optional":
                 continue
             source = (ROOT / entry["path"]).parent
             installed = ROOT / ".codex/skills" / entry["id"]
@@ -60,3 +75,14 @@ class SkillInstallationContractTests(unittest.TestCase):
                 check_skill_drift(source, installed).clean,
                 f"Workspace skill projection drifted: {entry['id']}",
             )
+
+    def test_approved_optional_skill_is_installed_explicitly(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            installed = Path(temporary) / ".codex/skills"
+            result = install_registered_skills(
+                ROOT,
+                installed,
+                optional_skills=("python-code-review",),
+            )
+            self.assertIn("python-code-review", result)
+            self.assertNotIn("optimizer", result)
