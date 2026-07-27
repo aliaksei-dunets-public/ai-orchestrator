@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "github-copilot-vscode",
+  "adapter_order": 2,
+  "maturity": "experimental",
+  "validation": {
+    "contract_matrix": "passed",
+    "native_smoke": "not_run",
+    "evidence": ["docs/validation/multi-project-report.md#contract-matrix-evidence"]
+  },
+  "capabilities": {
+    "shell": {"mode": "native", "adapter": "vscode-terminal"},
+    "virtual_uri": {"mode": "native", "adapter": "vscode-uri"},
+    "review_isolation": {"mode": "fallback", "adapter": "clean-context-review"},
+    "approval": {"mode": "fallback", "adapter": "chat-confirmation"}
+  }
+}

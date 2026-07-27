@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "backlog-loop",
+      "path": "workflows/backlog-loop.yaml",
+      "kind": "workflow",
+      "enabled": true
+    },
+    {
+      "id": "improvement-proposal",
+      "path": "workflows/improvement-proposal.yaml",
+      "kind": "workflow",
+      "enabled": true
+    },
+    {
+      "id": "task-creation-standard",
+      "path": "workflows/task-creation-standard.yaml",
+      "kind": "workflow",
+      "enabled": true
+    },
+    {
+      "id": "task-execution",
+      "path": "workflows/task-execution.yaml",
+      "kind": "workflow",
+      "enabled": true
+    }
+  ]
+}

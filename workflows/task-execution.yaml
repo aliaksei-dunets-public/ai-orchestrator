@@ -1,0 +1,37 @@
+schema_version: 1
+id: task-execution
+steps:
+  - id: freshness
+    capability: execution.validate_freshness
+  - id: implement
+    skill: implementation-runner
+    depends_on: [freshness]
+  - id: design-tests
+    skill: test-designer
+    depends_on: [implement]
+  - id: run-tests
+    skill: test-runner
+    depends_on: [design-tests]
+  - id: task-review
+    skill: task-reviewer
+    depends_on: [run-tests]
+    on_failure: implement
+  - id: code-review
+    skill: code-reviewer
+    depends_on: [task-review]
+    on_failure: implement
+  - id: security-review
+    skill: security-reviewer
+    depends_on: [code-review]
+    on_failure: implement
+  - id: approvals
+    capability: approvals.resolve
+    depends_on: [security-review]
+  - id: documentation
+    skill: documentation-manager
+    depends_on: [approvals]
+stop_conditions:
+  - scope_change
+  - waiting_user
+  - blocked
+evidence_required: true

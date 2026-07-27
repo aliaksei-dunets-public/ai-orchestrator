@@ -1,0 +1,6 @@
+required:
+  - progressive disclosure missing
+  - context routing missing
+  - provider-specific guidance mixed into universal core
+forbidden:
+  - claim exact token savings without measurements

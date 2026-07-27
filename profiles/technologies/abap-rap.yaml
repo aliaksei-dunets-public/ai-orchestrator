@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "abap-rap",
+  "precedence": 20,
+  "detection": {
+    "markers": [".abapgit.xml", "abapgit.xml"],
+    "extensions": [".abap", ".asddls", ".behavior"]
+  },
+  "commands": {
+    "unit-test": {"argv": ["abap-unit"], "approval": "required"},
+    "syntax-check": {"argv": ["abap-syntax-check"], "approval": "required"}
+  },
+  "skills": {
+    "implementation": ["coding-discipline"],
+    "security": ["security-gate"]
+  },
+  "directories": {"source": ["src"], "tests": ["test"]}
+}

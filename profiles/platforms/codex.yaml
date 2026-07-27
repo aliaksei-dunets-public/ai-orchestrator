@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "codex",
+  "adapter_order": 0,
+  "maturity": "stable",
+  "validation": {
+    "contract_matrix": "passed",
+    "native_smoke": "passed",
+    "evidence": ["docs/validation/multi-project-report.md#native-host-evidence"]
+  },
+  "capabilities": {
+    "shell": {"mode": "native", "adapter": "workspace-shell"},
+    "virtual_uri": {"mode": "fallback", "adapter": "materialize-readonly"},
+    "review_isolation": {"mode": "native", "adapter": "sub-agent"},
+    "approval": {"mode": "native", "adapter": "interactive-approval"}
+  }
+}

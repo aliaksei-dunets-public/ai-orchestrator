@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "code-reviewer",
+      "path": "skills/code-reviewer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "coding-discipline",
+      "path": "skills/coding-discipline/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "documentation-manager",
+      "path": "skills/documentation-manager/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "implementation-runner",
+      "path": "skills/implementation-runner/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "improvement-designer",
+      "path": "skills/improvement-designer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "knowledge-curator",
+      "path": "skills/knowledge-curator/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "memory-manager",
+      "path": "skills/memory-manager/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "orchestrator-auditor",
+      "path": "skills/orchestrator-auditor/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "optimizer",
+      "path": "skills/optimizer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "plan-reviewer",
+      "path": "skills/plan-reviewer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "plan-writer",
+      "path": "skills/plan-writer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "project-onboarding",
+      "path": "skills/project-onboarding/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "python-code-review",
+      "path": "skills/python-code-review/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "session-reporter",
+      "path": "skills/session-reporter/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "security-reviewer",
+      "path": "skills/security-reviewer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "security-gate",
+      "path": "skills/security-gate/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "task-analyzer",
+      "path": "skills/task-analyzer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "task-context-validator",
+      "path": "skills/task-context-validator/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "task-creator",
+      "path": "skills/task-creator/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "task-reviewer",
+      "path": "skills/task-reviewer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "test-designer",
+      "path": "skills/test-designer/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    },
+    {
+      "id": "test-runner",
+      "path": "skills/test-runner/SKILL.md",
+      "kind": "skill",
+      "enabled": true
+    }
+  ]
+}

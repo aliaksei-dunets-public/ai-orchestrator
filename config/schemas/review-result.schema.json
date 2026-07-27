@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/review-result.schema.json",
+  "type": "object",
+  "required": ["schema_version", "kind", "verdict", "criteria", "findings", "reviewer_mode"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"enum": ["task", "code", "security"]},
+    "verdict": {"enum": ["approved", "rework", "blocked"]},
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "status", "evidence"],
+        "properties": {
+          "criterion": {"type": "string", "minLength": 1},
+          "status": {"enum": ["satisfied", "failed", "unverified"]},
+          "evidence": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "severity", "file", "evidence", "impact", "remediation", "blocking"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["advisory", "low", "medium", "high", "critical"]},
+          "file": {"type": "string", "minLength": 1},
+          "evidence": {"type": "string", "minLength": 1},
+          "impact": {"type": "string", "minLength": 1},
+          "remediation": {"type": "string", "minLength": 1},
+          "blocking": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "reviewer_mode": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

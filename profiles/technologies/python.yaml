@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "python",
+  "precedence": 10,
+  "detection": {
+    "markers": ["pyproject.toml", "requirements.txt"],
+    "extensions": [".py"]
+  },
+  "commands": {
+    "test": {"argv": ["python", "-m", "unittest"], "approval": "allowlisted"},
+    "compile": {"argv": ["python", "-m", "compileall", "-q", "."], "approval": "allowlisted"}
+  },
+  "skills": {
+    "implementation": ["coding-discipline"],
+    "review": ["python-code-review"],
+    "security": ["security-gate"]
+  },
+  "directories": {"source": ["src", "orchestrator"], "tests": ["tests"]}
+}

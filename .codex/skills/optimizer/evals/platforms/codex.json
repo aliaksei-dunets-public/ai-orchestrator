@@ -1,0 +1,21 @@
+{
+  "platform": "codex",
+  "surface": "cli",
+  "executable": "codex",
+  "install_path": ".agents/skills/optimizer",
+  "prompt_prefix": "Use the optimizer skill explicitly. Audit the following fixture in {mode} mode. Return JSON that follows the supplied result contract.\n\n",
+  "command_template": [
+    "codex",
+    "exec",
+    "--ephemeral",
+    "--json",
+    "--sandbox",
+    "read-only",
+    "--cd",
+    "{workspace}",
+    "{prompt}"
+  ],
+  "output_format": "jsonl",
+  "ide_smoke_test_required": false,
+  "notes": "Record model and config overrides. Add an output schema flag only after verifying support in the installed version."
+}

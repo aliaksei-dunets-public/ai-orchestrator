@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Creator"
+  short_description: "Create and validate executable task plans"
+  default_prompt: "Use $task-creator to create a validated Task Context and executable implementation plan."

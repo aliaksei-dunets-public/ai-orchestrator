@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/technology-profile.schema.json",
+  "type": "object",
+  "required": ["schema_version", "id", "precedence", "detection", "commands"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "minLength": 1},
+    "precedence": {"type": "integer", "minimum": 0},
+    "detection": {"type": "object"},
+    "commands": {"type": "object"},
+    "skills": {
+      "type": "object",
+      "properties": {
+        "implementation": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "review": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "security": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "directories": {"type": "object"}
+  },
+  "additionalProperties": false
+}

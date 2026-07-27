@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/platform-profile.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "adapter_order",
+    "maturity",
+    "validation",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "minLength": 1},
+    "adapter_order": {"type": "integer", "minimum": 0},
+    "maturity": {"enum": ["stable", "experimental"]},
+    "validation": {
+      "type": "object",
+      "required": ["contract_matrix", "native_smoke", "evidence"],
+      "properties": {
+        "contract_matrix": {"enum": ["passed", "failed", "not_run"]},
+        "native_smoke": {"enum": ["passed", "failed", "not_run"]},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["mode"],
+        "properties": {
+          "mode": {"enum": ["native", "fallback", "blocked"]},
+          "adapter": {"type": "string"},
+          "reason": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"maturity": {"const": "stable"}},
+        "required": ["maturity"]
+      },
+      "then": {
+        "properties": {
+          "validation": {
+            "properties": {
+              "contract_matrix": {"const": "passed"},
+              "native_smoke": {"const": "passed"},
+              "evidence": {"minItems": 1}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

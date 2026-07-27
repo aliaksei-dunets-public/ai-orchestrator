@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-orchestrator"
+version = "1.0.0"
+description = "Portable, platform-neutral AI development orchestrator"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Proprietary"}
+authors = [{name = "AI Orchestrator contributors"}]
+dependencies = []
+
+[project.scripts]
+orchestrator = "orchestrator.cli:main"
+orchestrator-task = "orchestrator.task_cli:main"
+
+[tool.setuptools.packages.find]
+include = ["orchestrator*"]

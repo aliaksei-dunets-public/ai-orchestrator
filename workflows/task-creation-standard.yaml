@@ -1,0 +1,22 @@
+schema_version: 1
+id: task-creation-standard
+steps:
+  - id: analyze
+    skill: task-analyzer
+  - id: plan
+    skill: plan-writer
+    depends_on: [analyze]
+  - id: review
+    skill: plan-reviewer
+    depends_on: [plan]
+    on_failure: plan
+  - id: validate
+    skill: task-context-validator
+    depends_on: [review]
+  - id: register
+    capability: task-manager.register
+    depends_on: [validate]
+gates:
+  deep_approval:
+    when: mode == deep
+    before: validate

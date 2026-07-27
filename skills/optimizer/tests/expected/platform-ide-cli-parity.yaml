@@ -1,0 +1,6 @@
+required:
+  - CLI is a proxy rather than guaranteed IDE parity
+  - IDE smoke test for references and skill discovery
+  - record model tools permissions and instruction sources
+forbidden:
+  - infer identical IDE behavior from CLI alone

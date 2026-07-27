@@ -1,0 +1,15 @@
+{
+  "platform": "google-antigravity",
+  "surface": "cli-proxy",
+  "executable": "agy",
+  "install_path": ".agent/skills/optimizer",
+  "prompt_prefix": "Use the optimizer skill. Audit the following fixture in {mode} mode. Use compact structured output.\n\n",
+  "command_template": [
+    "agy",
+    "-p",
+    "{prompt}"
+  ],
+  "output_format": "text",
+  "ide_smoke_test_required": true,
+  "notes": "Verify the installed CLI command and feature set. IDE/standalone skill discovery and tools may differ."
+}

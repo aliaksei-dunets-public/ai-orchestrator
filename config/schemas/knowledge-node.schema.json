@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/knowledge-node.schema.json",
+  "type": "object",
+  "required": ["schema_version", "id", "kind", "label", "source", "supersedes"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "minLength": 1},
+    "kind": {"type": "string", "minLength": 1},
+    "label": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "supersedes": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

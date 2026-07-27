@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "claude-vscode",
+  "adapter_order": 3,
+  "maturity": "experimental",
+  "validation": {
+    "contract_matrix": "passed",
+    "native_smoke": "not_run",
+    "evidence": ["docs/validation/multi-project-report.md#contract-matrix-evidence"]
+  },
+  "capabilities": {
+    "shell": {"mode": "native", "adapter": "vscode-terminal"},
+    "virtual_uri": {"mode": "fallback", "adapter": "materialize-readonly"},
+    "review_isolation": {"mode": "fallback", "adapter": "clean-context-review"},
+    "approval": {"mode": "fallback", "adapter": "chat-confirmation"}
+  }
+}

@@ -2,8 +2,8 @@
 
 ## Архитектурная спецификация и roadmap
 
-**Версия:** 0.3  
-**Статус:** начальная спецификация продукта  
+**Версия:** 0.4
+**Статус:** нормативная архитектурная спецификация
 **Язык:** русский
 
 ## 1. Назначение
@@ -19,7 +19,7 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 
 1. Ядро не знает конкретный проект.
 2. Проектная специфика задаётся профилями, контекстом и overrides.
-3. Навыки атомарны и имеют явные контракты.
+3. Навыки имеют одну основную ответственность и явные контракты; coordinator-навык может компоновать другие навыки, не дублируя их ответственность.
 4. Workflow собираются из навыков и approval gates.
 5. Task Manager остаётся лёгким автоматом состояний.
 6. Для маленьких задач используется сокращённый workflow.
@@ -27,6 +27,13 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 8. Самоулучшение выполняется только через предложения и явное одобрение пользователя.
 9. Любая новая capability должна иметь документацию и тестовый сценарий.
 10. Security policies нельзя незаметно отменить локальным override.
+
+### 2.1. Нормативность и источники истины
+
+- Этот документ является источником истины для архитектурных границ, общей последовательности lifecycle и roadmap продукта.
+- `task-layer-specification-ru.md` является источником истины для Task Context, Task Registry, статусов, переходов и Task Manager CLI.
+- Если формулировки расходятся, для Task Layer действует более узкая спецификация; расхождение должно быть устранено в обоих документах до релиза.
+- Термины «обязан», «запрещён» и «единственный источник истины» задают нормативные требования. Примеры и целевые команды не считаются реализованными возможностями, пока соответствующая фаза не завершена.
 
 ## 3. Архитектурные слои
 
@@ -38,9 +45,9 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 
 Состоит из четырёх независимых частей:
 
-- **Task Creator** — анализирует запрос и создаёт Task Context.
-- **Task Context** — хранит постановку, анализ, критерии, план и результат.
-- **Task Manager** — управляет очередью и внешними статусами.
+- **Task Creator** — coordinator workflow, который классифицирует запрос, вызывает специализированные навыки и создаёт Task Context.
+- **Task Context** — хранит версионируемое определение задачи и дополняемый Execution Record.
+- **Task Manager** — управляет очередью, операционным статусом и ссылкой на Task Context.
 - **Task Execution Workflow** — выполняет задачу и проводит проверки.
 
 Детальный контракт находится в `task-layer-specification-ru.md`.
@@ -51,7 +58,7 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 
 ### 3.4. Skills
 
-Базовый набор:
+Базовый набор. `task-creator` является coordinator-навыком Task Creation Workflow; остальные элементы предоставляют атомарные операции или проверки:
 
 - task-manager;
 - task-creator;
@@ -75,6 +82,8 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 - orchestrator-auditor;
 - improvement-designer.
 
+Каталог `skills/` является каноническим source переносимых навыков. Platform-каталоги, включая `.codex/skills/`, являются устанавливаемыми проекциями: installer создаёт или обновляет их из `skills/`, а Health Check обнаруживает drift. Ручное редактирование platform-копий после появления канонического source запрещено.
+
 ### 3.5. Registries
 
 Реестры skills, workflows, capabilities, platform profiles, technology profiles, templates и policies являются единым каталогом доступных компонентов.
@@ -83,7 +92,9 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 
 Описывают возможности среды выполнения: shell, Git, MCP, virtual URI, sub-agents, параллельность, память, интерактивность, commits и pull requests.
 
-Примеры: OpenAI Codex, GitHub Copilot, Claude Code, Antigravity, локальный и CI-агент.
+Порядок целевой поддержки: OpenAI Codex как базовая среда, затем Google Antigravity, GitHub Copilot VS Code и Claude VS Code. Каждый новый adapter добавляется только после прохождения общего capability contract предыдущей платформой.
+
+Каждый platform profile обязан объявлять maturity `stable` или `experimental` и раздельные результаты общего contract matrix и native smoke run. Статус `stable` разрешён только при `passed` для обеих проверок и наличии evidence; evidence native smoke фиксирует host/version, ОС или runtime, дату, запущенную проверку и результат. Прохождение contract matrix в другой среде не заменяет native smoke в vendor host: такой profile остаётся `experimental`, но может участвовать в общей матрице переносимости.
 
 ### 3.7. Technology Profiles
 
@@ -116,7 +127,7 @@ AI Orchestrator — переносимое, конфигурируемое яд�
 7. task-specific instructions;
 8. пользовательские инструкции текущей сессии.
 
-Более локальный слой уточняет общий, но immutable security policies имеют приоритет над локальными настройками.
+Каждый следующий слой имеет приоритет над предыдущим только в пределах разрешённых настроек. Immutable security policies имеют безусловный приоритет и не могут быть ослаблены ни project override, ни task-specific, ни пользовательской инструкцией.
 
 ## 5. Структура репозитория
 
@@ -153,6 +164,8 @@ ai-orchestrator/
 └── releases/
 ```
 
+Локальный operational state целевого проекта находится в `.orchestrator/` и не является частью переносимого core. Task Registry, временные и lock-файлы исключаются из Git; Task Context, планы, код, тесты и документация остаются версионируемыми.
+
 ## 6. Project Onboarding
 
 Onboarding знакомит оркестратор с целевым проектом без изменения ядра:
@@ -181,7 +194,7 @@ Health Check — ранняя детерминированная диагнос�
 - наличие project context;
 - доступность инструментов и MCP;
 - целостность Task Registry;
-- отсутствие нескольких активных задач;
+- отсутствие нескольких задач, занимающих слот выполнения согласно Task Layer;
 - версии схем и неизвестные параметры.
 
 Уровни: `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
@@ -211,6 +224,7 @@ User request
 → Task Context validation
 → Task Manager registration
 → Claim task
+→ Task Context freshness validation
 → Implementation
 → Tests
 → Task Review
@@ -221,10 +235,10 @@ User request
 → Memory and Knowledge
 → Commit
 → Done
-→ Session Report
+→ Session Report (на уровне сессии)
 ```
 
-Security Review выполняется до передачи изменений пользователю.
+Security Review выполняется до передачи изменений пользователю. Статус `done` устанавливается Task Manager только по команде execution workflow после завершения всех обязательных gates; Task Manager не интерпретирует их содержание. Session Report формируется после остановки execution/backlog loop и не является условием перехода отдельной задачи в `done`.
 
 ## 10. Память и знания
 
@@ -267,7 +281,7 @@ Security Review выполняется до передачи изменений 
 
 ### Фаза 4 — Минимальный Task Manager
 
-JSON Task Registry, статусы, переходы, CLI, `claim-next` и атомарные записи.
+JSON Task Registry, статусы, переходы, CLI, `claim-next` и crash-safe записи для одного writer. Межпроцессная блокировка не входит в первую версию.
 
 ### Фаза 5 — Quick Task Creator
 
@@ -311,7 +325,7 @@ JSON Task Registry, статусы, переходы, CLI, `claim-next` и ат�
 
 ### Фаза 15 — Platform Profiles
 
-Адаптация к нескольким агентным платформам и fallback-механизмам.
+Последовательная адаптация и общий capability contract для Codex, Google Antigravity, GitHub Copilot VS Code и Claude VS Code.
 
 ### Фаза 16 — Technology Profiles
 
@@ -339,23 +353,39 @@ Improvement proposals, approval workflow, regression tests и rollback.
 
 ### Фаза 22 — Multi-Project Validation
 
-Пилоты на разных стеках, платформах, managed и standalone mode.
+Пилоты на Codex, Google Antigravity, GitHub Copilot VS Code и Claude VS Code, минимум двух стеках, а также в managed и standalone mode.
 
 ### Фаза 23 — Stable Release 1.0
 
 Стабильные контракты, migration guide, compatibility policy и полный acceptance suite.
 
+### 12.1. Соответствие roadmap Task Layer
+
+Roadmap этого документа является каноническим. Этапы `T0–T9` из Task Layer уточняют его и не образуют вторую независимую очередь:
+
+| Task Layer | Фазы продукта |
+| --- | --- |
+| T0 — Контракты | 0–1 |
+| T1–T3 — Task Manager | 2 и 4 |
+| T4 — Quick Task Creator | 5 |
+| T5–T6 — Standard/Deep Creator и проверки | 6 |
+| T7 — Execution Integration | 7–13 |
+| T8 — Backlog Loop | 19 |
+| T9 — Platform Validation | 15–16 и 22 |
+
+Планы реализации создаются отдельно для фаз `0–23`; один план может ссылаться на несколько этапов Task Layer, но не должен дублировать их как самостоятельный backlog.
+
 ## 13. Definition of Done фазы
 
-Фаза завершена, когда:
+Фаза завершена, когда применимые к её scope условия выполнены:
 
 - scope реализован;
 - документация и registries обновлены;
 - schemas валидны;
-- Health Check не содержит `ERROR` и `CRITICAL`;
-- добавлены unit, scenario и regression tests;
-- демонстрационный сценарий выполнен;
-- session report и release notes сформированы;
+- после появления Health Check он не содержит `ERROR` и `CRITICAL`;
+- добавлены релевантные unit, contract и scenario tests, а regression test добавлен для каждой исправленной ошибки;
+- для исполняемой capability выполнен демонстрационный сценарий;
+- после появления Session Reporter сформирован session report, а для выпуска — release notes;
 - ограничения и следующий backlog зафиксированы.
 
 ## 14. Первый практический релиз 0.1.0

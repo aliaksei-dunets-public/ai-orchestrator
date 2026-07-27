@@ -1,0 +1,7 @@
+# Secret prevention is the fast local gate. Keep broader SAST/SCA checks in CI.
+# Review and update pinned versions intentionally.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

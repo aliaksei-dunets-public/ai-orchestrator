@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "platform_order": [
+    "codex",
+    "google-antigravity",
+    "github-copilot-vscode",
+    "claude-vscode"
+  ],
+  "cells": [
+    {"platform": "codex", "technology": "python", "mode": "managed"},
+    {"platform": "codex", "technology": "python", "mode": "standalone"},
+    {"platform": "codex", "technology": "abap-rap", "mode": "managed"},
+    {"platform": "codex", "technology": "abap-rap", "mode": "standalone"},
+    {"platform": "google-antigravity", "technology": "python", "mode": "managed"},
+    {"platform": "google-antigravity", "technology": "python", "mode": "standalone"},
+    {"platform": "google-antigravity", "technology": "abap-rap", "mode": "managed"},
+    {"platform": "google-antigravity", "technology": "abap-rap", "mode": "standalone"},
+    {"platform": "github-copilot-vscode", "technology": "python", "mode": "managed"},
+    {"platform": "github-copilot-vscode", "technology": "python", "mode": "standalone"},
+    {"platform": "github-copilot-vscode", "technology": "abap-rap", "mode": "managed"},
+    {"platform": "github-copilot-vscode", "technology": "abap-rap", "mode": "standalone"},
+    {"platform": "claude-vscode", "technology": "python", "mode": "managed"},
+    {"platform": "claude-vscode", "technology": "python", "mode": "standalone"},
+    {"platform": "claude-vscode", "technology": "abap-rap", "mode": "managed"},
+    {"platform": "claude-vscode", "technology": "abap-rap", "mode": "standalone"}
+  ]
+}

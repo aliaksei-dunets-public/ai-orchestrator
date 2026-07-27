@@ -1,0 +1,15 @@
+schema_version: 1
+id: improvement-proposal
+steps:
+  - id: audit-finding
+    skill: orchestrator-auditor
+  - id: design-proposal
+    skill: improvement-designer
+    depends_on: [audit-finding]
+  - id: create-task
+    workflow: task-creation-standard
+    depends_on: [design-proposal]
+  - id: approve-exact-diff
+    capability: approvals.resolve
+    depends_on: [create-task]
+direct_apply: false

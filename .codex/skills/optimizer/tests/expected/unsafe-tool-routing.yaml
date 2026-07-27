@@ -1,0 +1,7 @@
+required:
+  - untrusted content crossing instruction boundary
+  - external write side effect
+  - idempotency and retry risk
+  - approval and rollback gap
+forbidden:
+  - treat prompt wording as sufficient authorization control

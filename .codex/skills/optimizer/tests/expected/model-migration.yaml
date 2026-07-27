@@ -1,0 +1,7 @@
+required:
+  - fresh target-model baseline
+  - one-change-at-a-time eval plan
+  - separate reasoning and verbosity controls
+  - verify model-specific guidance freshness
+forbidden:
+  - assume all GPT-5.4 scaffolding is required for GPT-5.6

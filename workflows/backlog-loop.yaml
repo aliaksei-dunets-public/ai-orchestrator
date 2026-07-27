@@ -1,0 +1,13 @@
+schema_version: 1
+id: backlog-loop
+limits:
+  max_tasks: required
+  max_seconds: required
+  max_steps: required
+steps:
+  - claim-next
+  - task-execution
+  - commit-task
+  - complete-task
+stop_conditions: [empty, limit, waiting_user, blocked, failed]
+commit_per_task: true

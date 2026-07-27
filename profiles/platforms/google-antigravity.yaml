@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "google-antigravity",
+  "adapter_order": 1,
+  "maturity": "experimental",
+  "validation": {
+    "contract_matrix": "passed",
+    "native_smoke": "not_run",
+    "evidence": ["docs/validation/multi-project-report.md#contract-matrix-evidence"]
+  },
+  "capabilities": {
+    "shell": {"mode": "native", "adapter": "workspace-shell"},
+    "virtual_uri": {"mode": "native", "adapter": "virtual-resource"},
+    "review_isolation": {"mode": "fallback", "adapter": "clean-context-review"},
+    "approval": {"mode": "native", "adapter": "interactive-approval"}
+  }
+}

@@ -1,0 +1,12 @@
+required:
+  - return only important material findings with compact evidence impact and action
+  - return recommended or applied changes without repeating the findings
+  - omit the questions section when no material unresolved decision exists
+  - report available before and after metrics and one compact validation result
+  - keep execution model scorecard architecture and implementation plan for explicit deep mode only
+  - limit standard mode to five material findings unless additional findings are critical or high
+forbidden:
+  - repeat the same issue in executive summary findings and recommendations
+  - include empty questions or metric placeholders
+  - fabricate token savings or validation results
+  - include low priority style observations in the default report

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "path_prefixes": ["orchestrator/cli.py", "orchestrator/task_cli.py"],
+      "documents": [
+        "docs/specifications/orchestrator-specification-ru.md",
+        "docs/specifications/task-layer-specification-ru.md",
+        "docs/migrations/cli-contract.md"
+      ],
+      "owner": "documentation-manager",
+      "reason": "Public CLI contract changed."
+    },
+    {
+      "path_prefixes": ["config/schemas/", "registries/"],
+      "documents": ["docs/architecture/component-contracts.md"],
+      "owner": "documentation-manager",
+      "reason": "Machine-readable contract changed."
+    },
+    {
+      "path_prefixes": ["generated/"],
+      "documents": ["generated/README.md"],
+      "owner": "generator",
+      "reason": "Generated artifacts are owned by their generator."
+    }
+  ]
+}

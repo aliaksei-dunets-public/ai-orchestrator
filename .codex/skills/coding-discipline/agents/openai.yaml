@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation Discipline"
+  short_description: "Guardrails for code implementation tasks"
+  default_prompt: "Use $coding-discipline before implementing or modifying code."

@@ -1,0 +1,11 @@
+required:
+  - generic brevity instruction is insufficient
+  - define audience-specific required and omitted information
+  - recommend compact standard and detailed response modes where applicable
+  - separate analysis depth from returned response length
+  - define expansion conditions for risk failure conflict or insufficient evidence
+  - evaluate task success together with output tokens and follow-up turns
+forbidden:
+  - recommend shallow analysis to reduce tokens
+  - remove validation evidence or material risks
+  - impose one hard token limit on every task type

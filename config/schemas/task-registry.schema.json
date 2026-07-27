@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-orchestrator/task-registry.schema.json",
+  "title": "Task Registry",
+  "type": "object",
+  "required": ["schema_version", "next_id", "tasks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "next_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "status", "context", "status_note", "created_at", "updated_at"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{4,}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": ["backlog", "in_progress", "waiting_user", "blocked", "done", "cancelled"]
+          },
+          "context": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{4,}\\.md$"
+          },
+          "status_note": {
+            "type": ["string", "null"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
