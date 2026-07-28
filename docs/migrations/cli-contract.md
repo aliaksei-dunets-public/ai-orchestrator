@@ -1,29 +1,28 @@
-# CLI Contract Migrations
+---
+language: en
+translation_of: docs/migrations/cli-contract.ru.md
+---
+
+# CLI contract migrations
 
 ## Unreleased
 
-`claim-next` получил additive параметры `--mode`, `--run-id`,
-`--max-workers`, `--worktree-root` и `--repository-root`. Без них сохраняется
-прежний serial contract. Для isolated assignment `complete` требует
-`--commit-evidence` и проверяет SHA против назначенного workspace.
+`claim-next` has additive `--mode`, `--run-id`, `--max-workers`,
+`--worktree-root`, and `--repository-root` options. Without them the previous
+serial contract remains unchanged. In isolated mode, `complete` requires
+`--commit-evidence` and verifies the SHA against the assigned workspace.
 
-Добавлены `assignment`/`cleanup` в Task Manager CLI и
-`orchestrator workspace inspect|cleanup`. Новые стабильные exit codes:
-`7 INVALID_EXECUTION_MODE`, `8 WORKSPACE_ERROR`, `9 REGISTRY_LOCKED`.
-Legacy consumers, не включающие isolated mode, менять не требуется.
+Task Manager adds `assignment` and `cleanup`; `orchestrator workspace` adds
+`inspect` and `cleanup`. Stable exit codes are `7 INVALID_EXECUTION_MODE`,
+`8 WORKSPACE_ERROR`, and `9 REGISTRY_LOCKED`. Legacy consumers do not need a
+migration unless they opt into isolated mode.
 
-Task Context paths returned by Task Manager commands moved from
-`.orchestrator/tasks/<TASK-ID>.md` to
-`.orchestrator/tasks/contexts/<TASK-ID>.md`. Consumers must treat the returned
-`context` field as authoritative instead of constructing the path from an ID.
+Task Context paths are under `.orchestrator/tasks/contexts/` and checkpoints are
+under `.orchestrator/tasks/checkpoints/`. Consumers must use the returned
+`context` field rather than derive paths from task IDs. The checkpoint directory
+must be ignored by Git.
 
-Execution checkpoints now use
-`.orchestrator/tasks/checkpoints/<TASK-ID>.checkpoint.lock`; the entire
-`checkpoints/` directory must be ignored by Git. `complete` removes the
-checkpoint after persisting `done` and may return `cleanup_warning` if cleanup
-fails. `cancel` preserves it.
-
-Новые completion transitions требуют двух команд:
+Completion requires finalization followed by completion:
 
 ```powershell
 .\.venv\Scripts\orchestrator-task.exe finalize TASK-0003 `
@@ -32,16 +31,16 @@ fails. `cancel` preserves it.
   --finalization-receipt .orchestrator/tasks/finalization/TASK-0003.json
 ```
 
-Для isolated task к `complete` также передаются прежние `--commit-evidence` и
-`--repository-root`. Receipt directory является operational state и должен быть
-исключён из Git. Historical `done` records без поля `finalization` остаются
-читаемыми; новый вызов `complete` без receipt возвращает
-`FINALIZATION_REQUIRED` с exit code `10`.
+`complete` removes the checkpoint after persisting `done` and may return a
+`cleanup_warning`; `cancel` preserves it. Historical `done` records without a
+finalization field remain readable, while a new completion without a receipt
+returns `FINALIZATION_REQUIRED`.
 
-`orchestrator telemetry [--path PATH] [--json]` is an additive command that
-summarizes optional local JSONL execution metrics. Existing Health Check and Task
-Manager commands, output fields and exit codes are unchanged, so no consumer
-migration is required.
+Telemetry is additive:
+
+```text
+orchestrator telemetry [--path PATH] [--json]
+```
 
 An absent telemetry file returns a successful zero summary. Invalid JSONL fails
 closed with a diagnostic error.
@@ -51,9 +50,6 @@ closed with a diagnostic error.
 `orchestrator memory --root ROOT {propose,approve,promote,disable,supersede,list}`,
 `orchestrator knowledge --root ROOT {add-node,add-edge,rebuild,list}`, and
 `orchestrator context --root ROOT [--mode MODE] [--budget-chars N]` are additive.
-Domain failures return exit code 2 and a JSON object with `ok=false`; they do not
-print a traceback. Successful operations return exit code 0 and `ok=true`.
-
-Existing Health, telemetry, and Task Manager commands and exit codes remain
-compatible. Context budgets default to 2048/6144/12288 characters for
-quick/standard/deep routes.
+Domain failures return exit code `2` and `{ "ok": false }`; successful
+operations return exit code `0` and `{ "ok": true }`. Context budgets are
+2048/6144/12288 characters for quick/standard/deep routes.

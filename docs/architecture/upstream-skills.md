@@ -1,3 +1,7 @@
+---
+language: en
+---
+
 # Upstream Skills Compatibility
 
 Source: `https://github.com/aliaksei-dunets-public/ai-agent-skills`<br>

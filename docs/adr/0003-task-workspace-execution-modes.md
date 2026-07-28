@@ -1,40 +1,46 @@
-# ADR 0003: Режимы workspace для выполнения задач
+---
+language: en
+---
 
-- Статус: accepted
-- Дата: 2026-07-28
+# ADR-0003: Workspace execution modes
 
-## Контекст
+- Status: accepted
+- Date: 2026-07-28
 
-Последовательный Task Manager разрешал только одну активную задачу и один
-изменяющий процесс. Простое увеличение числа активных задач смешивает
-незакоммиченные изменения, checkpoints и Git-состояние одного workspace.
+## Context
 
-## Решение
+Serial Task Manager permits one active task and one modifying process. Simply
+increasing the number of active tasks would mix uncommitted changes,
+checkpoints, and Git state in one workspace.
 
-Поддерживаются два режима:
+## Decision
 
-- `serial` остаётся режимом по умолчанию и сохраняет прежний single-slot
-  контракт;
-- `isolated_parallel` требует `run_id`, `max_workers` и `worktree_root`.
+Two modes are supported:
 
-В isolated run задача с `sequence=1` выполняется в main workspace. До её
-успешного commit нельзя выделять следующие задачи. Задачи `sequence>=2`
-получают уникальную ветку и Git worktree от проверенного commit первой задачи.
+- `serial` remains the default and preserves the single-slot contract;
+- `isolated_parallel` requires `run_id`, `max_workers`, and `worktree_root`.
 
-Task Registry хранит assignment: run, sequence, worker limit, workspace kind,
-path, branch, base commit и commit evidence. Все registry mutations проходят
-через bounded owner-aware lock. Execution freshness и checkpoint проверяются
-относительно назначенного workspace.
+In an isolated run, `sequence=1` executes in the main workspace. No later task
+is assigned until its commit succeeds. Tasks with `sequence>=2` receive unique
+branches and Git worktrees based on the verified first-task commit.
 
-Интеграция worktree-ветки выполняется явно. Конфликт, отсутствующий commit или
-несовпадение ownership останавливают run. Failed worktree сохраняется для
-восстановления. Cleanup запрещён для main и разрешён только после проверки
-ownership manifest.
+Task Registry stores run, sequence, worker limit, workspace kind, path, branch,
+base commit, and commit evidence. Registry mutations use a bounded owner-aware
+lock. Freshness and checkpoints are checked against the assigned workspace.
 
-## Последствия
+Worktree integration is explicit. A conflict, missing commit, or ownership
+mismatch stops the run. Failed worktrees are preserved for recovery. Cleanup
+never targets main and is allowed only after ownership-manifest validation.
 
-- В одном workspace по-прежнему допускается только один writer.
-- Параллельность ограничена `max_workers` и требует Git CLI.
-- Operational lock, worktrees и ownership metadata исключаются из Git.
-- Для возврата к прежнему поведению достаточно выбрать `serial`; миграция
-  существующих registry records не требуется.
+## Consequences
+
+- One workspace still permits only one writer.
+- Parallelism is bounded by `max_workers` and requires Git CLI.
+- Locks, worktrees, and ownership metadata are excluded from Git.
+- Selecting `serial` restores historical behavior; existing registry records do
+  not require migration.
+
+## Rollback
+
+Select `serial` to disable isolated assignment. Preserve any failed worktree for
+diagnosis and remove it only through guarded cleanup after ownership review.

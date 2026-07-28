@@ -2,7 +2,7 @@
 
 The user asks in Russian:
 
-> Проведи аудит этого навыка и покажи только важные замечания, изменения и метрики.
+> Audit this skill and show only important findings, changes, and metrics.
 
 The audited `SKILL.md`, tool schemas, file paths, and all evidence are in
 English. No explicit request asks to translate code, identifiers, schema keys,

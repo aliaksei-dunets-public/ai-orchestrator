@@ -21,7 +21,13 @@ ARTIFACT_DIRECTORIES = (
     "registries",
     "docs",
 )
-ARTIFACT_FILES = ("pyproject.toml", "README.md", "CHANGELOG.md", "ROADMAP.md")
+ARTIFACT_FILES = (
+    "pyproject.toml",
+    "README.md",
+    "README.ru.md",
+    "CHANGELOG.md",
+    "ROADMAP.md",
+)
 
 
 def file_checksum(path: Path | str) -> str:
@@ -105,6 +111,17 @@ def build_release_artifact(root: Path | str, destination: Path | str) -> Path:
         raise ReleaseError("Release artifact cannot contain repository root")
 
     target.parent.mkdir(parents=True, exist_ok=True)
+
+    def ignore_historical_russian(directory: str, names: list[str]) -> list[str]:
+        current = Path(directory).resolve()
+        try:
+            relative = current.relative_to(repository).as_posix()
+        except ValueError:
+            return []
+        if relative in {"docs/plans", "docs/validation", "docs/specifications"}:
+            return [name for name in names if name.endswith(".ru.md")]
+        return []
+
     with tempfile.TemporaryDirectory(
         prefix=f".{target.name}-build-",
         dir=target.parent,
@@ -117,7 +134,10 @@ def build_release_artifact(root: Path | str, destination: Path | str) -> Path:
                 shutil.copytree(
                     source_item,
                     staged / name,
-                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store"),
+                    ignore=lambda directory, names: sorted(
+                        set(shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store")(directory, names))
+                        | set(ignore_historical_russian(directory, names))
+                    ),
                 )
         for name in ARTIFACT_FILES:
             source_item = repository / name

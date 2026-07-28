@@ -1,98 +1,70 @@
-# Phase 20 — Orchestrator Audit Implementation Plan
+# phase 20 orchestrator audit Implementation Plan
 
-> **For agentic workers:** Implement this plan task-by-task using the repository's approved execution workflow.
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-**Goal:** Находить смысловые противоречия, drift, дублирование и пробелы тестов без автоматических изменений.
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-**Architecture:** Audit объединяет deterministic inventory с model-led analysis, сохраняет evidence pointers и выдаёт improvement proposals. Findings дедуплицируются по стабильному fingerprint.
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-**Tech Stack:** Python 3.11+, Python standard library for runtime-critical Task Manager paths, Markdown, JSON/JSON Schema, YAML profiles and `unittest`.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
 ## Global Constraints
 
-- Соблюдать `docs/specifications/orchestrator-specification-ru.md` 0.4 и `docs/specifications/task-layer-specification-ru.md` 0.3.
-- Не ослаблять immutable security policies и не добавлять неутверждённые внешние runtime dependencies.
-- Сохранять backward compatibility ранее завершённых фаз или добавлять явную migration.
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
 ## Deliverables
 
-- Create: `skills/orchestrator-auditor/SKILL.md`
-- Create: `orchestrator/audit.py`
-- Create: `config/schemas/audit-report.schema.json`
-- Create: `tests/scenarios/test_audit.py`
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
 ## Dependencies
 
-- Фазы 2–3, 17–19.
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
 ## Acceptance Criteria
 
-- Каждый finding содержит evidence и severity.
-- Audit никогда не применяет proposal.
-- Повторный audit без изменений не дублирует findings.
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
 ## Testing Strategy
 
-- `python -m unittest tests.scenarios.test_audit -v` проходит.
-- Seeded fixtures обнаруживают contradiction, dead workflow и missing test.
-- При исправлении обнаруженного дефекта добавить отдельный regression fixture; иначе зафиксировать неприменимость regression test в review evidence.
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
 
 ## Risks and Rollback
 
-- Недоказуемые рекомендации; откат — исключить findings без source pointers.
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
 
 ## Implementation Tasks
 
-### Task 1: Контракт и тестовые fixtures
+### Task 1: Canonical English maintainer artifact
 
 **Files:**
 
-- Create: `skills/orchestrator-auditor/SKILL.md`
-- Create: `config/schemas/audit-report.schema.json`
-- Test: `tests/scenarios/test_audit.py`
+- Modify: $(2026-07-27-phase-20-orchestrator-audit.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-20-orchestrator-audit.ru.md))
 
 **Interfaces:**
 
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фазы 2–3, 17–19.).
-- Produces: проверяемый результат Task 1, совместимый с deliverables этой фазы.
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
 
 **Acceptance:**
 
-- Каждый finding содержит evidence и severity.
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
 
 **Tests:**
 
-- `python -m unittest tests.scenarios.test_audit -v` проходит.
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
 
-- [ ] **Step 1:** Добавить проверку для условия «Каждый finding содержит evidence и severity.».
-- [ ] **Step 2:** Запустить `python -m unittest tests.scenarios.test_audit -v` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать контракт и тестовые fixtures в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Каждый finding содержит evidence и severity.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
-
-### Task 2: Реализация и интеграция
-
-**Files:**
-
-- Create: `orchestrator/audit.py`
-- Create: `tests/scenarios/test_audit.py`
-- Test: `tests/scenarios/test_audit.py`
-
-**Interfaces:**
-
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фазы 2–3, 17–19.).
-- Produces: проверяемый результат Task 2, совместимый с deliverables этой фазы.
-
-**Acceptance:**
-
-- Audit никогда не применяет proposal.
-
-**Tests:**
-
-- Seeded fixtures обнаруживают contradiction, dead workflow и missing test.
-
-- [ ] **Step 1:** Добавить проверку для условия «Audit никогда не применяет proposal.».
-- [ ] **Step 2:** Запустить `Seeded fixtures обнаруживают contradiction, dead workflow и missing test.` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать реализация и интеграция в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Audit никогда не применяет proposal.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

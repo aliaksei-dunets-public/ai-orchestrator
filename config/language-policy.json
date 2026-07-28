@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "default_language": "en",
+  "languages": [
+    "en",
+    "ru",
+    "mixed",
+    "unknown"
+  ],
+  "graph_source_languages": [
+    "en"
+  ],
+  "excluded_path_prefixes": [
+    ".git/",
+    ".venv/",
+    ".orchestrator/",
+    "releases/",
+    "generated/"
+  ],
+  "generated_path_prefixes": [
+    ".codex/skills/",
+    ".agents/skills/"
+  ],
+  "russian_companion_patterns": [
+    "README.ru.md",
+    "docs/guides/*-ru.md",
+    "docs/guides/*.ru.md",
+    "docs/migrations/*.ru.md",
+    "skills/optional/*/README.ru.md"
+  ],
+  "legacy_russian_patterns": [
+    "docs/specifications/*-ru.md",
+    "docs/plans/*.ru.md",
+    "docs/validation/*.ru.md"
+  ],
+  "user_canonical_patterns": [
+    "README.md",
+    "docs/guides/*.md",
+    "docs/migrations/*.md",
+    "skills/optional/*/README.md"
+  ],
+  "document_classes": {
+    "canonical": {
+      "canonical": true,
+      "graph_eligible": true
+    },
+    "user_canonical": {
+      "canonical": true,
+      "graph_eligible": true
+    },
+    "user_companion": {
+      "canonical": false,
+      "graph_eligible": false
+    },
+    "legacy_russian": {
+      "canonical": false,
+      "graph_eligible": false
+    },
+    "generated": {
+      "canonical": false,
+      "graph_eligible": false
+    },
+    "excluded": {
+      "canonical": false,
+      "graph_eligible": false
+    }
+  }
+}

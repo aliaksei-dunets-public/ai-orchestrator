@@ -6,20 +6,20 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-ORCHESTRATOR_SPEC = ROOT / "docs" / "specifications" / "orchestrator-specification-ru.md"
-TASK_SPEC = ROOT / "docs" / "specifications" / "task-layer-specification-ru.md"
+ORCHESTRATOR_SPEC = ROOT / "docs" / "specifications" / "orchestrator-specification.md"
+TASK_SPEC = ROOT / "docs" / "specifications" / "task-layer-specification.md"
 
 
 class SpecificationContractTests(unittest.TestCase):
     def test_normative_versions_and_sources_of_truth(self) -> None:
         orchestrator = ORCHESTRATOR_SPEC.read_text(encoding="utf-8")
         task = TASK_SPEC.read_text(encoding="utf-8")
-        self.assertIn("**Версия:** 0.5", orchestrator)
-        self.assertIn("**Версия:** 0.3", task)
-        self.assertIn("источником истины", orchestrator)
-        self.assertIn("источником истины", task)
+        self.assertIn("**Version:** 0.5", orchestrator)
+        self.assertIn("**Version:** 0.3", task)
+        self.assertIn("source of truth", orchestrator)
+        self.assertIn("source of truth", task)
         self.assertIn("Google Antigravity", orchestrator)
-        self.assertIn("конкурентные writers не поддерживаются", task)
+        self.assertIn("isolated_parallel", task)
 
     def test_markdown_fences_are_balanced(self) -> None:
         for path in (ORCHESTRATOR_SPEC, TASK_SPEC):
@@ -32,5 +32,5 @@ class SpecificationContractTests(unittest.TestCase):
         contracts = (ROOT / "docs" / "architecture" / "component-contracts.md").read_text(encoding="utf-8")
         for component in ("Core", "Task Creator", "Task Manager", "Task Execution Workflow", "Workflow Engine"):
             self.assertIn(component, contracts)
-        self.assertIn("источники истины", adr.lower())
+        self.assertIn("source of truth", adr.lower())
         self.assertIn("migration", adr)

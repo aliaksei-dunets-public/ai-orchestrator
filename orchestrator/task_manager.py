@@ -28,7 +28,7 @@ TASK_ID_RE = re.compile(r"TASK-(\d{4,})")
 CONTEXTS_DIRNAME = "contexts"
 CHECKPOINTS_DIRNAME = "checkpoints"
 CRITICAL_QUESTION_RE = re.compile(
-    r"(?im)^\s*-\s*(?:\[critical\]|critical\s*:|критическ(?:ий|ая)\s*:)",
+    r"(?im)^\s*-\s*(?:\[critical\]|critical\s*:)",
 )
 STATUSES = {"backlog", "in_progress", "waiting_user", "blocked", "done", "cancelled"}
 SLOT_STATUSES = {"in_progress", "waiting_user"}
@@ -437,7 +437,7 @@ def _registered_context(text: str, task_id: str, revision: int, title: str) -> s
     else:
         body[first_heading] = heading
     if "# Execution Record" not in body:
-        body.extend(["", "# Execution Record", "", "## Итог выполнения", ""])
+        body.extend(["", "# Execution Record", "", "## Completion Summary", ""])
     return "\n".join([*frontmatter, *body]).rstrip() + "\n"
 
 
@@ -547,7 +547,7 @@ class TaskManager:
             raise TaskManagerError("GENERAL_ERROR", "Draft must not contain an allocated id")
         if fields.get("mode") == "deep" and fields.get("approach_approved", "").lower() != "true":
             raise TaskManagerError("GENERAL_ERROR", "Deep draft requires explicit approach approval")
-        open_questions = text.split("## Открытые вопросы", 1)
+        open_questions = text.split("## Open Questions", 1)
         if len(open_questions) == 2:
             section = open_questions[1].split("\n#", 1)[0]
             if CRITICAL_QUESTION_RE.search(section):

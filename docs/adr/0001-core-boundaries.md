@@ -1,28 +1,42 @@
-# ADR-0001: Границы Core и источники истины
+---
+language: en
+---
 
-**Статус:** принято
+# ADR-0001: Core boundaries and sources of truth
 
-## Контекст
+This decision establishes the source of truth for portable architecture.
 
-Оркестратор должен работать на нескольких агентных платформах и технологических стеках. Смешение project state, platform adapters и orchestration logic сделает переносимость непроверяемой.
+**Status:** accepted
 
-## Решение
+## Context
 
-- `orchestrator/` содержит platform-neutral runtime.
-- `skills/` является каноническим source навыков; platform-каталоги являются устанавливаемыми проекциями.
-- `registries/` связывает логические identifiers с существующими артефактами.
-- `profiles/` описывает возможности платформ и стеков, но не изменяет Core.
-- `docs/specifications/orchestrator-specification-ru.md` определяет архитектуру и roadmap.
-- `docs/specifications/task-layer-specification-ru.md` определяет контракты Task Layer.
-- `.orchestrator/tasks/tasks.json` является локальным operational state и не хранится в Git.
-- Task Context и Execution Record остаются версионируемыми.
+The orchestrator must work across agent platforms and technology stacks.
+Mixing project state, platform adapters, and orchestration logic would make
+portability unverifiable.
 
-Контракты изменяются через новую revision спецификации, migration note и regression/contract tests. Immutable security policies имеют приоритет над любым локальным слоем.
+## Decision
 
-## Последствия
+- `orchestrator/` contains the platform-neutral runtime.
+- `skills/` is the canonical skill source; platform directories are installable projections.
+- `registries/` maps logical identifiers to existing artifacts.
+- `profiles/` describes platform and stack capabilities without changing Core.
+- `docs/specifications/orchestrator-specification.md` defines architecture and roadmap.
+- `docs/specifications/task-layer-specification.md` defines Task Layer contracts.
+- `.orchestrator/tasks/tasks.json` is local operational state and is not stored in Git.
+- Task Context and Execution Record remain versioned.
 
-Core зависит от capabilities, а не от названий платформ. Новая platform integration обязана реализовать общий contract и пройти acceptance suite, прежде чем станет стабильной.
+Contracts change through a new specification revision, migration note, and
+regression/contract tests. Immutable security policies have priority over every
+local layer.
 
-## Откат
+## Consequences
 
-До появления зависимого runtime-кода ADR можно заменить новым решением. После публикации контракта несовместимое изменение требует superseding ADR и migration.
+Core depends on capabilities rather than platform names. A new platform
+integration must implement the shared contract and pass the acceptance suite
+before it becomes stable.
+
+## Rollback
+
+Before dependent runtime code exists, this ADR can be replaced by a new
+decision. After a contract is published, an incompatible change requires a
+superseding ADR and migration.

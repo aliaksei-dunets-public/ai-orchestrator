@@ -22,26 +22,26 @@ created_by: task-creation-workflow
 
 # Test task
 
-## Исходный запрос
+## User Request
 Create it.
 
-## Цель
+## Goal
 Test lifecycle.
 
-## Объём задачи
-### Входит в scope
+## Scope
+### In Scope
 - Lifecycle.
-### Не входит в scope
+### Out of Scope
 - Concurrency.
 
-## Критерии приёмки
+## Acceptance Criteria
 - Lifecycle passes.
 
-## План реализации
+## Implementation Plan
 - Implement.
 
-## Открытые вопросы
-- Нет.
+## Open Questions
+- None.
 """
 
 
@@ -80,7 +80,7 @@ class TaskManagerTests(unittest.TestCase):
 
     def test_registration_rejects_critical_open_question(self) -> None:
         draft = self.create_draft()
-        draft.write_text(DRAFT.replace("- Нет.", "- CRITICAL: choose migration."), encoding="utf-8")
+        draft.write_text(DRAFT.replace("- None.", "- CRITICAL: choose migration."), encoding="utf-8")
         with self.assertRaises(TaskManagerError) as raised:
             self.manager.register(draft)
         self.assertIn("Critical open question", str(raised.exception))

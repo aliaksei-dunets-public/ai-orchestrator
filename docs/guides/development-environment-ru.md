@@ -1,4 +1,11 @@
+---
+language: ru
+translation_of: docs/guides/development-environment.md
+---
+
 # Локальное Python-окружение
+
+[English version](development-environment.md)
 
 Проект требует Python 3.11 или новее и использует стандартную библиотеку
 Python. Для разработки и проверок используется локальное виртуальное

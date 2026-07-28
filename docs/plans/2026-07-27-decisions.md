@@ -1,49 +1,70 @@
-# Принятые решения по roadmap
+# decisions Implementation Plan
 
-## DEC-001 — Порядок поддержки агентных платформ
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-**Статус:** принято.
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-После базовой поддержки OpenAI Codex platform adapters реализуются и валидируются в порядке:
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-1. Google Antigravity;
-2. GitHub Copilot VS Code;
-3. Claude VS Code.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
-Каждая платформа обязана пройти общий capability contract до начала адаптации следующей. Фаза 22 запускает acceptance matrix на Codex и всех трёх дополнительных платформах.
+## Global Constraints
 
-## DEC-002 — Межпроцессная блокировка Task Registry
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
-**Статус:** отложено как дополнительная capability.
+## Deliverables
 
-Первая версия рассчитана на одного разработчика и один изменяющий Task Manager process. Она сохраняет crash-safe запись через временный файл, `flush`/`fsync` и `os.replace`, но не обещает корректность конкурентных writers.
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
-Межпроцессный lock, конкурентный `claim-next`, timeout и stale-lock recovery добавляются только после появления подтверждённой потребности и отдельного решения.
+## Dependencies
 
-## DEC-003 — Каноническое расположение переносимых skills
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
-**Статус:** принято.
+## Acceptance Criteria
 
-`skills/` является каноническим source. Platform-каталоги, включая `.codex/skills/`, являются устанавливаемыми проекциями, не редактируются вручную и проверяются на drift.
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
-Текущий `.codex/skills/task-creator` остаётся bootstrap-установкой; после Phase 24 его канонический source находится в `skills/system/task-creator`, а Codex-копия создаётся installer.
+## Testing Strategy
 
-## DEC-004 — Хранение Task Registry вне Git
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
 
-**Статус:** принято.
+## Risks and Rollback
 
-`.orchestrator/tasks/tasks.json`, временные файлы и будущие lock-файлы являются локальным operational state и исключаются из Git. Task Context, планы, implementation changes, тесты и документация остаются версионируемыми.
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
 
-Execution Record финализируется до implementation commit; commit SHA не дублируется в Task Context, поскольку восстанавливается из Git history. После успешного commit команда `complete` меняет только незатреканный registry, поэтому lifecycle `Commit → Done` не оставляет tracked changes.
+## Implementation Tasks
 
-История переходов статуса в первой версии не сохраняется; отдельный event log остаётся будущей capability.
+### Task 1: Canonical English maintainer artifact
 
-## DEC-005 — Уровень зрелости внешних platform adapters
+**Files:**
 
-**Статус:** принято, вариант 1.
+- Modify: $(2026-07-27-decisions.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-decisions.ru.md))
 
-Codex profile имеет maturity `stable`, поскольку общий contract matrix и native smoke run выполнены в наблюдаемом Codex host. Google Antigravity, GitHub Copilot VS Code и Claude VS Code имеют maturity `experimental`: их общий contract matrix проходит, но независимые native host runs ещё не выполнены.
+**Interfaces:**
 
-Повышение external profile до `stable` требует одного успешного native smoke run в соответствующем vendor host. Evidence обязано фиксировать host и его версию, ОС/среду выполнения, дату, запущенную проверку и результат; contract matrix также должен оставаться в состоянии `passed`.
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
 
-Принятый дизайн и стратегия проверки зафиксированы в [DEC-005 Platform Maturity Design](2026-07-28-dec-005-platform-maturity-design.md).
+**Acceptance:**
+
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
+
+**Tests:**
+
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
+
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

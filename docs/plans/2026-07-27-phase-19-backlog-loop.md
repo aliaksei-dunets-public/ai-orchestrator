@@ -1,106 +1,70 @@
-# Phase 19 — Backlog Loop Implementation Plan
+# phase 19 backlog loop Implementation Plan
 
-> **For agentic workers:** Implement this plan task-by-task using the repository's approved execution workflow.
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-**Goal:** Последовательно обрабатывать ограниченное число задач с commit-per-task и stop conditions.
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-**Architecture:** Loop вызывает claim и execution как black boxes, считает task/time/step budgets и останавливается на waiting_user, blocked или error. Tracked Task Context и implementation changes фиксируются до `complete`, после чего меняется только исключённый из Git registry.
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-**Workspace-aware extension:** `serial` сохраняет этот алгоритм. В
-`isolated_parallel` bootstrap-задача выполняется и коммитится в main, после
-чего bounded batch задач выполняется в уникальных worktrees. Commit evidence
-проверяется до explicit integration; conflict останавливает loop и сохраняет
-worktree.
-
-**Tech Stack:** Python 3.11+, Python standard library for runtime-critical Task Manager paths, Markdown, JSON/JSON Schema, YAML profiles and `unittest`.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
 ## Global Constraints
 
-- Соблюдать `docs/specifications/orchestrator-specification-ru.md` 0.4 и `docs/specifications/task-layer-specification-ru.md` 0.3.
-- Не ослаблять immutable security policies и не добавлять неутверждённые внешние runtime dependencies.
-- Сохранять backward compatibility ранее завершённых фаз или добавлять явную migration.
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
 ## Deliverables
 
-- Create: `orchestrator/backlog.py`
-- Create: `workflows/backlog-loop.yaml`
-- Create: `tests/scenarios/test_backlog_loop.py`
-- Modify: `config/defaults.yaml`
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
 ## Dependencies
 
-- Фазы 3–13 и 17.
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
 ## Acceptance Criteria
 
-- Ни один limit нельзя отключить неявно.
-- Waiting/blocked немедленно останавливает loop.
-- Каждая done task имеет отдельный implementation commit evidence.
-- Переход `complete` после commit не создаёт tracked changes.
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
 ## Testing Strategy
 
-- `python -m unittest tests.scenarios.test_backlog_loop -v` проходит.
-- Scenario matrix покрывает empty, limit, waiting, blocked, failure и successful two-task run.
-- Scenario проверяет чистый `git status --porcelain` после `commit → complete`, кроме явно создаваемого session report.
-- При исправлении обнаруженного дефекта добавить отдельный regression fixture; иначе зафиксировать неприменимость regression test в review evidence.
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
 
 ## Risks and Rollback
 
-- Бесконечный loop или неверная следующая задача; откат — hard maximum и fail closed при invalid registry.
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
 
 ## Implementation Tasks
 
-### Task 1: Контракт и тестовые fixtures
+### Task 1: Canonical English maintainer artifact
 
 **Files:**
 
-- Create: `orchestrator/backlog.py`
-- Create: `tests/scenarios/test_backlog_loop.py`
-- Test: `tests/scenarios/test_backlog_loop.py`
+- Modify: $(2026-07-27-phase-19-backlog-loop.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-19-backlog-loop.ru.md))
 
 **Interfaces:**
 
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фазы 3–13 и 17.).
-- Produces: проверяемый результат Task 1, совместимый с deliverables этой фазы.
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
 
 **Acceptance:**
 
-- Ни один limit нельзя отключить неявно.
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
 
 **Tests:**
 
-- `python -m unittest tests.scenarios.test_backlog_loop -v` проходит.
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
 
-- [ ] **Step 1:** Добавить проверку для условия «Ни один limit нельзя отключить неявно.».
-- [ ] **Step 2:** Запустить `python -m unittest tests.scenarios.test_backlog_loop -v` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать контракт и тестовые fixtures в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Ни один limit нельзя отключить неявно.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
-
-### Task 2: Реализация и интеграция
-
-**Files:**
-
-- Create: `workflows/backlog-loop.yaml`
-- Modify: `config/defaults.yaml`
-- Test: `tests/scenarios/test_backlog_loop.py`
-
-**Interfaces:**
-
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фазы 3–13 и 17.).
-- Produces: проверяемый результат Task 2, совместимый с deliverables этой фазы.
-
-**Acceptance:**
-
-- Waiting/blocked немедленно останавливает loop.
-
-**Tests:**
-
-- Scenario matrix покрывает empty, limit, waiting, blocked, failure и successful two-task run.
-
-- [ ] **Step 1:** Добавить проверку для условия «Waiting/blocked немедленно останавливает loop.».
-- [ ] **Step 2:** Запустить `Scenario matrix покрывает empty, limit, waiting, blocked, failure и successful two-task run.` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать реализация и интеграция в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Waiting/blocked немедленно останавливает loop.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

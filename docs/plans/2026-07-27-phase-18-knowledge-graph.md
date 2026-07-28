@@ -1,98 +1,70 @@
-# Phase 18 — Knowledge Graph Implementation Plan
+# phase 18 knowledge graph Implementation Plan
 
-> **For agentic workers:** Implement this plan task-by-task using the repository's approved execution workflow.
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-**Goal:** Представить сущности и связи проекта с provenance, conflict и supersede semantics.
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-**Architecture:** Graph хранится в переносимых JSONL nodes/edges и строит производные indexes. Canonical truth остаётся в исходных документах, graph — навигационный слой.
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-**Tech Stack:** Python 3.11+, Python standard library for runtime-critical Task Manager paths, Markdown, JSON/JSON Schema, YAML profiles and `unittest`.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
 ## Global Constraints
 
-- Соблюдать `docs/specifications/orchestrator-specification-ru.md` 0.4 и `docs/specifications/task-layer-specification-ru.md` 0.3.
-- Не ослаблять immutable security policies и не добавлять неутверждённые внешние runtime dependencies.
-- Сохранять backward compatibility ранее завершённых фаз или добавлять явную migration.
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
 ## Deliverables
 
-- Create: `orchestrator/knowledge.py`
-- Create: `skills/knowledge-curator/SKILL.md`
-- Create: `config/schemas/knowledge-node.schema.json`
-- Create: `config/schemas/knowledge-edge.schema.json`
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
 ## Dependencies
 
-- Фаза 17.
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
 ## Acceptance Criteria
 
-- Node/edge ссылается на существующий source.
-- Conflict не перезаписывает обе версии молча.
-- Indexes полностью воспроизводятся из canonical JSONL.
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
 ## Testing Strategy
 
-- `python -m unittest tests.unit.test_knowledge -v` проходит.
-- Rebuild scenario сравнивает graph indexes byte-for-byte.
-- При исправлении обнаруженного дефекта добавить отдельный regression fixture; иначе зафиксировать неприменимость regression test в review evidence.
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
 
 ## Risks and Rollback
 
-- Graph становится вторым источником истины; откат — удалить indexes и перестроить из source records.
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
 
 ## Implementation Tasks
 
-### Task 1: Контракт и тестовые fixtures
+### Task 1: Canonical English maintainer artifact
 
 **Files:**
 
-- Create: `orchestrator/knowledge.py`
-- Create: `config/schemas/knowledge-node.schema.json`
-- Test: `tests/scenarios/test_phase_18.py`
+- Modify: $(2026-07-27-phase-18-knowledge-graph.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-18-knowledge-graph.ru.md))
 
 **Interfaces:**
 
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фаза 17.).
-- Produces: проверяемый результат Task 1, совместимый с deliverables этой фазы.
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
 
 **Acceptance:**
 
-- Node/edge ссылается на существующий source.
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
 
 **Tests:**
 
-- `python -m unittest tests.unit.test_knowledge -v` проходит.
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
 
-- [ ] **Step 1:** Добавить проверку для условия «Node/edge ссылается на существующий source.».
-- [ ] **Step 2:** Запустить `python -m unittest tests.unit.test_knowledge -v` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать контракт и тестовые fixtures в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Node/edge ссылается на существующий source.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
-
-### Task 2: Реализация и интеграция
-
-**Files:**
-
-- Create: `skills/knowledge-curator/SKILL.md`
-- Create: `config/schemas/knowledge-edge.schema.json`
-- Test: `tests/scenarios/test_phase_18.py`
-
-**Interfaces:**
-
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фаза 17.).
-- Produces: проверяемый результат Task 2, совместимый с deliverables этой фазы.
-
-**Acceptance:**
-
-- Conflict не перезаписывает обе версии молча.
-
-**Tests:**
-
-- Rebuild scenario сравнивает graph indexes byte-for-byte.
-
-- [ ] **Step 1:** Добавить проверку для условия «Conflict не перезаписывает обе версии молча.».
-- [ ] **Step 2:** Запустить `Rebuild scenario сравнивает graph indexes byte-for-byte.` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать реализация и интеграция в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Conflict не перезаписывает обе версии молча.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

@@ -1,85 +1,70 @@
-# Интеграция Knowledge Curator в Project Onboarding
+# knowledge curator onboarding design Implementation Plan
 
-## Решение
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-Существующий bundled skill `knowledge-curator` становится владельцем полного
-lifecycle Knowledge Graph: первичная инвентаризация, подготовка proposal,
-валидация, запись canonical nodes/edges, rebuild индексов и последующее
-сопровождение. Отдельный дублирующий `knowledge-onboarding` skill не создаётся.
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-`project-onboarding` остаётся владельцем bootstrap target project и вызывает
-knowledge-curation как фазу подготовки preview. Агент передаёт в onboarding
-проверяемый `knowledge_graph` proposal с nodes и edges. Onboarding не принимает
-его на доверии: core валидирует ontology, provenance, существование effective
-endpoint nodes, конфликты и supersede cycles, затем включает итоговое содержимое
-canonical JSONL в общий `plan_hash`.
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-До approval пользователя target project не изменяется. После approval `apply`
-атомарно записывает обычные onboarding files и graph stores через тот же backup,
-rollback и validation workflow. Derived indexes перестраиваются из canonical
-stores и остаются ignored operational state.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
-## Границы
+## Global Constraints
 
-- Graph является navigation layer; source documents остаются canonical truth.
-- Автоматический свободный crawl всего проекта не вводится.
-- Proposal может быть пустым: onboarding создаёт пустые stores без ложных знаний.
-- Source paths только project-relative; `.git`, secrets, credentials, `.env` и
-  releases запрещены.
-- Core ontology immutable; project ontology только additive.
-- Существующие CLI и Python APIs сохраняют backward compatibility.
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
-## Поток данных
+## Deliverables
 
-```text
-project-onboarding inspect
-→ project-onboarding plan
-→ knowledge-curator source inventory
-→ knowledge_graph proposal
-→ validate and merge with existing canonical graph
-→ preview and plan_hash
-→ explicit user approval
-→ atomic apply
-→ effective_graph validation
-→ deterministic index rebuild
-→ Health Check and report
-```
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
-## Контракт proposal
+## Dependencies
 
-```json
-{
-  "schema_version": 1,
-  "nodes": [
-    {
-      "id": "reports-api",
-      "kind": "component",
-      "label": "Reports API",
-      "source": "docs/specifications/api-contract.md",
-      "supersedes": null,
-      "enabled": true
-    }
-  ],
-  "edges": [
-    {
-      "id": "reports-api-depends-on-auth",
-      "source_node": "reports-api",
-      "target_node": "authorization-service",
-      "relation": "depends_on",
-      "source": "docs/adr/0010-api-authorization.md",
-      "enabled": true
-    }
-  ]
-}
-```
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
-`source_digest` не принимается от агента как authoritative input: core вычисляет
-его из фактического файла. Existing identical IDs остаются idempotent; differing
-payloads отклоняются как conflict.
+## Acceptance Criteria
 
-## Проверки
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
-Proposal должен проходить schema validation, ontology validation, source
-authority, duplicate/conflict, supersede cycle, effective endpoint и deterministic
-JSONL checks. Tests покрывают direct graph preparation, onboarding preview/apply,
-stale plan, rollback, idempotency, secrets/excluded sources и index rebuild.
+## Testing Strategy
+
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
+
+## Risks and Rollback
+
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
+
+## Implementation Tasks
+
+### Task 1: Canonical English maintainer artifact
+
+**Files:**
+
+- Modify: $(2026-07-28-knowledge-curator-onboarding-design.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-knowledge-curator-onboarding-design.ru.md))
+
+**Interfaces:**
+
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
+
+**Acceptance:**
+
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
+
+**Tests:**
+
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
+
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

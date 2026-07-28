@@ -1,8 +1,8 @@
 ---
 name: task-context-validator
-description: Валидировать quick, standard и deep Task Context перед регистрацией, включая frontmatter, обязательные разделы, критические вопросы и approval deep-подхода. Использовать непосредственно перед Task Manager registration.
+description: Validate quick, standard, and deep Task Context before registration, including frontmatter, required sections, critical questions, and deep-approach approval. Use immediately before Task Manager registration.
 ---
 
 # Task Context Validator
 
-Использовать канонический contract из `skills/task-creator/references/task-context-contract.md` и script `skills/task-creator/scripts/validate_task_context.py`. Критический открытый вопрос или отсутствие deep approval возвращает blocked result; содержимое автоматически не исправлять.
+Use the canonical contract at `skills/system/task-creator/references/task-context-contract.md` and script `skills/system/task-creator/scripts/validate_task_context.py`. A critical open question or missing deep approval returns a blocked result; do not auto-edit content.

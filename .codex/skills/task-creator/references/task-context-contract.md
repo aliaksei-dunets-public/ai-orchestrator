@@ -1,48 +1,33 @@
-# Контракт Task Context
+# Task Context contract
 
-Нормативный источник — `docs/specifications/task-layer-specification-ru.md`. Использовать этот файл как краткий checklist; при расхождении применять спецификацию.
+The normative source is `docs/specifications/task-layer-specification.md`.
+Use this file as a compact checklist; the specification wins if they differ.
 
 ## Frontmatter
 
-Общие обязательные поля:
+Required fields:
 
 ```yaml
 schema_version: 1
-title: Краткое название
+title: Short title
 type: feature
 mode: quick | standard | deep
 risk: low | medium | high | critical
 created_by: task-creation-workflow
 ```
 
-Draft не содержит `id` или использует `id: null`. Зарегистрированный context содержит `id: TASK-XXXX` и положительный `revision`; поле `status` запрещено.
+A draft has no `id` or uses `id: null`. A registered context has
+`id: TASK-XXXX` and a positive `revision`; `status` is forbidden. A deep draft
+also has `approach_approved: true` after the user's explicit approval.
 
-Deep draft дополнительно содержит `approach_approved: true`, подтверждающее явное approval выбранного подхода.
+## Required sections
 
-## Обязательные разделы
+Quick contexts require User Request, Goal, Scope (including In Scope and Out of
+Scope), Acceptance Criteria, Implementation Plan, and Open Questions.
 
-Для `quick`:
+Standard and deep contexts additionally require Problem or Need, Current
+Behavior, Expected Behavior, Analysis, Selected Approach, Alternatives
+Considered, Affected Components, Constraints, Risks, and Plan Review.
 
-- `## Исходный запрос`
-- `## Цель`
-- `## Объём задачи`
-- `### Входит в scope`
-- `### Не входит в scope`
-- `## Критерии приёмки`
-- `## План реализации`
-- `## Открытые вопросы`
-
-Для `standard` и `deep` дополнительно:
-
-- `## Проблема или потребность`
-- `## Текущее поведение`
-- `## Ожидаемое поведение`
-- `## Анализ`
-- `## Выбранный подход`
-- `## Рассмотренные альтернативы`
-- `## Затрагиваемые компоненты`
-- `## Ограничения`
-- `## Риски`
-- `## Plan Review`
-
-Зарегистрированный context содержит заголовок `# TASK-XXXX — <title>` и `# Execution Record`. Критические открытые вопросы запрещают регистрацию.
+Registered contexts have a `# TASK-XXXX — <title>` heading and an
+`# Execution Record`. Critical open questions block registration.

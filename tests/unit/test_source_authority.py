@@ -3,8 +3,12 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+import shutil
 
 from orchestrator.source_authority import SourceAuthorityError, classify_source
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class SourceAuthorityTests(unittest.TestCase):
@@ -29,3 +33,22 @@ class SourceAuthorityTests(unittest.TestCase):
             self.assertFalse(classify_source(root, report).authoritative)
             with self.assertRaisesRegex(SourceAuthorityError, "outside"):
                 classify_source(root, Path(temporary).parent / "outside.md")
+
+    def test_language_policy_rejects_russian_and_mixed_graph_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            shutil.copy(ROOT / "config/language-policy.json", root / "config.json")
+            (root / "config").mkdir()
+            (root / "config.json").replace(root / "config/language-policy.json")
+            russian = root / "docs/guides/guide-ru.md"
+            mixed = root / "docs/notes.md"
+            russian.parent.mkdir(parents=True)
+            russian.write_text(
+                "---\nlanguage: ru\ntranslation_of: docs/guides/guide.md\n---\n# \u0420\u0443\u0441\u0441\u043a\u0438\u0439\n",
+                encoding="utf-8",
+            )
+            mixed.write_text("# English\n\n\u0420\u0443\u0441\u0441\u043a\u0438\u0439 text\n", encoding="utf-8")
+            with self.assertRaisesRegex(SourceAuthorityError, "English canonical"):
+                classify_source(root, russian)
+            with self.assertRaisesRegex(SourceAuthorityError, "English canonical"):
+                classify_source(root, mixed)

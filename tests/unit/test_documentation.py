@@ -21,7 +21,7 @@ class DocumentationTests(unittest.TestCase):
         mapping = load_documentation_map(ROOT / "config/documentation-map.json")
         impacts = documentation_impact(["orchestrator/task_manager.py"], mapping)
         documents = {item.document for item in impacts}
-        self.assertIn("docs/specifications/task-layer-specification-ru.md", documents)
+        self.assertIn("docs/specifications/task-layer-specification.md", documents)
         self.assertIn("docs/migrations/cli-contract.md", documents)
 
     def test_generated_and_hand_written_docs_have_owners(self) -> None:
@@ -42,8 +42,8 @@ class DocumentationTests(unittest.TestCase):
 
     def test_task_storage_contract_documents_have_no_broken_links(self) -> None:
         documents = (
-            "docs/specifications/orchestrator-specification-ru.md",
-            "docs/specifications/task-layer-specification-ru.md",
+            "docs/specifications/orchestrator-specification.md",
+            "docs/specifications/task-layer-specification.md",
             "docs/guides/deployment-to-target-project-ru.md",
             "docs/architecture/component-contracts.md",
             "docs/migrations/cli-contract.md",
@@ -68,7 +68,7 @@ class DocumentationTests(unittest.TestCase):
         mapping = load_documentation_map(ROOT / "config/documentation-map.json")
         impacts = documentation_impact(["orchestrator/retrieval.py"], mapping)
         documents = {item.document for item in impacts}
-        self.assertIn("docs/specifications/orchestrator-specification-ru.md", documents)
+        self.assertIn("docs/specifications/orchestrator-specification.md", documents)
         self.assertIn("docs/migrations/1.2.md", documents)
 
     def test_finalization_runtime_changes_have_canonical_owners(self) -> None:

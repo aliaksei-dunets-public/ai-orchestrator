@@ -63,22 +63,22 @@ risk: low
 created_by: task-creation-workflow
 ---
 # Create contracts
-## Исходный запрос
+## User Request
 Create it.
-## Цель
+## Goal
 Provide contracts.
-## Объём задачи
+## Scope
 Bounded work.
-### Входит в scope
+### In Scope
 - Schema.
-### Не входит в scope
+### Out of Scope
 - CLI.
-## Критерии приёмки
+## Acceptance Criteria
 - Fixture passes.
-## План реализации
+## Implementation Plan
 - Add schema.
-## Открытые вопросы
-- Нет.
+## Open Questions
+- None.
 """
 
 

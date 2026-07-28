@@ -1,3 +1,7 @@
+---
+language: en
+---
+
 # ADR-0002: Project-owned Memory and Knowledge lifecycle
 
 **Status:** accepted

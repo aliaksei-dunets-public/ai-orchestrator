@@ -1,61 +1,52 @@
-# ADR 0004: Task Finalization receipts
+---
+language: en
+---
 
-- Статус: accepted
-- Дата: 2026-07-28
+# ADR-0004: Task Finalization receipts
 
-## Контекст
+- Status: accepted
+- Date: 2026-07-28
 
-Execution specifications требовали обновить документацию, граф знаний и память
-до commit и `done`, но runtime Backlog Loop переходил напрямую от execution к
-commit/complete. `TaskManager.complete()` проверял только status и
-workspace/commit evidence. Поэтому агент или direct CLI caller мог завершить
-задачу, не выполнив три заявленных gate.
+## Context
 
-## Решение
+Execution specifications required documentation, Knowledge Graph, and memory
+updates before commit and `done`, but Backlog Loop moved directly from execution
+to commit/complete. `TaskManager.complete()` checked status and workspace/commit
+evidence only, so a direct caller could skip the three gates.
 
-Добавляется обязательный `TaskFinalizationCoordinator`, выполняемый после
-implementation/reviews/security и до commit. Он получает:
+## Decision
 
-- task ID и зарегистрированный Task Context;
-- completed execution checkpoint;
-- normalized changed paths;
-- update-or-N/A dispositions Documentation Manager;
-- explicit schema-version-1 Knowledge Curator proposal;
-- secret-safe memory candidates.
+An obligatory `TaskFinalizationCoordinator` runs after implementation, reviews,
+and security, and before commit. It receives task ID and registered context,
+completed checkpoint, normalized changed paths, Documentation Manager
+dispositions, an explicit schema-version-1 Knowledge Curator proposal, and
+secret-safe memory candidates.
 
-Coordinator валидирует все входы, применяет policy-safe knowledge/memory
-изменения и создаёт versioned receipt. Receipt связан digest-ами с task ID,
-context revision/baseline hash, checkpoint и changed paths. `complete` принимает
-receipt только из `.orchestrator/tasks/finalization/<TASK-ID>.json`, проверяет
-его hash/freshness/ready state и сохраняет digest в Task Registry.
+The coordinator validates inputs, applies policy-safe knowledge/memory changes,
+and creates a versioned receipt. The receipt binds task ID, context
+revision/baseline hash, checkpoint, and changed paths. `complete` accepts only
+`.orchestrator/tasks/finalization/<TASK-ID>.json`, verifies hash/freshness/readiness,
+and stores its digest in Task Registry.
 
-Пустой knowledge proposal и пустой memory candidate list являются допустимыми
-явными no-op. Отсутствующий proposal или documentation disposition блокирует
-финализацию. Instruction и non-authoritative memory требуют hash-bound approval;
-до решения coordinator возвращает `waiting_user`.
+Empty knowledge proposals and empty memory candidate lists are valid explicit
+no-ops. Missing proposals or documentation disposition block finalization.
+Instruction and non-authoritative memory require hash-bound approval and return
+`waiting_user` until decided. Session Reporter remains a post-loop step and
+never auto-promotes non-authoritative memory.
 
-Session Reporter остаётся post-loop шагом. Он создаёт отчёт и session-sourced
-proposals один раз после остановки loop, не блокирует уже установленный task
-status и никогда не auto-promote non-authoritative memory.
+## Consequences
 
-## Последствия
-
-- Direct API/CLI и serial/isolated backlog больше не могут пропустить
-  documentation/knowledge/memory finalization.
-- Existing historical `done` records остаются читаемыми, но каждый новый
-  completion transition требует receipt.
-- Operational receipts и derived indexes не коммитятся; canonical docs, memory
-  and knowledge stores коммитятся вместе с задачей.
-- Pending approval останавливает commit и сохраняет checkpoint/proposal для
-  idempotent resume.
-- Task Manager остаётся structural gate и не становится владельцем semantic
-  content.
+- Direct API/CLI and serial/isolated backlog cannot skip finalization.
+- Historical `done` records remain readable; every new completion needs a receipt.
+- Receipts and derived indexes are operational state; canonical docs, memory, and
+  knowledge stores are committed with the task.
+- Pending approval stops commit and preserves checkpoint/proposal for idempotent
+  resume.
+- Task Manager remains a structural gate, not a semantic-content owner.
 
 ## Rollback
 
-Остановить execution до commit, сохранить receipt/checkpoint и вернуть runtime,
-workflow, CLI/schema и skills к предыдущей версии одним commit revert.
-Canonical append-only memory не удалять: ошибочные записи disable/supersede.
-Knowledge corrections выполнять новым provenance-backed proposal. Historical
-registry records с finalization metadata остаются additive и могут читаться как
-необязательное поле старым recovery tooling.
+Stop before commit, preserve receipt/checkpoint, and revert runtime, workflow,
+CLI/schema, and skills in one commit. Do not delete append-only memory; use
+disable/supersede. Correct Knowledge Graph content with a new
+provenance-backed proposal. Historical registry records remain readable.

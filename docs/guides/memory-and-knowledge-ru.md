@@ -1,4 +1,11 @@
+---
+language: ru
+translation_of: docs/guides/memory-and-knowledge.md
+---
+
 # Память и граф знаний оркестратора
+
+[English version](memory-and-knowledge.md)
 
 ## Назначение
 
@@ -10,7 +17,7 @@
 - **Knowledge Graph** хранит структурированные сущности проекта и связи между ними.
 - **Retrieval** выбирает только релевантную и актуальную часть этих данных и формирует ограниченный Context Pack для агента.
 
-Контракт реализации описан в [спецификации оркестратора](../specifications/orchestrator-specification-ru.md), workflow задач — в [спецификации Task Layer](../specifications/task-layer-specification-ru.md), а архитектурное решение — в [ADR-0002](../adr/0002-project-memory-knowledge-lifecycle.md).
+Контракт реализации описан в [английской спецификации оркестратора](../specifications/orchestrator-specification.md), workflow задач — в [английской спецификации Task Layer](../specifications/task-layer-specification.md), а архитектурное решение — в [ADR-0002](../adr/0002-project-memory-knowledge-lifecycle.md).
 
 ## 1. Пользователь приходит с задачей
 

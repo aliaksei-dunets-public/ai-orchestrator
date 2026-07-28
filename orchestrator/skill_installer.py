@@ -75,7 +75,12 @@ def install_skill(source: Path | str, installed: Path | str) -> SkillDrift:
     if current.clean:
         return current
     installed_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f".{installed_path.name}-", dir=installed_path.parent) as temporary:
+    # Keep staging outside the projection directory. Some platform hosts watch
+    # projection directories and can hold newly-created temporary directories
+    # open, which makes recursive backup/copy operations hang on Windows.
+    staging_parent = Path(tempfile.gettempdir()) if os.name == "nt" else installed_path.parent.parent
+    staging_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f".{installed_path.name}-", dir=staging_parent) as temporary:
         staged = Path(temporary) / installed_path.name
         shutil.copytree(
             source_path,
@@ -337,9 +342,11 @@ def install_registered_skills(
         return _projection_drift(sources, destination)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
+    staging_parent = Path(tempfile.gettempdir()) if os.name == "nt" else destination.parent.parent
+    staging_parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
         prefix=f".{destination.name}-projection-",
-        dir=destination.parent,
+        dir=staging_parent,
     ) as temporary:
         temporary_root = Path(temporary)
         staged = temporary_root / destination.name

@@ -10,18 +10,18 @@ created_by: task-creation-workflow
 
 # Task title
 
-## Исходный запрос
+## User Request
 
-## Цель
+## Goal
 
-## Объём задачи
+## Scope
 
-### Входит в scope
+### In Scope
 
-### Не входит в scope
+### Out of Scope
 
-## Критерии приёмки
+## Acceptance Criteria
 
-## План реализации
+## Implementation Plan
 
-## Открытые вопросы
+## Open Questions

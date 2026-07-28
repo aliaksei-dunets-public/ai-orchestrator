@@ -26,7 +26,7 @@ title: Example
 
 # TASK-0001 — Example
 
-## План реализации
+## Implementation Plan
 
 - First.
 - Second.

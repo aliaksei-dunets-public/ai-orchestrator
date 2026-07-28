@@ -53,7 +53,7 @@ class SessionReportTests(unittest.TestCase):
     def test_omits_empty_sections_and_writes_utf8(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "reports" / "session.md"
-            write_session_report(path, {"changes": ["Изменение"], "risks": []})
+            write_session_report(path, {"changes": ["Change"], "risks": []})
             content = path.read_text(encoding="utf-8")
             self.assertIn("## Changes", content)
             self.assertNotIn("## Risks", content)

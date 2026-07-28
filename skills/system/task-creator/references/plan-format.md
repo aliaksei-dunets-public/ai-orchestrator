@@ -1,76 +1,55 @@
-# Формат плана реализации
+# Implementation plan format
 
-Использовать этот формат для каждого независимого deliverable или фазы roadmap.
+Use this format for each independent deliverable or roadmap phase.
 
 ```markdown
-# <Название> Implementation Plan
+# <Title> Implementation Plan
 
 > **For agentic workers:** Implement this plan task-by-task using the repository's approved execution workflow.
 
-**Goal:** Одно проверяемое предложение.
-
-**Architecture:** Два-три предложения о границах и подходе.
-
-**Tech Stack:** Конкретные языки, форматы, библиотеки и CLI.
+**Goal:** One verifiable sentence.
+**Architecture:** Two or three sentences describing boundaries and approach.
+**Tech Stack:** Concrete languages, formats, libraries, and CLI.
 
 ## Global Constraints
-
-- Ограничения совместимости, зависимостей, безопасности и scope.
+- Compatibility, dependency, security, and scope constraints.
 
 ## Deliverables
-
-- Точные артефакты и публичные интерфейсы.
+- Exact artifacts and public interfaces.
 
 ## Dependencies
-
-- Предыдущие фазы, внешние инструменты и условия запуска.
+- Earlier phases, external tools, and launch conditions.
 
 ## Acceptance Criteria
-
-- Наблюдаемое и проверяемое условие.
+- Observable, verifiable conditions.
 
 ## Testing Strategy
-
-- Unit, contract, scenario, regression и ручные проверки, применимые к scope.
+- Unit, contract, scenario, regression, and manual checks.
 
 ## Risks and Rollback
-
-- Риск, сигнал обнаружения и способ безопасного отката.
+- Risk, detection signal, and safe rollback.
 
 ## Implementation Tasks
-
-### Task 1: <Проверяемый компонент>
-
+### Task 1: <Verifiable component>
 **Files:**
-
-- Create: `точный/путь`
-- Modify: `точный/путь:символ`
-- Test: `точный/путь`
-
+- Create: `exact/path`
+- Modify: `exact/path:symbol`
+- Test: `exact/path`
 **Interfaces:**
-
-- Consumes: точные входы.
-- Produces: точные выходы и поведение.
-
+- Consumes: exact inputs.
+- Produces: exact outputs and behavior.
 **Acceptance:**
-
-- Локальные критерии этого Task.
-
+- Local criteria for this task.
 **Tests:**
-
-- Точная команда и ожидаемый результат.
-
-- [ ] **Step 1:** Создать failing test или детерминированную проверку.
-- [ ] **Step 2:** Запустить проверку и подтвердить ожидаемую ошибку.
-- [ ] **Step 3:** Реализовать минимальное изменение.
-- [ ] **Step 4:** Запустить focused и затронутый regression suite.
-- [ ] **Step 5:** Обновить документацию/evidence и передать Task на review.
+- Exact command and expected result.
+- [ ] **Step 1:** Add a failing test or deterministic check.
+- [ ] **Step 2:** Run it and confirm the expected failure.
+- [ ] **Step 3:** Implement the smallest change.
+- [ ] **Step 4:** Run focused and affected regression suites.
+- [ ] **Step 5:** Update documentation/evidence and hand the task to review.
 ```
 
-Правила:
-
-- Один Task — минимальный deliverable со своим test/review cycle.
-- Указывать существующие либо планируемые точные пути; не использовать «соответствующий файл».
-- Не оставлять `TBD`, `TODO`, `FIXME`, «реализовать позже» и ссылки на неописанные шаги.
-- Не требовать regression test, если ошибка не исправляется; объяснить неприменимость.
-- Для документационных фаз заменять failing test на статическую проверку структуры, ссылок или контракта.
+Rules: one task is one minimally reviewable deliverable; use exact existing or
+planned paths; do not leave TBD/TODO/FIXME or vague steps; require regression
+tests for fixed defects or explain why they do not apply; documentation phases
+may use static structure, link, or contract checks instead of a failing test.

@@ -1,42 +1,52 @@
 ---
 name: task-creator
-description: Создавать и проверять Task Context и отдельные исполнимые планы из пользовательского запроса, утверждённой спецификации или roadmap; выбирать режим quick, standard или deep, выявлять решения пользователя, формулировать scope, критерии приёмки, тесты, риски и пошаговую реализацию. Использовать при декомпозиции roadmap, подготовке задачи к регистрации в Task Manager, аудите плана или передаче работы другой сессии либо агенту.
+description: Create and validate Task Context documents and executable plans from a user request, approved specification, or roadmap. Choose quick, standard, or deep mode; identify user decisions; define scope, acceptance criteria, tests, risks, and implementation steps. Use for roadmap decomposition, Task Manager registration preparation, plan audits, or handoff.
 ---
 
 # Task Creator
 
 ## Memory and knowledge context
 
-Before repository analysis in every quick, standard, or deep route, build a fresh
-bounded context pack with `orchestrator.task_creation.retrieve_task_creation_context`.
-Treat an empty pack as a valid no-op and never substitute stale or unbounded data.
+Before repository analysis in every quick, standard, or deep route, build a
+fresh bounded context pack with
+`orchestrator.task_creation.retrieve_task_creation_context`. An empty pack is a
+valid no-op; never substitute stale or unbounded data.
 
-Преобразовать требования в один или несколько самодостаточных Task Context и планов. Не выполнять реализацию и не менять Task Registry: регистрация остаётся обязанностью Task Manager.
+Convert requirements into one or more self-contained Task Context documents and
+plans. Do not implement the task or edit Task Registry; registration belongs to
+Task Manager.
 
-## Рабочий процесс
+## Workflow
 
-1. Прочитать нормативные требования и релевантные файлы проекта. Если доступны `docs/specifications/task-layer-specification-ru.md` и `docs/specifications/orchestrator-specification-ru.md`, считать их источниками истины.
-2. Выбрать режим:
-   - `quick` — локальное, очевидное и низкорисковое изменение;
-   - `standard` — обычная ошибка или feature с несколькими связанными изменениями;
-   - `deep` — архитектурное, высокорисковое, неоднозначное или необратимое изменение.
-3. Отделить цель от реализации, определить входящий и исключённый scope, зависимости, риски и затрагиваемые интерфейсы.
-4. Зафиксировать только решения, которые нельзя надёжно вывести из требований или репозитория. Для `deep` получить явное approval выбранного подхода до регистрации; при отсутствии ответа оставить draft и вернуть список решений.
-5. Разделить независимые подсистемы или фазы на отдельные планы. Не вести параллельный backlog: связать планы с каноническим roadmap и явно указать зависимости.
-6. Прочитать [plan-format.md](references/plan-format.md) перед созданием плана. Сделать каждый Task независимо проверяемым, с точными файлами, интерфейсами, критериями приёмки, тестами и ожидаемым результатом.
-7. При создании Task Context прочитать [task-context-contract.md](references/task-context-contract.md). Не помещать operational status в Task Context.
-8. Провести self-review: покрытие требований, отсутствие scope creep и placeholders, согласованность интерфейсов, реализуемость порядка, security/documentation impact.
-9. Запустить валидаторы:
+1. Read the normative requirements and relevant project files. Use
+   `docs/specifications/task-layer-specification.md` and
+   `docs/specifications/orchestrator-specification.md` as sources of truth.
+2. Choose `quick` for obvious low-risk local work, `standard` for normal bugs
+   and features, or `deep` for architectural, high-risk, ambiguous, or
+   irreversible changes.
+3. Separate goal from implementation, define included and excluded scope,
+   dependencies, risks, and affected interfaces.
+4. Record only decisions that cannot be inferred reliably. Deep work requires
+   explicit approval of the selected approach before registration.
+5. Split independent subsystems or phases into separate plans. Link plans to the
+   canonical roadmap and state dependencies; do not create a parallel backlog.
+6. Read [plan-format.md](references/plan-format.md) before writing a plan.
+7. Read [task-context-contract.md](references/task-context-contract.md) before
+   writing a context. Never put operational status in Task Context.
+8. Self-review coverage, scope, placeholders, interface consistency, ordering,
+   security impact, and documentation impact.
+9. Run the validators:
 
 ```powershell
 python .codex/skills/task-creator/scripts/validate_plan.py <plan> [<plan> ...]
 python .codex/skills/task-creator/scripts/validate_task_context.py <context> [--draft|--registered]
 ```
 
-10. Исправить все ошибки валидатора. Если Task Manager уже реализован и пользователь просит регистрацию, передать ему проверенный draft; самостоятельно `tasks.json` не редактировать.
+10. Fix every validator error. If the user asks to register a task, hand the
+    validated draft to Task Manager and never edit `tasks.json` directly.
 
-## Результат
+## Result
 
-Вернуть пути созданных артефактов, режим, зависимости, команды проверки и отдельный список нерешённых пользовательских решений. Если решений нет, явно написать «решения пользователя не требуются».
-
-Свести пользовательский отчёт к трём предложениям, если пользователь не запросил подробный разбор.
+Return created artifact paths, mode, dependencies, validation commands, and
+unresolved user decisions. If there are none, explicitly say that no user
+decisions are required.

@@ -72,7 +72,7 @@ class ReleaseAcceptanceTests(unittest.TestCase):
         workspaces = (
             ROOT / "docs/migrations/1.3-task-workspaces.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("## Совместимость", workspaces)
+        self.assertIn("## Compatibility", workspaces)
         self.assertIn("## Rollback", workspaces)
 
     def test_release_readme_links_resolve_inside_artifact(self) -> None:

@@ -94,7 +94,7 @@ def validate_definition(definition: TaskContextDefinition) -> None:
     missing = [name for name, value in required.items() if not value]
     if missing:
         raise TaskCreationError(f"Missing required task definition fields: {missing}")
-    if any(question.lower().startswith(("critical:", "[critical]", "критический:")) for question in definition.open_questions):
+    if any(question.lower().startswith(("critical:", "[critical]")) for question in definition.open_questions):
         raise TaskCreationError("Critical open question blocks context creation")
     if definition.mode in {"standard", "deep"}:
         detailed = {
@@ -118,7 +118,7 @@ def validate_definition(definition: TaskContextDefinition) -> None:
 
 def _bullets(items: Iterable[str]) -> str:
     values = [item.strip() for item in items if item.strip()]
-    return "\n".join(f"- {item}" for item in values) if values else "- Нет."
+    return "\n".join(f"- {item}" for item in values) if values else "- None."
 
 
 def render_task_context(definition: TaskContextDefinition) -> str:
@@ -138,46 +138,46 @@ def render_task_context(definition: TaskContextDefinition) -> str:
     frontmatter.append("---")
     sections = [
         f"# {definition.title}",
-        "## Исходный запрос",
+        "## User Request",
         definition.original_request,
-        "## Цель",
+        "## Goal",
         definition.goal,
     ]
     if definition.mode in {"standard", "deep"}:
         sections.extend(
             [
-                "## Проблема или потребность",
+                "## Problem or Need",
                 definition.problem,
-                "## Текущее поведение",
+                "## Current Behavior",
                 definition.current_behavior,
-                "## Ожидаемое поведение",
+                "## Expected Behavior",
                 definition.expected_behavior,
-                "## Анализ",
+                "## Analysis",
                 definition.analysis,
-                "## Выбранный подход",
+                "## Selected Approach",
                 definition.selected_approach,
-                "## Рассмотренные альтернативы",
+                "## Alternatives Considered",
                 _bullets(definition.alternatives),
             ]
         )
     sections.extend(
         [
-            "## Объём задачи",
-            "### Входит в scope",
+            "## Scope",
+            "### In Scope",
             _bullets(definition.in_scope),
-            "### Не входит в scope",
+            "### Out of Scope",
             _bullets(definition.out_of_scope),
         ]
     )
     if definition.mode in {"standard", "deep"}:
-        sections.extend(["## Затрагиваемые компоненты", _bullets(definition.components)])
-    sections.extend(["## Критерии приёмки", _bullets(definition.acceptance_criteria)])
+        sections.extend(["## Affected Components", _bullets(definition.components)])
+    sections.extend(["## Acceptance Criteria", _bullets(definition.acceptance_criteria)])
     if definition.mode in {"standard", "deep"}:
-        sections.extend(["## Ограничения", _bullets(definition.constraints), "## Риски", _bullets(definition.risks)])
-    sections.extend(["## План реализации", _bullets(definition.plan)])
+        sections.extend(["## Constraints", _bullets(definition.constraints), "## Risks", _bullets(definition.risks)])
+    sections.extend(["## Implementation Plan", _bullets(definition.plan)])
     if definition.mode in {"standard", "deep"}:
         sections.extend(["## Plan Review", definition.plan_review])
-    sections.extend(["## Открытые вопросы", _bullets(definition.open_questions)])
+    sections.extend(["## Open Questions", _bullets(definition.open_questions)])
     return "\n\n".join([*frontmatter, *sections]).rstrip() + "\n"
 
 

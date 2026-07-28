@@ -3,6 +3,7 @@ context:
   default_excludes:
     - releases/**
   explicit_release_search: true
+language_policy: config/language-policy.json
 telemetry:
   enabled_by_default: false
   path: .orchestrator/telemetry/events.jsonl

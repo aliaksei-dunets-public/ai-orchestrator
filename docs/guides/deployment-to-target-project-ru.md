@@ -1,4 +1,11 @@
+---
+language: ru
+translation_of: docs/guides/deployment-to-target-project.md
+---
+
 # Развёртывание AI Orchestrator в целевом проекте
+
+[English version](deployment-to-target-project.md)
 
 **Версия гайда:** 2.0
 **Целевая версия оркестратора:** 1.2.0
@@ -416,6 +423,6 @@ read-only inventory проекта и возвращает `answers.knowledge_gr
 ignored graph index и откатывает graph вместе с остальными файлами при
 `ERROR`/`CRITICAL`. Пустой proposal допустим и не создаёт выдуманных сущностей.
 
-Нормативные контракты: [спецификация оркестратора](../specifications/orchestrator-specification-ru.md),
-[Task Layer](../specifications/task-layer-specification-ru.md) и
+Нормативные контракты: [английская спецификация оркестратора](../specifications/orchestrator-specification.md),
+[Task Layer](../specifications/task-layer-specification.md) и
 [контракты компонентов](../architecture/component-contracts.md).

@@ -8,30 +8,30 @@ from pathlib import Path
 
 COMMON_FIELDS = ("schema_version", "title", "type", "mode", "risk", "created_by")
 QUICK_HEADINGS = (
-    "## Исходный запрос",
-    "## Цель",
-    "## Объём задачи",
-    "### Входит в scope",
-    "### Не входит в scope",
-    "## Критерии приёмки",
-    "## План реализации",
-    "## Открытые вопросы",
+    "## User Request",
+    "## Goal",
+    "## Scope",
+    "### In Scope",
+    "### Out of Scope",
+    "## Acceptance Criteria",
+    "## Implementation Plan",
+    "## Open Questions",
 )
 STANDARD_HEADINGS = QUICK_HEADINGS + (
-    "## Проблема или потребность",
-    "## Текущее поведение",
-    "## Ожидаемое поведение",
-    "## Анализ",
-    "## Выбранный подход",
-    "## Рассмотренные альтернативы",
-    "## Затрагиваемые компоненты",
-    "## Ограничения",
-    "## Риски",
+    "## Problem or Need",
+    "## Current Behavior",
+    "## Expected Behavior",
+    "## Analysis",
+    "## Selected Approach",
+    "## Alternatives Considered",
+    "## Affected Components",
+    "## Constraints",
+    "## Risks",
     "## Plan Review",
 )
 TASK_ID_RE = re.compile(r"TASK-\d{4,}")
 CRITICAL_QUESTION_RE = re.compile(
-    r"(?im)^\s*-\s*(?:\[critical\]|critical\s*:|критическ(?:ий|ая)\s*:)",
+    r"(?im)^\s*-\s*(?:\[critical\]|critical\s*:)\s*",
 )
 
 
@@ -98,7 +98,7 @@ def validate_text(text: str, expected_state: str | None = None) -> list[str]:
     for heading in required_headings:
         if heading not in lines:
             errors.append(f"missing required heading: {heading}")
-    open_questions = text.split("## Открытые вопросы", 1)
+    open_questions = text.split("## Open Questions", 1)
     if len(open_questions) == 2:
         section = open_questions[1].split("\n#", 1)[0]
         if CRITICAL_QUESTION_RE.search(section):

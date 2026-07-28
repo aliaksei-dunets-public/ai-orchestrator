@@ -25,7 +25,7 @@ REQUIRED_TASK_MARKERS = (
     "**Tests:**",
 )
 PLACEHOLDER_RE = re.compile(
-    r"\b(?:TBD|TODO|FIXME|implement later|fill in details|реализовать позже)\b",
+    r"\b(?:TBD|TODO|FIXME|implement later|fill in details)\b",
     re.IGNORECASE,
 )
 TASK_RE = re.compile(r"^### Task \d+: .+$", re.MULTILINE)

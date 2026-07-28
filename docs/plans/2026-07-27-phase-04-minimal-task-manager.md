@@ -1,105 +1,70 @@
-# Phase 04 — Минимальный Task Manager Implementation Plan
+# phase 04 minimal task manager Implementation Plan
 
-> **For agentic workers:** Implement this plan task-by-task using the repository's approved execution workflow.
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-**Goal:** Реализовать T0–T3: schema, read-only команды, регистрацию, переходы и безопасный claim.
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-**Architecture:** Task Registry остаётся единственным локальным operational state и не хранится в Git. Первая версия допускает один изменяющий process; каждая запись публикуется crash-safe через временный файл, flush/fsync и `os.replace`.
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-**Tech Stack:** Python 3.11+, Python standard library for runtime-critical Task Manager paths, Markdown, JSON/JSON Schema, YAML profiles and `unittest`.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
 ## Global Constraints
 
-- Соблюдать `docs/specifications/orchestrator-specification-ru.md` 0.4 и `docs/specifications/task-layer-specification-ru.md` 0.3.
-- Не ослаблять immutable security policies и не добавлять неутверждённые внешние runtime dependencies.
-- Сохранять backward compatibility ранее завершённых фаз или добавлять явную migration.
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
 ## Deliverables
 
-- Create: `orchestrator/task_manager.py`
-- Create: `orchestrator/task_cli.py`
-- Create: `config/schemas/task-registry.schema.json`
-- Create: `templates/task-context.md`
-- Create: `tests/unit/test_task_manager.py`
-- Create: `tests/scenarios/test_task_cli.py`
-- Modify: `.gitignore`
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
 ## Dependencies
 
-- Фазы 0–2; Task Layer T0.
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
 ## Acceptance Criteria
 
-- Команды и exit codes соответствуют Task Layer 0.3.
-- Последовательные `claim-next` не нарушают правило одной активной задачи.
-- Crash registration обнаруживается validate как recoverable inconsistency.
-- `tasks.json`, `*.tmp` и `*.lock` исключены из Git, а Task Context остаётся tracked.
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
 ## Testing Strategy
 
-- `python -m unittest tests.unit.test_task_manager tests.scenarios.test_task_cli -v` проходит.
-- `git check-ignore .orchestrator/tasks/tasks.json .orchestrator/tasks/probe.tmp .orchestrator/tasks/probe.lock` подтверждает локальный operational state.
-- При исправлении обнаруженного дефекта добавить отдельный regression fixture; иначе зафиксировать неприменимость regression test в review evidence.
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
 
 ## Risks and Rollback
 
-- Одновременный запуск writers может потерять update и находится вне контракта; откат при сбое — восстановить последний валидный файл и orphan context по диагностике `validate`.
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
 
 ## Implementation Tasks
 
-### Task 1: Контракт и тестовые fixtures
+### Task 1: Canonical English maintainer artifact
 
 **Files:**
 
-- Create: `orchestrator/task_manager.py`
-- Create: `config/schemas/task-registry.schema.json`
-- Create: `tests/unit/test_task_manager.py`
-- Test: `tests/unit/test_task_manager.py`
+- Modify: $(2026-07-27-phase-04-minimal-task-manager.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-04-minimal-task-manager.ru.md))
 
 **Interfaces:**
 
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фазы 0–2; Task Layer T0.).
-- Produces: проверяемый результат Task 1, совместимый с deliverables этой фазы.
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
 
 **Acceptance:**
 
-- Команды и exit codes соответствуют Task Layer 0.3.
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
 
 **Tests:**
 
-- `python -m unittest tests.unit.test_task_manager tests.scenarios.test_task_cli -v` проходит.
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
 
-- [ ] **Step 1:** Добавить проверку для условия «Команды и exit codes соответствуют Task Layer 0.3.».
-- [ ] **Step 2:** Запустить `python -m unittest tests.unit.test_task_manager tests.scenarios.test_task_cli -v` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать контракт и тестовые fixtures в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что условие «Команды и exit codes соответствуют Task Layer 0.3.» выполняется.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
-
-### Task 2: Реализация и интеграция
-
-**Files:**
-
-- Create: `orchestrator/task_cli.py`
-- Create: `templates/task-context.md`
-- Create: `tests/scenarios/test_task_cli.py`
-- Modify: `.gitignore`
-- Test: `tests/unit/test_task_manager.py`
-
-**Interfaces:**
-
-- Consumes: нормативные спецификации и deliverables зависимых фаз (Фазы 0–2; Task Layer T0.).
-- Produces: проверяемый результат Task 2, совместимый с deliverables этой фазы.
-
-**Acceptance:**
-
-- Последовательный `claim-next` блокирует вторую активную задачу, а registry остаётся незатреканным.
-
-**Tests:**
-
-- `python -m unittest tests.scenarios.test_task_cli.TaskCliScenarioTests.test_single_writer_claim_and_gitignore -v` проходит.
-
-- [ ] **Step 1:** Добавить проверку последовательного claim и `git check-ignore` для operational-файлов.
-- [ ] **Step 2:** Запустить `python -m unittest tests.scenarios.test_task_cli.TaskCliScenarioTests.test_single_writer_claim_and_gitignore -v` и подтвердить ожидаемый failure до реализации.
-- [ ] **Step 3:** Реализовать реализация и интеграция в перечисленных файлах без расширения scope.
-- [ ] **Step 4:** Повторить focused check и убедиться, что single-writer и Git-boundary соблюдаются.
-- [ ] **Step 5:** Запустить затронутый regression suite, записать evidence и передать изменение на независимый review.
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

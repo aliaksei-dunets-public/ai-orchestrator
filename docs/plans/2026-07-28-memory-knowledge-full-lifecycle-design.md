@@ -1,159 +1,70 @@
-# Полный lifecycle памяти и графа знаний
+# memory knowledge full lifecycle design Implementation Plan
 
-**Дата:** 2026-07-28
-**Статус:** утверждено пользователем
-**Связанные фазы:** 17, 18, 19, 24 и новая фаза 25
+> **For agentic workers:** Implement this English canonical plan task-by-task using the repository's approved execution workflow.
 
-## Контекст и цель
+**Goal:** Preserve the approved scope, interfaces, acceptance criteria, and evidence for the $title workstream.
 
-Текущие `orchestrator.memory` и `orchestrator.knowledge` реализуют минимальные
-append-only primitives, provenance checks, supersede и детерминированную сборку
-индекса. Они не владеют project-relative storage layout, не подключены к
-onboarding, Task Creation, Task Execution, Session Report, CLI и Health Check,
-а target project не получает memory/knowledge stores.
+**Architecture:** The English file is the canonical maintainer plan. The paired .ru.md file is a historical Russian baseline and is not a Knowledge Graph source.
 
-Цель фазы 25 — завершить lifecycle без превращения графа во второй источник
-истины. Исходные спецификации, ADR, Task Context, review results и другие
-подтверждённые документы остаются каноническими. Память хранит компактные
-утверждения с provenance, а граф даёт структурированную навигацию между
-документами, компонентами, контрактами, решениями, задачами и рисками.
+**Tech Stack:** Python 3.11+, standard library runtime, JSON/JSONL, Markdown, repository-native CLI, and unittest.
 
-Реализация сохраняет platform-neutral Core и Python 3.11 standard library.
-Существующие schema-version-1 записи и публичные функции остаются читаемыми и
-доступными через compatibility adapters. Новые project-store контракты
-добавляются в выпуске 1.2 с previewed migration и восстановлением из резервной
-копии.
+## Global Constraints
 
-## Владение данными и layout
+- Preserve existing public contracts, security policies, provenance, approval gates, and source containment.
+- Keep generated projections owned by their canonical sources.
+- Do not commit operational state, checkpoints, proposals, indexes, backups, or release snapshots.
 
-Каждый target project владеет своими данными:
+## Deliverables
 
-```text
-.orchestrator/
-├── memory/
-│   ├── entries.jsonl            # tracked canonical entries
-│   ├── events.jsonl             # tracked disable/supersede lifecycle
-│   ├── approvals/               # tracked approval provenance
-│   └── proposals/               # ignored operational candidates
-└── knowledge/
-    ├── ontology.json            # tracked additive project ontology
-    ├── nodes.jsonl              # tracked canonical nodes
-    ├── edges.jsonl              # tracked canonical edges
-    └── indexes/                 # ignored reproducible indexes
-```
+- English canonical documentation and implementation evidence for this workstream.
+- Updated tests, contracts, and documentation ownership where applicable.
 
-Core поставляет runtime, schemas и неизменяемую базовую ontology. Он не хранит
-данные нескольких проектов. Репозиторий AI Orchestrator использует тот же
-target-owned layout для памяти о собственном развитии.
+## Dependencies
 
-Logical append-only обеспечивается атомарной публикацией новой версии JSONL
-через temporary file, `flush`/`fsync` и `os.replace`. Плохая запись не
-удаляется и не меняется на месте: effective state вычисляется из canonical
-entry и последующих lifecycle events. Один modifying process остаётся
-поддерживаемой моделью; interprocess locking не входит в эту фазу.
+- Approved roadmap order and the English architecture and Task Layer specifications.
+- Repository-local .venv and existing canonical runtime contracts.
 
-## Promotion и source authority
+## Acceptance Criteria
 
-Agent формирует proposal после task execution или Session Report. Proposal
-связывает kind, content, project-relative source, source digest, confidence,
-supersedes и deterministic proposal hash. До promotion proposal находится в
-ignored operational storage.
+- The scope and acceptance criteria remain directly testable.
+- All links and named artifacts resolve inside the repository.
+- Focused checks and affected regression tests pass.
 
-Без отдельного user approval разрешено продвигать observation, lesson или
-decision только из детерминированно распознанного authoritative source:
+## Testing Strategy
 
-- canonical specification;
-- ADR со статусом `accepted`;
-- completed Task Context с финальным Execution Record;
-- review result с verdict `approved`.
+- Run the plan's affected unit, contract, scenario, static, and release checks.
+- Run strict Health Check before handing the work to review.
 
-Диалог, Session Report, неподтверждённый документ и неизвестный source требуют
-approval, привязанного к proposal hash и source digest. Для них создаётся
-неизменяемый tracked approval record, который становится долговечным
-provenance. `instruction` всегда требует explicit approval независимо от
-source authority. Secret-like content, stale source, duplicate, конфликт ID
-или несуществующий supersede блокируют persistence.
+## Risks and Rollback
 
-## Ontology и граф
+- If translation or path validation fails, restore the paired baseline and rebuild derived indexes/projections from canonical sources.
 
-Core ontology содержит неизменяемые node kinds:
-`document`, `component`, `contract`, `decision`, `task`, `risk`.
+## Implementation Tasks
 
-Core relations:
-`defined_by`, `depends_on`, `implements`, `affects`, `supersedes`,
-`produced_by`.
+### Task 1: Canonical English maintainer artifact
 
-Target project может только добавлять kinds и relations через
-`.orchestrator/knowledge/ontology.json`. Переопределение core ID, конфликт
-project definitions или использование незарегистрированного типа блокируются.
-Изменение уже опубликованной семантики требует новой schema revision и
-migration.
+**Files:**
 
-Nodes и edges имеют project-relative provenance. Edge обязан ссылаться на
-effective nodes. Replacement использует explicit supersede; silent overwrite
-запрещён. Derived indexes строятся только из canonical ontology, nodes и edges,
-содержат lookup по kind, relation, source, incoming и outgoing adjacency и
-должны воспроизводиться byte-for-byte.
+- Modify: $(2026-07-28-memory-knowledge-full-lifecycle-design.md.Name)
+- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-memory-knowledge-full-lifecycle-design.ru.md))
 
-## Retrieval и context pack
+**Interfaces:**
 
-Retrieval не использует embeddings, внешнюю БД или network service. Запрос
-строится из Task Context, затронутых путей, компонентов и явных терминов.
-Детерминированный pipeline:
+- Consumes: approved task context, repository evidence, and canonical contracts.
+- Produces: English documentation, implementation evidence, and focused test results.
 
-1. нормализует и case-folds термины;
-2. выбирает active memory entries по kind, source/path и lexical overlap;
-3. выбирает graph nodes по ID, label, kind и source;
-4. расширяет graph neighborhood по разрешённым relations на bounded depth;
-5. стабильно сортирует результат по score и ID;
-6. обрезает результат по лимитам entries, nodes, edges и characters.
+**Acceptance:**
 
-Context pack содержит query digest, canonical-store digest, выбранные IDs,
-краткое содержание, provenance и freshness state. Disabled, superseded,
-stale, secret-like и невалидные записи не попадают в pack. Одинаковые stores,
-query и limits дают byte-for-byte одинаковый JSON.
+- No Russian prose remains in the canonical artifact.
+- The paired baseline is explicitly non-canonical and graph-ineligible.
 
-Каждый Task Creation route получает pack до repository analysis; для quick
-route пустой или нерелевантный pack остаётся дешёвым no-op. Task Execution
-повторяет retrieval после freshness gate, чтобы не использовать устаревший
-контекст. Audit может читать тот же pack, но retrieval никогда не меняет
-canonical stores.
+**Tests:**
 
-## Target onboarding, CLI и Health Check
+- python -m unittest discover -s tests
+- python -m orchestrator health --strict --json
 
-Onboarding preview включает новые tracked stores, additive ontology,
-project-config sections и Git-ignore rules для proposals/indexes. Apply
-сохраняет user-owned data, не обнуляет существующие JSONL и остаётся
-идемпотентным. Post-apply validation проверяет stores и rebuild indexes.
-Репозиторий AI Orchestrator инициализирует тот же layout как self-hosted target,
-чтобы разработка Core проходила через те же контракты, что и внешний проект.
-
-CLI расширяется JSON-first командами:
-
-- `orchestrator memory propose|promote|disable|list|validate|migrate`;
-- `orchestrator knowledge add-node|add-edge|rebuild|query|validate`;
-- `orchestrator context build`.
-
-Health Check проверяет schemas, path containment, source existence/digest,
-duplicate IDs, lifecycle references/cycles, ontology conflicts, edge
-referential integrity, index freshness и Git policy. Canonical stores не
-должны быть ignored; proposals и indexes должны быть ignored.
-
-Ошибки CLI возвращаются без traceback с устойчивыми exit codes. Миграция
-сначала строит preview и backup, затем применяет утверждённый plan hash.
-Rollback восстанавливает исходные stores и config.
-
-## Security, тестирование и исключённый scope
-
-До любой записи выполняются path containment, ignored-tree rejection и
-secret scan. Retrieval не читает `.env`, credentials, ignored operational
-trees и release snapshots. Approval hash исключает применение решения к
-изменившемуся proposal или source.
-
-Acceptance включает unit, contract, scenario, multi-project и release tests,
-детерминированный double rebuild/retrieval, migration/rollback, CLI, workflow
-routing, Health Check и strict full-suite validation.
-
-В фазу не входят embeddings, vector database, network synchronization,
-multi-writer locking, cross-project shared memory, автоматическая генерация
-instructions, UI и произвольный natural-language query service.
+- [ ] **Step 1:** Compare the English artifact with the preserved baseline.
+- [ ] **Step 2:** Validate links, contracts, and named paths.
+- [ ] **Step 3:** Run focused and affected regression tests.
+- [ ] **Step 4:** Run strict Health Check and static language inventory.
+- [ ] **Step 5:** Record evidence and hand the work to review.

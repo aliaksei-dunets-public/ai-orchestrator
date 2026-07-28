@@ -1,4 +1,11 @@
+---
+language: ru
+translation_of: skills/optional/python-code-review/README.md
+---
+
 # Python Code Review Skill 2.0
+
+[English version](README.md)
 
 Платформо-независимый навык для AI coding agents, в котором основным механизмом
 ревью является не чек-лист, а глобальный анализ поведения и архитектуры системы.

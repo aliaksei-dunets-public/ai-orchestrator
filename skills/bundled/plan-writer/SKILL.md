@@ -1,12 +1,12 @@
 ---
 name: plan-writer
-description: Превращать утверждённую Task Specification в пошаговый исполнимый план с точными файлами, интерфейсами, критериями приёмки и тестами. Использовать после выбора подхода и до Plan Review.
+description: Turn an approved Task Specification into an executable step-by-step plan with exact files, interfaces, acceptance criteria, and tests. Use after approach selection and before Plan Review.
 ---
 
 # Plan Writer
 
-1. Сопоставить каждый acceptance criterion с deliverable и проверкой.
-2. Разделить работу на независимо проверяемые tasks.
-3. Указать точные paths, inputs, outputs, commands и expected results.
-4. Не оставлять placeholders и не расширять scope.
-5. Передать полный план Plan Reviewer.
+1. Map each acceptance criterion to a deliverable and check.
+2. Split work into independently verifiable tasks.
+3. State exact paths, inputs, outputs, commands, and expected results.
+4. Leave no placeholders and do not expand scope.
+5. Pass the complete plan to Plan Reviewer.

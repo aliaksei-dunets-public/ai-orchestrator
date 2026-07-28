@@ -1,17 +1,29 @@
+---
+language: en
+translation_of: README.ru.md
+---
+
 # AI Orchestrator
 
-Универсальный, конфигурируемый оркестратор для управления навыками, workflow, задачами, памятью и проектным контекстом на разных агентных платформах и технологических стеках.
+Portable, configurable orchestrator for skills, workflows, tasks, memory, and
+Project Context across agent platforms and technology stacks.
 
-## Спецификации
+## Specifications
 
-- [Главная архитектурная спецификация](docs/specifications/orchestrator-specification-ru.md)
-- [Спецификация уровня задач](docs/specifications/task-layer-specification-ru.md)
+- [Architecture specification](docs/specifications/orchestrator-specification.md)
+- [Task Layer specification](docs/specifications/task-layer-specification.md)
+- [Russian README](README.ru.md)
 
-## Статус
+## Status
 
-Реализован контракт версии 1.2.0: создание и выполнение задач, проверки, approval gates, документация, target-owned Project Memory и Knowledge Graph, bounded context retrieval, аудит, backlog loop, профили адаптации и выборочная установка system/bundled/optional skills. Ограничения и порядок обновления описаны в [руководстве миграции](docs/migrations/1.2.md).
+Version 1.2.0 contracts are implemented: task creation and execution, checks,
+approval gates, documentation, target-owned Project Memory and Knowledge Graph,
+bounded context retrieval, audit, backlog loop, adaptation profiles, and
+selective system/bundled/optional skill installation. Constraints and upgrade
+order are described in the [migration guide](docs/migrations/1.2.md).
 
-Текущая ветка дополнительно поддерживает risk-based execution routing, bounded evidence и локальную telemetry:
+The current branch also supports risk-based execution routing, bounded
+evidence, and local telemetry:
 
 ```powershell
 python -m orchestrator telemetry --json

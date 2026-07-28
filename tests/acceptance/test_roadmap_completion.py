@@ -15,7 +15,11 @@ UNITTEST_RE = re.compile(r"`python -m unittest ([^`\r\n]+)`")
 
 class RoadmapCompletionAcceptanceTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.plans = sorted((ROOT / "docs/plans").glob("2026-*-phase-*.md"))
+        self.plans = sorted(
+            path
+            for path in (ROOT / "docs/plans").glob("2026-*-phase-*.md")
+            if not path.name.endswith(".ru.md")
+        )
 
     def test_all_26_plans_have_acceptance_and_all_named_artifacts_exist(self) -> None:
         self.assertEqual(len(self.plans), 26)

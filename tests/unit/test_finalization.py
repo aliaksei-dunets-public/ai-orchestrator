@@ -92,9 +92,9 @@ class FinalizationTests(unittest.TestCase):
             "created_by: task-creation-workflow\n"
             "---\n\n"
             "# TASK-0001 — Finalize\n\n"
-            "## Цель\n\nFinalize the task.\n\n"
+            "## Goal\n\nFinalize the task.\n\n"
             "# Execution Record\n\n"
-            "## Итог выполнения\n\nStatus: completed.\n",
+            "## Completion Summary\n\nStatus: completed.\n",
             encoding="utf-8",
         )
         self.checkpoint = tasks / "checkpoints/TASK-0001.checkpoint.lock"

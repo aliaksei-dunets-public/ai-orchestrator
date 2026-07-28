@@ -3,10 +3,14 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+import shutil
 
 from orchestrator.knowledge import KnowledgeEdge, KnowledgeNode, add_edge, add_node
 from orchestrator.memory import create_proposal, disable_entry, promote_proposal
 from orchestrator.retrieval import build_context_pack, serialize_context_pack
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class RetrievalTests(unittest.TestCase):
@@ -68,6 +72,23 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(empty["memory"], [])
             self.assertEqual(empty["nodes"], [])
             self.assertEqual(empty["edges"], [])
+
+    def test_russian_graph_provenance_is_excluded_from_context_pack(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            shutil.copy(ROOT / "config/language-policy.json", root / "config.json")
+            (root / "config").mkdir()
+            (root / "config.json").replace(root / "config/language-policy.json")
+            source = root / "docs/guides/guide-ru.md"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "---\nlanguage: ru\ntranslation_of: docs/guides/guide.md\n---\n# \u0420\u0443\u0441\u0441\u043a\u0438\u0439\n",
+                encoding="utf-8",
+            )
+            nodes = root / ".orchestrator/knowledge/nodes.jsonl"
+            add_node(nodes, KnowledgeNode("RU1", "document", "Russian guide", str(source)))
+            pack = build_context_pack(root, terms=["guide"], budget_chars=512)
+            self.assertEqual(pack["nodes"], [])
 
 
 if __name__ == "__main__":

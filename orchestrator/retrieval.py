@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from .knowledge import KnowledgeEdge, KnowledgeNode, effective_graph
+from .language_policy import LanguagePolicyError, classify_path
 from .memory import ENTRIES_PATH, EVENTS_PATH, MemoryEntry, effective_entries
 from .session_report import redact
 
 
-TOKEN_RE = re.compile(r"[A-Za-zА-Яа-яЁё0-9_./-]+")
+TOKEN_RE = re.compile(r"[A-Za-z\u0410-\u044f\u0401\u04510-9_./-]+")
 EPOCH = "1970-01-01T00:00:00+00:00"
 
 
@@ -72,6 +73,30 @@ def _fresh(root: Path, source: str, expected_digest: str | None) -> bool:
     return hashlib.sha256(path.read_bytes()).hexdigest() == expected_digest
 
 
+def _english_graph_source(root: Path, source: str) -> bool:
+    """Return whether a graph provenance source remains English-canonical."""
+    policy_path = root / "config/language-policy.json"
+    if not policy_path.is_file():
+        return True
+    try:
+        decision = classify_path(root, source)
+        path = _resolved_source(root, source)
+        if path is None:
+            return False
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if lines and lines[0] == "---":
+            try:
+                end = lines.index("---", 1)
+            except ValueError:
+                return False
+            metadata = any(line.strip().startswith("language:") for line in lines[1:end])
+        else:
+            metadata = False
+        return decision.graph_eligible and metadata
+    except LanguagePolicyError:
+        return False
+
+
 def _record_size(payload: dict[str, object]) -> int:
     return len(_canonical(payload))
 
@@ -111,6 +136,7 @@ def _safe_graph(root: Path) -> tuple[list[KnowledgeNode], list[KnowledgeEdge]]:
         node
         for node in nodes
         if redact(node.label) == node.label
+        and _english_graph_source(root, node.source)
         and _fresh(root, node.source, node.source_digest)
     ]
     safe_ids = {node.id for node in safe_nodes}
@@ -119,6 +145,7 @@ def _safe_graph(root: Path) -> tuple[list[KnowledgeNode], list[KnowledgeEdge]]:
         for edge in edges
         if edge.source_node in safe_ids
         and edge.target_node in safe_ids
+        and _english_graph_source(root, edge.source)
         and _fresh(root, edge.source, edge.source_digest)
     ]
     return safe_nodes, safe_edges

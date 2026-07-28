@@ -24,22 +24,22 @@ risk: low
 created_by: task-creation-workflow
 ---
 # Quick context
-## Исходный запрос
+## User Request
 Create it.
-## Цель
+## Goal
 Produce a valid draft.
-## Объём задачи
+## Scope
 Bounded.
-### Входит в scope
+### In Scope
 - Draft.
-### Не входит в scope
+### Out of Scope
 - Execution.
-## Критерии приёмки
+## Acceptance Criteria
 - Validator passes.
-## План реализации
+## Implementation Plan
 - Create and validate.
-## Открытые вопросы
-- Нет.
+## Open Questions
+- None.
 """
 
 
@@ -52,6 +52,6 @@ class TaskContextContractTests(unittest.TestCase):
         self.assertTrue(any("draft context" in error for error in errors))
 
     def test_critical_open_question_fails(self) -> None:
-        invalid = QUICK.replace("- Нет.", "- CRITICAL: choose destructive migration.")
+        invalid = QUICK.replace("- None.", "- CRITICAL: choose destructive migration.")
         errors = VALIDATOR.validate_text(invalid, "draft")
         self.assertTrue(any("critical open question" in error for error in errors))

@@ -2,8 +2,8 @@
 
 ## Sources of truth
 
-1. Follow `docs/specifications/orchestrator-specification-ru.md` for architecture and roadmap.
-2. Follow `docs/specifications/task-layer-specification-ru.md` for task contracts and state transitions.
+1. Follow `docs/specifications/orchestrator-specification.md` for architecture and roadmap.
+2. Follow `docs/specifications/task-layer-specification.md` for task contracts and state transitions.
 3. Treat `docs/plans/2026-07-27-roadmap-index.md` as the ordered implementation plan set.
 
 ## Development workflow
@@ -17,6 +17,8 @@
 - Do not commit `.orchestrator/tasks/tasks.json`, temporary files or lock files.
 - Search canonical sources by default; `releases/` is excluded through `.rgignore` and must be searched explicitly for release validation.
 - Preserve unrelated user changes and avoid destructive Git operations.
+- Canonical project artifacts use English; user-facing guides may have Russian companions, which are not Knowledge Graph sources.
+- Apply `config/language-policy.json` when classifying documentation language or graph provenance.
 
 ## Python environment
 
