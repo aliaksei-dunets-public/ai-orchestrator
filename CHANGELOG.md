@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added mandatory task finalization receipts that bind documentation, knowledge
+  and memory gates to the current Task Context, checkpoint and changed paths
+  before commit and `done`.
+- Added idempotent post-loop session reports and approval-gated session memory
+  proposals.
+
 ## 1.2.0 — 2026-07-28
 
 - Added target-owned tracked Project Memory and Knowledge Graph JSONL stores.

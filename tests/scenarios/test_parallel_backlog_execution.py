@@ -7,6 +7,7 @@ import unittest
 from orchestrator.backlog import (
     AssignedTask,
     BacklogLimits,
+    FinalizationRun,
     TaskRun,
     run_isolated_backlog,
 )
@@ -47,7 +48,7 @@ class ParallelBacklogExecutionScenarioTests(unittest.TestCase):
             events.append(f"integrate:{run.task_id}")
             return commit
 
-        def complete(task_id: str, evidence: str) -> None:
+        def complete(task_id: str, evidence: str, receipt: str) -> None:
             events.append(f"complete:{task_id}")
 
         result = run_isolated_backlog(
@@ -55,9 +56,13 @@ class ParallelBacklogExecutionScenarioTests(unittest.TestCase):
             max_workers=2,
             claim_next=claim,
             execute_task=execute,
+            finalize_task=lambda run, assignment: FinalizationRun(
+                "completed", f"receipt-{run.task_id}"
+            ),
             commit_task=commit,
             integrate_task=integrate,
             complete_task=complete,
+            finalize_session=lambda result: events.append(f"session:{result.status}"),
         )
         self.assertEqual(result.status, "limit")
         self.assertEqual(peak, 2)
@@ -78,11 +83,15 @@ class ParallelBacklogExecutionScenarioTests(unittest.TestCase):
             execute_task=lambda assignment, remaining: TaskRun(
                 assignment.task_id, "done", 1
             ),
+            finalize_task=lambda run, assignment: FinalizationRun(
+                "completed", f"receipt-{run.task_id}"
+            ),
             commit_task=lambda run, assignment: (
                 "bootstrap-commit" if assignment.workspace_kind == "main" else ""
             ),
             integrate_task=lambda run, assignment, commit: commit,
-            complete_task=lambda task_id, evidence: completed.append(task_id),
+            complete_task=lambda task_id, evidence, receipt: completed.append(task_id),
+            finalize_session=lambda result: None,
         )
         self.assertEqual(result.status, "failed")
         self.assertEqual(completed, ["TASK-0001"])
@@ -95,8 +104,12 @@ class ParallelBacklogExecutionScenarioTests(unittest.TestCase):
             execute_task=lambda assignment, remaining: TaskRun(
                 assignment.task_id, "done", 1
             ),
+            finalize_task=lambda run, assignment: FinalizationRun(
+                "completed", f"receipt-{run.task_id}"
+            ),
             commit_task=lambda run, assignment: "commit",
             integrate_task=lambda run, assignment, commit: commit,
-            complete_task=lambda task_id, evidence: None,
+            complete_task=lambda task_id, evidence, receipt: None,
+            finalize_session=lambda result: None,
         )
         self.assertEqual(result.status, "failed")

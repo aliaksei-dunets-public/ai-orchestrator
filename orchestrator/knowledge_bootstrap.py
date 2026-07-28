@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +31,48 @@ class GraphUpdate:
     edges_content: str
     effective_node_ids: tuple[str, ...]
     effective_edge_ids: tuple[str, ...]
+
+
+def apply_graph_update(
+    nodes_path: Path | str,
+    edges_path: Path | str,
+    update: GraphUpdate,
+) -> None:
+    """Apply a prepared two-file graph update with rollback on replacement failure."""
+    targets = (
+        (Path(nodes_path), update.nodes_content),
+        (Path(edges_path), update.edges_content),
+    )
+    originals: dict[Path, bytes | None] = {
+        path: path.read_bytes() if path.exists() else None for path, _ in targets
+    }
+    temporary: dict[Path, Path] = {}
+    replaced: list[Path] = []
+    try:
+        for path, content in targets:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            candidate = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+            with candidate.open("w", encoding="utf-8", newline="\n") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temporary[path] = candidate
+        for path, _ in targets:
+            os.replace(temporary[path], path)
+            replaced.append(path)
+    except Exception:
+        for path in reversed(replaced):
+            original = originals[path]
+            if original is None:
+                path.unlink(missing_ok=True)
+            else:
+                rollback = path.with_name(f"{path.name}.{os.getpid()}.rollback")
+                rollback.write_bytes(original)
+                os.replace(rollback, path)
+        raise
+    finally:
+        for candidate in temporary.values():
+            candidate.unlink(missing_ok=True)
 
 
 def _jsonl(records: list[dict[str, object]]) -> str:

@@ -1,1 +1,1 @@
-
+{"enabled":true,"id":"task-finalization-coordinator-implements-receipt","relation":"implements","schema_version":1,"source":"docs/adr/0004-task-finalization-receipts.md","source_digest":"5d6d8455796ee8fbdf8bcfce584976d434294fbc8d1c9721a2fca5cf22868324","source_node":"task-finalization-coordinator","target_node":"task-finalization-receipt-contract"}

@@ -14,10 +14,13 @@
 
 ## Task Manager
 
-- Входы: валидированный Task Context или допустимая status transition.
-- Выходы: локальный Task Registry result, ссылка `contexts/<TASK-ID>.md` на Task Context и canonical checkpoint path `checkpoints/<TASK-ID>.checkpoint.lock`.
+- Входы: валидированный Task Context, допустимая status transition и для
+  `complete` — schema-valid finalization receipt.
+- Выходы: локальный Task Registry result, ссылка `contexts/<TASK-ID>.md` на Task Context, canonical checkpoint path `checkpoints/<TASK-ID>.checkpoint.lock` и digest успешной финализации в terminal record.
 - Владеет: вычислением безопасных путей Task Context/checkpoint и удалением checkpoint после перехода в `done`; `cancelled` checkpoint сохраняет.
-- Не владеет: planning, implementation, reviews, commits и documentation.
+- Не владеет: planning, implementation, semantic reviews, commits, documentation,
+  graph curation или memory content. Он проверяет только receipt schema,
+  hash/freshness binding и `ready_for_completion`.
 - В `serial` режиме сохраняет один active slot. В `isolated_parallel` хранит
   run/sequence/workspace/branch/base/commit assignment и допускает несколько
   active задач только при уникальных workspace и соблюдении `max_workers`.
@@ -38,10 +41,28 @@
 ## Task Execution Workflow
 
 - Входы: claimed Task Context, capabilities и limits.
-- Выходы: Execution Record, bounded test/review evidence, optional numeric telemetry и запрос status transition.
+- Выходы: Execution Record, bounded test/review evidence, optional numeric
+  telemetry, Task Finalization receipt и запрос status transition.
 - Не владеет: правила переходов Task Manager.
 - Проверяет, что Task Context и checkpoint находятся внутри назначенного
   workspace; silent workspace switching запрещён.
+
+## Task Finalization Coordinator
+
+- Входы: task ID, текущие context revision/baseline hash, completed checkpoint,
+  normalized changed paths, documentation dispositions, Knowledge Curator
+  proposal и memory candidates.
+- Выходы: versioned receipt с digest binding, status/evidence каждого gate,
+  canonical store digests, promoted memory IDs и pending approval hashes.
+- Владеет: порядком documentation → knowledge → memory, deterministic
+  validation, policy-safe canonical apply и idempotent recovery.
+- Не владеет: качеством semantic content. Documentation Manager, Knowledge
+  Curator и Memory Manager остаются владельцами своих решений.
+- Пустой graph proposal и пустой список memory candidates являются допустимыми
+  явными no-op. Отсутствие решения или disposition не является no-op.
+- Receipt хранится как ignored operational state в
+  `.orchestrator/tasks/finalization/<TASK-ID>.json`; Task Registry сохраняет
+  только его digest и changed-paths digest.
 
 ## Telemetry
 
@@ -90,6 +111,11 @@
   без embeddings или внешней базы данных.
 - Не превращает observation в instruction автоматически и не использует graph
   как второй источник истины.
+- Task finalization автоматически продвигает только authoritative
+  observation/decision/lesson proposals. Instruction и non-authoritative source
+  требуют hash-bound approval; отсутствие решения возвращает `waiting_user`.
+- Session Reporter выполняется один раз после остановки execution/backlog loop.
+  Его candidates остаются proposals и не меняют уже установленный task status.
 
 `knowledge-curator` дополнительно владеет read-only source inventory, onboarding
 `knowledge_graph` proposal, provenance/ontology validation, canonical graph merge

@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from orchestrator.task_manager import TaskManager, TaskManagerError, validate_registry
+from tests.finalization_support import write_ready_receipt
 
 
 DRAFT = """---
@@ -100,10 +101,19 @@ class TaskManagerTests(unittest.TestCase):
         self.manager.claim_next()
         waiting = self.manager.set_status(task["id"], "waiting_user", "Need decision")
         self.assertEqual(waiting["status"], "waiting_user")
+        with self.assertRaises(TaskManagerError) as invalid:
+            self.manager.complete(task["id"])
+        self.assertEqual(invalid.exception.code, "INVALID_TRANSITION")
         self.manager.resume(task["id"])
         with self.assertRaises(TaskManagerError):
             self.manager.set_status(task["id"], "done")
-        done = self.manager.complete(task["id"])
+        with self.assertRaises(TaskManagerError) as missing:
+            self.manager.complete(task["id"])
+        self.assertEqual(missing.exception.code, "FINALIZATION_REQUIRED")
+        done = self.manager.complete(
+            task["id"],
+            finalization_receipt=write_ready_receipt(self.tasks, task["id"]),
+        )
         self.assertEqual(done["status"], "done")
         with self.assertRaises(TaskManagerError):
             self.manager.resume(task["id"])
@@ -113,7 +123,10 @@ class TaskManagerTests(unittest.TestCase):
         self.manager.claim_next()
         first_checkpoint = self.manager.checkpoint_path(first["id"])
         first_checkpoint.write_text("checkpoint", encoding="utf-8")
-        self.manager.complete(first["id"])
+        self.manager.complete(
+            first["id"],
+            finalization_receipt=write_ready_receipt(self.tasks, first["id"]),
+        )
         self.assertFalse(first_checkpoint.exists())
 
         second_draft = self.create_draft("cancel.md")
@@ -129,7 +142,7 @@ class TaskManagerTests(unittest.TestCase):
         task = self.manager.register(self.create_draft())
         self.manager.claim_next()
         checkpoint = self.manager.checkpoint_path(task["id"])
-        checkpoint.write_text("checkpoint", encoding="utf-8")
+        receipt = write_ready_receipt(self.tasks, task["id"])
         original_unlink = Path.unlink
 
         def failing_unlink(path: Path, *args: object, **kwargs: object) -> None:
@@ -138,7 +151,10 @@ class TaskManagerTests(unittest.TestCase):
             original_unlink(path, *args, **kwargs)
 
         with mock.patch.object(Path, "unlink", failing_unlink):
-            result = self.manager.complete(task["id"])
+            result = self.manager.complete(
+                task["id"],
+                finalization_receipt=receipt,
+            )
         self.assertEqual(result["status"], "done")
         self.assertIn("cleanup_warning", result)
         self.assertEqual(self.manager.show(task["id"])["status"], "done")
@@ -147,12 +163,26 @@ class TaskManagerTests(unittest.TestCase):
     def test_complete_reports_checkpoint_path_failure_after_status_persists(self) -> None:
         task = self.manager.register(self.create_draft())
         self.manager.claim_next()
+        checkpoint = self.manager.checkpoint_path(task["id"])
+        receipt = write_ready_receipt(self.tasks, task["id"])
+        calls = 0
+
+        def checkpoint_path(task_id: str) -> Path:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return checkpoint
+            raise TaskManagerError("GENERAL_ERROR", "unsafe checkpoint directory")
+
         with mock.patch.object(
             self.manager,
             "checkpoint_path",
-            side_effect=TaskManagerError("GENERAL_ERROR", "unsafe checkpoint directory"),
+            side_effect=checkpoint_path,
         ):
-            result = self.manager.complete(task["id"])
+            result = self.manager.complete(
+                task["id"],
+                finalization_receipt=receipt,
+            )
         self.assertEqual(result["status"], "done")
         self.assertIn("cleanup_warning", result)
         self.assertEqual(self.manager.show(task["id"])["status"], "done")

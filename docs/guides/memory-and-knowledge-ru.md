@@ -146,13 +146,18 @@ claim task
 → task/code review по режиму и риску
 → security review
 → documentation
-→ session report
-→ memory candidates
+→ Task Finalization:
+    documentation update или explicit N/A
+    Knowledge Curator proposal
+    memory proposals/promotions/approvals
+→ finalization receipt
 → commit
 → complete
+→ после остановки loop: session report
+→ approval-gated session memory proposals
 ```
 
-Каждый шаг имеет ограниченное число попыток и ограниченное evidence. Checkpoint используется для восстановления выполнения, но является operational state и не попадает в Git.
+Каждый шаг имеет ограниченное число попыток и ограниченное evidence. Checkpoint и finalization receipt используются для восстановления выполнения, но являются operational state и не попадают в Git. `complete` проверяет, что receipt связан с текущими task ID, context revision/baseline hash, completed checkpoint и changed paths.
 
 Если во время работы меняется scope, требуется решение пользователя или появляется security-impact, workflow останавливается в `waiting_user` либо `blocked`. Он не принимает существенное решение молча.
 
@@ -202,7 +207,7 @@ Promotion без дополнительного approval разрешён тол
 - завершённый Task Context;
 - approved review.
 
-Пользовательская инструкция, обычный Session Report и любой другой non-authoritative source требуют explicit approval. Тип `instruction` всегда требует approval.
+Пользовательская инструкция, обычный Session Report и любой другой non-authoritative source требуют explicit approval. Тип `instruction` всегда требует approval. Если approval ещё нет, Task Finalization сохраняет proposal и переводит выполнение в `waiting_user`; commit и `done` не выполняются. Явный reject считается завершённым disposition без promotion.
 
 Approval привязывается к:
 

@@ -15,3 +15,10 @@ description: Execute an approved Task Context plan step by step with a freshness
 7. Record non-empty evidence for every attempt and resume only from the last completed checkpoint.
 8. Treat any baseline or scope change as `waiting_user`; never rewrite the approved baseline during execution.
 9. Return `blocked` when progress requires unavailable authority or tooling.
+10. After implementation, tests, reviews and security, invoke Task Finalization
+    before commit. Supply normalized changed paths, complete documentation
+    dispositions, an explicit Knowledge Curator proposal and secret-safe memory
+    candidates.
+11. Persist the schema-valid receipt under the task-owned operational
+    finalization directory. Do not call `complete` when the receipt is missing,
+    stale, not ready or contains pending approvals.

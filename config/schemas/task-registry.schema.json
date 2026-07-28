@@ -80,6 +80,25 @@
                 "pattern": "^[0-9a-f]{40}$"
               }
             }
+          },
+          "finalization": {
+            "type": "object",
+            "required": ["receipt_hash", "changed_paths_digest", "completed_at"],
+            "additionalProperties": false,
+            "properties": {
+              "receipt_hash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "changed_paths_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
           }
         }
       }

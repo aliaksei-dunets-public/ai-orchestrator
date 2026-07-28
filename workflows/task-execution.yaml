@@ -15,6 +15,7 @@ mandatory_steps:
   - implement
   - run-tests
   - security-review
+  - finalize-task
 conditional_steps:
   design-tests: mode != quick or test_design_required
   task-review: mode != quick
@@ -22,6 +23,11 @@ conditional_steps:
   independent-review: mode == deep or security_sensitive or risk in [high, critical]
   approvals: approval_required
   documentation: documentation_impact
+finalization:
+  receipt: required
+  binds: [task-id, context-revision, baseline-hash, checkpoint, changed-paths]
+  gates: [documentation, knowledge, memory]
+  pending-approval: waiting_user
 security_depth:
   deterministic: mode != deep and not security_sensitive and risk in [low, medium]
   semantic: mode == deep or security_sensitive or risk in [high, critical]

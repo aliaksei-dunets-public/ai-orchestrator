@@ -288,6 +288,51 @@ def _task_workspace_checks(root: Path) -> Iterable[Finding]:
         )
 
 
+def _task_finalization_checks(root: Path) -> Iterable[Finding]:
+    receipts = root / ".orchestrator" / "tasks" / "finalization"
+    if not receipts.exists():
+        return
+    try:
+        from .finalization import load_receipt
+
+        for path in sorted(receipts.glob("TASK-*.json")):
+            identifier = path.name.removeprefix("TASK-").removesuffix(".json")
+            if len(identifier) < 4 or not identifier.isdigit():
+                continue
+            try:
+                receipt = load_receipt(path)
+            except Exception as exc:
+                yield _finding(
+                    "TASK_FINALIZATION_INVALID",
+                    "ERROR",
+                    f"Finalization receipt is invalid: {exc}",
+                    path,
+                )
+                continue
+            if receipt.pending_approval_hashes:
+                yield _finding(
+                    "TASK_FINALIZATION_PENDING",
+                    "INFO",
+                    f"{receipt.task_id} is waiting for "
+                    f"{len(receipt.pending_approval_hashes)} memory approval(s)",
+                    path,
+                )
+            elif receipt.ready_for_completion:
+                yield _finding(
+                    "TASK_FINALIZATION_READY",
+                    "INFO",
+                    f"{receipt.task_id} has completion-ready finalization evidence",
+                    path,
+                )
+    except Exception as exc:
+        yield _finding(
+            "TASK_FINALIZATION_CHECK_FAILED",
+            "ERROR",
+            f"Task finalization validation failed: {exc}",
+            receipts,
+        )
+
+
 def _jsonl_records(path: Path) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -496,6 +541,7 @@ def run_health_checks(root: Path | str = ".", *, scope: str = "all") -> HealthRe
     elif scope == "tasks":
         findings.extend(_task_checks(project_root))
         findings.extend(_task_workspace_checks(project_root))
+        findings.extend(_task_finalization_checks(project_root))
     else:
         findings.extend(_required_structure(project_root))
         findings.extend(_schema_checks(project_root))
@@ -503,6 +549,7 @@ def run_health_checks(root: Path | str = ".", *, scope: str = "all") -> HealthRe
         findings.extend(_skill_projection_checks(project_root))
         findings.extend(_task_checks(project_root))
         findings.extend(_task_workspace_checks(project_root))
+        findings.extend(_task_finalization_checks(project_root))
         findings.extend(_memory_knowledge_checks(project_root))
     findings.sort(key=lambda item: (SEVERITY_ORDER[item.severity], item.code, item.path or "", item.message))
     return HealthReport(tuple(findings))

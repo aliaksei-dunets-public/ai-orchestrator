@@ -16,3 +16,7 @@ description: Curate append-only project observations, decisions, and lessons wit
    rather than deleting history.
 6. Retrieve only `effective_entries`; proposals and disabled/superseded records are not
    agent context.
+7. During task finalization, turn confirmed task evidence into idempotent
+   proposals. Auto-promote only authoritative observation, decision and lesson
+   candidates; return pending proposal hashes for every required approval and
+   block completion until each proposal is explicitly approved or rejected.

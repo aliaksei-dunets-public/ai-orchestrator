@@ -361,9 +361,13 @@ blocked → cancelled
 
 `done` и `cancelled` терминальны в первой версии.
 
-Переход `waiting_user → done` запрещён: после пользовательского решения оркестратор возвращает задачу в `in_progress`, завершает документацию, память, commit и только затем ставит `done`.
+Переход `waiting_user → done` запрещён: после пользовательского решения оркестратор возвращает задачу в `in_progress`, завершает Task Finalization, commit и только затем ставит `done`.
 
-Task Manager проверяет только допустимость перехода и структурную целостность. Перед вызовом `complete` execution workflow обязан подтвердить выполнение acceptance criteria и обязательных gates в Execution Record; Task Manager не подменяет semantic review.
+Task Manager проверяет допустимость перехода, структурную целостность и
+completion-ready `FinalizationReceipt`. Receipt обязан быть связан с task ID,
+текущими context revision/baseline hash, completed checkpoint и changed paths.
+Task Manager не подменяет semantic review и не создаёт documentation,
+knowledge или memory content.
 
 ## 8. Правило одной активной задачи
 
@@ -421,7 +425,8 @@ python .orchestrator/bin/task.py assignment TASK-0003 --json
 python .orchestrator/bin/task.py status TASK-0003 waiting_user --note "..."
 python .orchestrator/bin/task.py block TASK-0003 --note "..."
 python .orchestrator/bin/task.py resume TASK-0003
-python .orchestrator/bin/task.py complete TASK-0003 --commit-evidence <sha> --repository-root .
+python -m orchestrator.task_cli finalize TASK-0003 --request finalization.json --repository-root .
+python -m orchestrator.task_cli complete TASK-0003 --finalization-receipt .orchestrator/tasks/finalization/TASK-0003.json --commit-evidence <sha> --repository-root .
 python .orchestrator/bin/task.py cleanup TASK-0003 --outcome completed --repository-root .
 python .orchestrator/bin/task.py cancel TASK-0003
 python .orchestrator/bin/task.py validate --json
@@ -429,7 +434,7 @@ python .orchestrator/bin/task.py validate --json
 
 `claim-next` в рамках одного CLI process выбирает первую `backlog`-задачу, проверяет отсутствие активной задачи, переводит её в `in_progress`, crash-safe сохраняет registry и возвращает путь к Task Context. Одновременный запуск двух изменяющих команд находится вне контракта первой версии.
 
-`register` берёт title из проверенного frontmatter черновика. `status` изменяет только нетерминальные статусы с тем же валидатором переходов; `block`, `resume`, `complete` и `cancel` — безопасные специализированные команды, причём только `complete` и `cancel` могут устанавливать терминальный статус. `resume` переводит `waiting_user` или `blocked` в `in_progress`; для возврата заблокированной задачи в очередь используется `status TASK-ID backlog`.
+`register` берёт title из проверенного frontmatter черновика. `status` изменяет только нетерминальные статусы с тем же валидатором переходов; `block`, `resume`, `complete` и `cancel` — безопасные специализированные команды, причём только `complete` и `cancel` могут устанавливать терминальный статус. `finalize` принимает versioned request, запускает documentation/knowledge/memory gates и атомарно пишет operational receipt. `complete` требует receipt с совпадающим task filename и отклоняет missing, stale, malformed или pending evidence кодом `FINALIZATION_REQUIRED`. `resume` переводит `waiting_user` или `blocked` в `in_progress`; для возврата заблокированной задачи в очередь используется `status TASK-ID backlog`.
 
 ### 9.2. Машинный вывод
 
@@ -501,7 +506,11 @@ claim-next
 → security review
 → user review when required
 → documentation
-→ memory and knowledge
+→ task finalization:
+    documentation update-or-N/A
+    explicit knowledge proposal and validated apply
+    memory proposals, promotion or approval disposition
+→ finalization receipt
 
 До анализа и до implementation каждый quick/standard/deep route получает fresh
 bounded context pack из effective Project Memory и Knowledge Graph. Empty или
@@ -513,16 +522,14 @@ baseline и не заменяет canonical source evidence.
 preview, hash-bound approval, apply и rollback. Graph proposal не записывается
 напрямую skill-ом и может быть пустым.
 
-После остановки task execution Session Reporter может сформировать secret-safe
-memory candidates. Эти candidates остаются proposals и проходят source-authority
-и approval gates; workflow не записывает их непосредственно в canonical memory.
 → commit
 → complete
+→ after execution/backlog stop: session report and session memory proposals
 ```
 
-Freshness, implementation, tests и Security Review обязательны для каждого маршрута. `quick` low/medium-risk task не запускает semantic Task Review и Code Review, если нет security-sensitive или другого escalation signal; `standard` запускает оба review, а `deep` и high/critical-risk task требуют независимого review. Approval и documentation добавляются только при соответствующем impact.
+Freshness, implementation, tests, Security Review и Task Finalization обязательны для каждого маршрута. `quick` low/medium-risk task не запускает semantic Task Review и Code Review, если нет security-sensitive или другого escalation signal; `standard` запускает оба review, а `deep` и high/critical-risk task требуют независимого review. Approval и semantic documentation update добавляются только при соответствующем impact, но coordinator всегда требует explicit disposition/proposal для всех трёх finalization gates.
 
-При замечании review выполнение возвращается к реализации. При необходимости решения пользователя ставится `waiting_user`. При невозможности продолжать — `blocked` с причиной. Execution evidence каждой попытки ограничивается по размеру, а число попыток шага имеет жёсткий верхний предел; полный диагностический output хранится отдельным artifact с source pointer, а checkpoint сохраняет компактные head/tail, длину и digest. Execution Record финализируется до commit; после успешного commit `complete` атомарно переводит задачу в `done`, затем удаляет её checkpoint. Ошибка очистки возвращается как `cleanup_warning` и не откатывает терминальный статус. `cancel` сохраняет checkpoint для диагностики.
+При замечании review выполнение возвращается к реализации. При необходимости решения пользователя, включая memory approval, ставится `waiting_user`. При невозможности продолжать — `blocked` с причиной. Execution evidence каждой попытки ограничивается по размеру, а число попыток шага имеет жёсткий верхний предел; полный диагностический output хранится отдельным artifact с source pointer, а checkpoint сохраняет компактные head/tail, длину и digest. Execution Record и Task Finalization завершаются до commit; после успешного commit `complete` проверяет receipt, атомарно переводит задачу в `done`, сохраняет receipt digest и удаляет checkpoint. Ошибка очистки возвращается как `cleanup_warning` и не откатывает терминальный статус. `cancel` сохраняет checkpoint для диагностики.
 
 Числовая execution telemetry является локальным operational state и не является источником статуса, определения задачи или review evidence. Она не хранит prompt/evidence payload и может отсутствовать, если platform provider не сообщает usage counters.
 
@@ -534,8 +541,14 @@ while limit not reached:
     if no task: stop
     result = execute task workflow
     if result is waiting_user or blocked: stop
-    if result is done: continue
+    finalization = finalize task
+    if finalization is waiting_user, blocked or failed: stop before commit
+    commit task
+    complete task with receipt
     stop with workflow error
+after loop stop:
+    form session report
+    propose session memory candidates
 ```
 
 Цикл обязан иметь:

@@ -284,7 +284,7 @@ orchestrator telemetry --path <events.jsonl>
 
 Отсутствующие provider counters остаются неизвестными и не подменяются оценками. Ошибка telemetry sink отражается в execution result, но не отменяет успешно сохранённый checkpoint.
 
-Execution checkpoint хранится в локальном каталоге `.orchestrator/tasks/checkpoints/` под именем `<TASK-ID>.checkpoint.lock` и исключается из Git. Implementation Runner получает этот путь через Task Manager. Переход в `done` удаляет checkpoint после успешной записи статуса; `cancelled` сохраняет его для диагностики.
+Execution checkpoint хранится в локальном каталоге `.orchestrator/tasks/checkpoints/` под именем `<TASK-ID>.checkpoint.lock` и исключается из Git. Implementation Runner получает этот путь через Task Manager. После завершения execution gates Task Finalization Coordinator связывает completed checkpoint, Task Context revision/baseline hash и changed paths с versioned receipt. `complete` принимает только completion-ready receipt из `.orchestrator/tasks/finalization/`, сохраняет его digest и затем удаляет checkpoint; `cancelled` сохраняет checkpoint для диагностики.
 
 Начиная с workspace-aware execution оркестратор поддерживает `serial` и
 `isolated_parallel`. Первый остаётся default. Во втором первая задача run
@@ -316,15 +316,15 @@ User request
 → Security Review
 → User Review when required
 → Documentation
-→ Memory and Knowledge
+→ Task Finalization (Documentation + Knowledge + Memory)
 → Commit
 → Done
 → Session Report (на уровне сессии)
 ```
 
-Freshness validation, implementation, tests и Security Review обязательны во всех маршрутах. Quick low/medium-risk task использует детерминированный security fast path и не запускает semantic Task/Code Review; finding, sensitive change или high/critical risk повышает глубину проверки. Standard включает Task Review и Code Review, а deep/high-risk — независимый review. Approval и documentation steps добавляются только при соответствующем impact.
+Freshness validation, implementation, tests, Security Review и Task Finalization обязательны во всех маршрутах. Quick low/medium-risk task использует детерминированный security fast path и не запускает semantic Task/Code Review; finding, sensitive change или high/critical risk повышает глубину проверки. Standard включает Task Review и Code Review, а deep/high-risk — независимый review. Approval и semantic documentation update добавляются только при соответствующем impact, но finalization всегда требует явный documentation disposition, Knowledge Curator proposal и memory disposition.
 
-Security Review выполняется до передачи изменений пользователю. Статус `done` устанавливается Task Manager только по команде execution workflow после завершения всех выбранных обязательных gates; Task Manager не интерпретирует их содержание. Session Report формируется после остановки execution/backlog loop и не является условием перехода отдельной задачи в `done`.
+Security Review выполняется до передачи изменений пользователю. Статус `done` устанавливается Task Manager только после проверки receipt schema, task/context/checkpoint/changed-path binding, отсутствия pending approvals и `ready_for_completion=true`; Task Manager не интерпретирует semantic содержание gates. Missing, malformed, stale или unsuccessful receipt отклоняется. Session Report формируется один раз после остановки execution/backlog loop, создаёт только approval-gated session proposals и не является условием перехода отдельной задачи в `done`.
 
 ## 10. Память и знания
 
@@ -332,6 +332,13 @@ Security Review выполняется до передачи изменений 
 - **Project Memory** хранит подтверждённые наблюдения, решения и уроки между сессиями.
 - **Knowledge Graph** содержит структурированные сущности и связи с источниками и историей supersede.
 - **Orchestrator Memory** относится только к развитию самого оркестратора.
+
+Во время task finalization Knowledge Curator всегда возвращает explicit
+schema-version-1 proposal; пустые `nodes`/`edges` являются валидным no-op.
+Memory candidates создаются idempotently. Authoritative observation, decision и
+lesson могут быть продвинуты автоматически; instruction и non-authoritative
+source требуют approval, связанный с proposal/source hashes. До решения задача
+остаётся `waiting_user`.
 
 Наблюдение не становится постоянной инструкцией автоматически.
 

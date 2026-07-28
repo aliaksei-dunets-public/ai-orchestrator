@@ -74,3 +74,7 @@ later Knowledge Graph maintenance task.
 5. Rebuild indexes atomically from effective canonical JSONL with
    `orchestrator.knowledge.rebuild_indexes`.
 6. Verify deterministic byte-for-byte rebuild output; never edit or commit indexes.
+7. During task finalization, always return an explicit schema-version-1 proposal.
+   Use an empty `nodes`/`edges` proposal when the task changed no graph-relevant
+   project facts. Apply non-empty maintenance proposals only through Core
+   validation and atomic graph update helpers.

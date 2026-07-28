@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-orchestrator/task-finalization.schema.json",
+  "title": "Task Finalization Receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "context_revision",
+    "baseline_hash",
+    "checkpoint_digest",
+    "changed_paths_digest",
+    "documentation_status",
+    "documentation_evidence",
+    "knowledge_status",
+    "knowledge_store_digest",
+    "memory_status",
+    "memory_proposal_hashes",
+    "memory_entry_ids",
+    "pending_approval_hashes",
+    "ready_for_completion",
+    "receipt_hash"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "task_id": {"type": "string", "pattern": "^TASK-[0-9]{4,}$"},
+    "context_revision": {"type": "integer", "minimum": 1},
+    "baseline_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "checkpoint_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "changed_paths_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "documentation_status": {"const": "completed"},
+    "documentation_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["document", "owner", "status", "reason", "evidence_ref"],
+        "additionalProperties": false,
+        "properties": {
+          "document": {"type": "string", "minLength": 1},
+          "owner": {"type": "string", "minLength": 1},
+          "status": {"enum": ["updated", "not_applicable"]},
+          "reason": {"type": "string"},
+          "evidence_ref": {"type": "string"}
+        }
+      }
+    },
+    "knowledge_status": {"enum": ["empty", "applied"]},
+    "knowledge_store_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "memory_status": {"enum": ["completed", "waiting_user"]},
+    "memory_proposal_hashes": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+      "uniqueItems": true
+    },
+    "memory_entry_ids": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^MEM-[0-9]{4,}$"},
+      "uniqueItems": true
+    },
+    "pending_approval_hashes": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+      "uniqueItems": true
+    },
+    "ready_for_completion": {"type": "boolean"},
+    "receipt_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

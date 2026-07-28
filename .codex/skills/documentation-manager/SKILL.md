@@ -10,3 +10,6 @@ description: Determine documentation impact from changed contracts, update only 
 3. Modify only canonical, hand-written documents owned by `documentation-manager`.
 4. Regenerate generator-owned documents through their owner rather than editing them manually.
 5. Validate local links with `orchestrator.documentation.broken_local_links`; block completion on broken links.
+6. Return exactly one `updated` or `not_applicable` disposition for every mapped
+   canonical document. An update must appear in changed paths; non-applicability
+   requires a concrete reason. Pass these dispositions to Task Finalization.

@@ -8,6 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from .finalization import (
+    FinalizationError,
+    RECEIPT_DIRNAME,
+    load_receipt,
+    verify_completion_receipt,
+)
 from .registry_lock import RegistryLock, RegistryLockError
 from .worktree_manager import (
     COMMIT_RE,
@@ -44,6 +50,7 @@ EXIT_CODES = {
     "INVALID_EXECUTION_MODE": 7,
     "WORKSPACE_ERROR": 8,
     "REGISTRY_LOCKED": 9,
+    "FINALIZATION_REQUIRED": 10,
 }
 
 
@@ -207,6 +214,11 @@ def validate_registry(tasks_root: Path | str) -> list[RegistryIssue]:
         assignment = task.get("assignment")
         if assignment is not None:
             issues.extend(_validate_assignment(assignment, task_id, registry_path))
+        finalization = task.get("finalization")
+        if finalization is not None:
+            issues.extend(
+                _validate_finalization(finalization, task_id, status, registry_path)
+            )
     if len(active_tasks) > 1:
         assignments = [task.get("assignment") for task in active_tasks]
         if not all(
@@ -264,6 +276,65 @@ def validate_registry(tasks_root: Path | str) -> list[RegistryIssue]:
         for context in contexts_root.glob("TASK-*.md"):
             if context.resolve() not in referenced:
                 issues.append(RegistryIssue("ORPHAN_CONTEXT", "ERROR", "Context is not registered", context))
+    return issues
+
+
+def _validate_finalization(
+    finalization: object,
+    task_id: object,
+    status: object,
+    registry_path: Path,
+) -> list[RegistryIssue]:
+    if not isinstance(finalization, dict):
+        return [
+            RegistryIssue(
+                "INVALID_FINALIZATION",
+                "ERROR",
+                f"Finalization for {task_id} must be an object",
+                registry_path,
+            )
+        ]
+    required = {"receipt_hash", "changed_paths_digest", "completed_at"}
+    if set(finalization) != required:
+        return [
+            RegistryIssue(
+                "INVALID_FINALIZATION",
+                "ERROR",
+                f"Finalization for {task_id} has invalid fields",
+                registry_path,
+            )
+        ]
+    issues: list[RegistryIssue] = []
+    for field in ("receipt_hash", "changed_paths_digest"):
+        value = finalization.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
+            issues.append(
+                RegistryIssue(
+                    "INVALID_FINALIZATION",
+                    "ERROR",
+                    f"Finalization for {task_id} has invalid {field}",
+                    registry_path,
+                )
+            )
+    completed_at = finalization.get("completed_at")
+    if not isinstance(completed_at, str) or not completed_at.strip():
+        issues.append(
+            RegistryIssue(
+                "INVALID_FINALIZATION",
+                "ERROR",
+                f"Finalization for {task_id} has invalid completed_at",
+                registry_path,
+            )
+        )
+    if status != "done":
+        issues.append(
+            RegistryIssue(
+                "INVALID_FINALIZATION",
+                "ERROR",
+                f"Only done tasks may contain finalization evidence: {task_id}",
+                registry_path,
+            )
+        )
     return issues
 
 
@@ -741,8 +812,46 @@ class TaskManager:
         *,
         commit_evidence: str | None = None,
         repository_root: Path | str | None = None,
+        finalization_receipt: Path | str | None = None,
     ) -> dict[str, Any]:
         task = self.show(task_id)
+        if "done" not in TRANSITIONS[task["status"]]:
+            raise TaskManagerError(
+                "INVALID_TRANSITION",
+                f"Transition from {task['status']} to done is not allowed",
+            )
+        if finalization_receipt is None:
+            raise TaskManagerError(
+                "FINALIZATION_REQUIRED",
+                "task completion requires a finalization receipt",
+            )
+        receipt_path = Path(finalization_receipt)
+        if not receipt_path.is_absolute():
+            receipt_path = self.tasks_root / receipt_path
+        receipt_path = receipt_path.resolve()
+        finalization_root = (self.tasks_root / RECEIPT_DIRNAME).resolve()
+        try:
+            receipt_path.relative_to(finalization_root)
+        except ValueError as exc:
+            raise TaskManagerError(
+                "FINALIZATION_REQUIRED",
+                "finalization receipt must be inside tasks/finalization",
+            ) from exc
+        if receipt_path.name != f"{task_id}.json":
+            raise TaskManagerError(
+                "FINALIZATION_REQUIRED",
+                "finalization receipt filename must match the task id",
+            )
+        try:
+            receipt = load_receipt(receipt_path)
+            verify_completion_receipt(
+                receipt,
+                task_id=task_id,
+                context_path=self.tasks_root / str(task["context"]),
+                checkpoint_path=self.checkpoint_path(task_id),
+            )
+        except (FinalizationError, OSError, UnicodeError) as exc:
+            raise TaskManagerError("FINALIZATION_REQUIRED", str(exc)) from exc
         assignment = task.get("assignment")
         if isinstance(assignment, dict):
             if not isinstance(commit_evidence, str) or not COMMIT_RE.fullmatch(commit_evidence):
@@ -757,25 +866,30 @@ class TaskManager:
                 manager.verify_commit(_worktree_assignment(task_id, assignment), commit_evidence)
             except WorktreeError as exc:
                 raise TaskManagerError("WORKSPACE_ERROR", str(exc)) from exc
-            try:
-                with RegistryLock(self.tasks_root):
-                    payload = self._read()
-                    current = next(item for item in payload["tasks"] if item["id"] == task_id)
-                    if "done" not in TRANSITIONS[current["status"]]:
-                        raise TaskManagerError(
-                            "INVALID_TRANSITION",
-                            f"Transition from {current['status']} to done is not allowed",
-                        )
+        try:
+            with RegistryLock(self.tasks_root):
+                payload = self._read()
+                current = next(item for item in payload["tasks"] if item["id"] == task_id)
+                if "done" not in TRANSITIONS[current["status"]]:
+                    raise TaskManagerError(
+                        "INVALID_TRANSITION",
+                        f"Transition from {current['status']} to done is not allowed",
+                    )
+                if isinstance(current.get("assignment"), dict):
                     current["assignment"]["commit_evidence"] = commit_evidence.lower()
-                    current["status"] = "done"
-                    current["status_note"] = None
-                    current["updated_at"] = _now()
-                    self._write(payload)
-                    result = dict(current)
-            except RegistryLockError as exc:
-                raise TaskManagerError("REGISTRY_LOCKED", str(exc)) from exc
-        else:
-            result = self.set_status(task_id, "done", terminal_command=True)
+                completed_at = _now()
+                current["finalization"] = {
+                    "receipt_hash": receipt.receipt_hash,
+                    "changed_paths_digest": receipt.changed_paths_digest,
+                    "completed_at": completed_at,
+                }
+                current["status"] = "done"
+                current["status_note"] = None
+                current["updated_at"] = completed_at
+                self._write(payload)
+                result = dict(current)
+        except RegistryLockError as exc:
+            raise TaskManagerError("REGISTRY_LOCKED", str(exc)) from exc
         try:
             checkpoint = self.checkpoint_path(task_id)
             checkpoint.unlink(missing_ok=True)

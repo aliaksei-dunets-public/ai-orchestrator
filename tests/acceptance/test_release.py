@@ -156,3 +156,12 @@ class ReleaseAcceptanceTests(unittest.TestCase):
             "docs/migrations/1.3-task-workspaces.md",
         ):
             self.assertTrue((ARTIFACT / relative).is_file(), relative)
+
+    def test_task_finalization_runtime_is_in_release_artifact(self) -> None:
+        for relative in (
+            "orchestrator/finalization.py",
+            "config/schemas/task-finalization.schema.json",
+            "docs/adr/0004-task-finalization-receipts.md",
+            "docs/migrations/1.4-task-finalization.md",
+        ):
+            self.assertTrue((ARTIFACT / relative).is_file(), relative)

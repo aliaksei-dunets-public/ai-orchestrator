@@ -41,6 +41,37 @@ class HealthTests(unittest.TestCase):
         self.assertEqual(report.exit_code(), 0)
         self.assertEqual(report.exit_code(strict=True), 1)
 
+    def test_invalid_finalization_receipt_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            receipts = root / ".orchestrator/tasks/finalization"
+            receipts.mkdir(parents=True)
+            (receipts / "TASK-0001.json").write_text("{broken", encoding="utf-8")
+            report = run_health_checks(root, scope="tasks")
+            self.assertTrue(
+                any(
+                    item.code == "TASK_FINALIZATION_INVALID"
+                    for item in report.findings
+                )
+            )
+
+    def test_finalization_request_is_not_validated_as_a_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            receipts = root / ".orchestrator/tasks/finalization"
+            receipts.mkdir(parents=True)
+            (receipts / "TASK-0001.request.json").write_text(
+                '{"changed_paths":[]}',
+                encoding="utf-8",
+            )
+            report = run_health_checks(root, scope="tasks")
+            self.assertFalse(
+                any(
+                    item.code == "TASK_FINALIZATION_INVALID"
+                    for item in report.findings
+                )
+            )
+
     def test_existing_codex_projection_drift_is_an_error(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

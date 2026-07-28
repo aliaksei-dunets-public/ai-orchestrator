@@ -11,6 +11,7 @@ from orchestrator.task_manager import (
     TaskManagerError,
     validate_registry,
 )
+from tests.finalization_support import write_ready_receipt
 from tests.unit.test_task_manager import DRAFT
 from tests.unit.test_worktree_manager import git
 
@@ -24,6 +25,7 @@ class ParallelTaskClaimScenarioTests(unittest.TestCase):
             ".orchestrator/tasks/tasks.json\n"
             ".orchestrator/tasks/*.tmp\n"
             ".orchestrator/tasks/checkpoints/\n"
+            ".orchestrator/tasks/finalization/\n"
             ".orchestrator/worktrees/\n",
             encoding="utf-8",
         )
@@ -68,6 +70,9 @@ class ParallelTaskClaimScenarioTests(unittest.TestCase):
                 first["id"],
                 commit_evidence=bootstrap_commit,
                 repository_root=root,
+                finalization_receipt=write_ready_receipt(
+                    manager.tasks_root, first["id"]
+                ),
             )
 
             second = manager.claim_next(settings, repository_root=root)
@@ -118,6 +123,9 @@ class ParallelTaskClaimScenarioTests(unittest.TestCase):
                     task["id"],
                     commit_evidence=commit,
                     repository_root=root,
+                    finalization_receipt=write_ready_receipt(
+                        manager.tasks_root, task["id"]
+                    ),
                 )
             self.assertEqual(completion.exception.code, "INVALID_TRANSITION")
             with self.assertRaises(TaskManagerError) as cleanup:

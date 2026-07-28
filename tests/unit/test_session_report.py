@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from orchestrator.session_report import (
+    finalize_session,
     redact,
     render_session_report,
     session_memory_candidates,
@@ -73,3 +74,31 @@ class SessionReportTests(unittest.TestCase):
             {"decision", "lesson", "observation"},
         )
         self.assertTrue(all(item["requires_approval"] for item in candidates))
+
+    def test_session_finalization_writes_idempotent_approval_gated_proposals(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            result = finalize_session(
+                root,
+                "reports/session.md",
+                {
+                    "changes": ["Added finalization"],
+                    "validation": ["Tests passed"],
+                    "decisions": ["Require receipts"],
+                },
+            )
+            repeated = finalize_session(
+                root,
+                "reports/session.md",
+                {
+                    "changes": ["Added finalization"],
+                    "validation": ["Tests passed"],
+                    "decisions": ["Require receipts"],
+                },
+            )
+            self.assertEqual(result.proposal_hashes, repeated.proposal_hashes)
+            self.assertEqual(result.report_path, "reports/session.md")
+            proposals = (
+                root / ".orchestrator/memory/proposals/proposals.jsonl"
+            ).read_text(encoding="utf-8")
+            self.assertEqual(len(proposals.splitlines()), 3)

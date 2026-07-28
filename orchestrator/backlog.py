@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, Literal
 
 
@@ -34,6 +34,7 @@ class BacklogResult:
     tasks: tuple[TaskRun, ...]
     steps: int
     reason: str
+    post_loop_errors: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -43,38 +44,108 @@ class AssignedTask:
     workspace_path: str
 
 
+@dataclass(frozen=True)
+class FinalizationRun:
+    status: Literal["completed", "waiting_user", "blocked", "failed"]
+    receipt_evidence: str | None = None
+    reason: str | None = None
+
+
 def run_backlog(
     *,
     limits: BacklogLimits,
     claim_next: Callable[[], str | None],
     execute_task: Callable[[str, int], TaskRun],
+    finalize_task: Callable[[TaskRun], FinalizationRun],
     commit_task: Callable[[TaskRun], str],
-    complete_task: Callable[[str, str], None],
+    complete_task: Callable[[str, str, str], None],
+    finalize_session: Callable[[BacklogResult], None],
     monotonic: Callable[[], float] = time.monotonic,
 ) -> BacklogResult:
     started = monotonic()
     runs: list[TaskRun] = []
     steps = 0
+
+    def finish(result: BacklogResult) -> BacklogResult:
+        try:
+            finalize_session(result)
+            return result
+        except Exception as exc:
+            return replace(
+                result,
+                post_loop_errors=(f"{type(exc).__name__}: {exc}",),
+            )
+
     while len(runs) < limits.max_tasks:
         if monotonic() - started >= limits.max_seconds or steps >= limits.max_steps:
-            return BacklogResult("limit", tuple(runs), steps, "time or step budget reached")
+            return finish(
+                BacklogResult("limit", tuple(runs), steps, "time or step budget reached")
+            )
         task_id = claim_next()
         if task_id is None:
             status: LoopStatus = "empty" if not runs else "completed"
-            return BacklogResult(status, tuple(runs), steps, "backlog is empty")
+            return finish(
+                BacklogResult(status, tuple(runs), steps, "backlog is empty")
+            )
         remaining = limits.max_steps - steps
         run = execute_task(task_id, remaining)
         if run.steps < 0 or run.steps > remaining:
-            return BacklogResult("failed", tuple(runs), steps, "executor exceeded step budget")
+            return finish(
+                BacklogResult(
+                    "failed", tuple(runs), steps, "executor exceeded step budget"
+                )
+            )
         steps += run.steps
         runs.append(run)
         if run.status in {"waiting_user", "blocked", "failed"}:
-            return BacklogResult(run.status, tuple(runs), steps, f"{task_id}: {run.status}")
+            return finish(
+                BacklogResult(
+                    run.status, tuple(runs), steps, f"{task_id}: {run.status}"
+                )
+            )
+        try:
+            finalization = finalize_task(run)
+        except Exception as exc:
+            return finish(
+                BacklogResult(
+                    "failed",
+                    tuple(runs),
+                    steps,
+                    f"{task_id}: finalization error: {type(exc).__name__}: {exc}",
+                )
+            )
+        if finalization.status != "completed":
+            return finish(
+                BacklogResult(
+                    finalization.status,
+                    tuple(runs),
+                    steps,
+                    finalization.reason
+                    or f"{task_id}: finalization {finalization.status}",
+                )
+            )
+        receipt = (finalization.receipt_evidence or "").strip()
+        if not receipt:
+            return finish(
+                BacklogResult(
+                    "failed",
+                    tuple(runs),
+                    steps,
+                    f"{task_id}: missing finalization receipt",
+                )
+            )
         commit_evidence = commit_task(run)
         if not commit_evidence.strip():
-            return BacklogResult("failed", tuple(runs), steps, f"{task_id}: missing commit evidence")
-        complete_task(task_id, commit_evidence)
-    return BacklogResult("limit", tuple(runs), steps, "task budget reached")
+            return finish(
+                BacklogResult(
+                    "failed",
+                    tuple(runs),
+                    steps,
+                    f"{task_id}: missing commit evidence",
+                )
+            )
+        complete_task(task_id, commit_evidence, receipt)
+    return finish(BacklogResult("limit", tuple(runs), steps, "task budget reached"))
 
 
 def run_isolated_backlog(
@@ -83,9 +154,11 @@ def run_isolated_backlog(
     max_workers: int,
     claim_next: Callable[[], AssignedTask | None],
     execute_task: Callable[[AssignedTask, int], TaskRun],
+    finalize_task: Callable[[TaskRun, AssignedTask], FinalizationRun],
     commit_task: Callable[[TaskRun, AssignedTask], str],
     integrate_task: Callable[[TaskRun, AssignedTask, str], str],
-    complete_task: Callable[[str, str], None],
+    complete_task: Callable[[str, str, str], None],
+    finalize_session: Callable[[BacklogResult], None],
     monotonic: Callable[[], float] = time.monotonic,
 ) -> BacklogResult:
     if not 2 <= max_workers <= 16:
@@ -94,41 +167,115 @@ def run_isolated_backlog(
     runs: list[TaskRun] = []
     steps = 0
 
+    def finish(result: BacklogResult) -> BacklogResult:
+        try:
+            finalize_session(result)
+            return result
+        except Exception as exc:
+            return replace(
+                result,
+                post_loop_errors=(f"{type(exc).__name__}: {exc}",),
+            )
+
     bootstrap = claim_next()
     if bootstrap is None:
-        return BacklogResult("empty", (), 0, "backlog is empty")
+        return finish(BacklogResult("empty", (), 0, "backlog is empty"))
     if bootstrap.workspace_kind != "main":
-        return BacklogResult("failed", (), 0, "isolated run must bootstrap in main")
+        return finish(
+            BacklogResult("failed", (), 0, "isolated run must bootstrap in main")
+        )
     first = execute_task(bootstrap, limits.max_steps)
     runs.append(first)
     steps += first.steps
     if first.steps < 0 or steps > limits.max_steps:
-        return BacklogResult("failed", tuple(runs), steps, "executor exceeded step budget")
+        return finish(
+            BacklogResult(
+                "failed", tuple(runs), steps, "executor exceeded step budget"
+            )
+        )
     if first.status != "done":
-        return BacklogResult(first.status, tuple(runs), steps, f"{first.task_id}: {first.status}")
+        return finish(
+            BacklogResult(
+                first.status, tuple(runs), steps, f"{first.task_id}: {first.status}"
+            )
+        )
+    try:
+        first_finalization = finalize_task(first, bootstrap)
+    except Exception as exc:
+        return finish(
+            BacklogResult(
+                "failed",
+                tuple(runs),
+                steps,
+                f"{first.task_id}: finalization error: {type(exc).__name__}: {exc}",
+            )
+        )
+    if first_finalization.status != "completed":
+        return finish(
+            BacklogResult(
+                first_finalization.status,
+                tuple(runs),
+                steps,
+                first_finalization.reason
+                or f"{first.task_id}: finalization {first_finalization.status}",
+            )
+        )
+    first_receipt = (first_finalization.receipt_evidence or "").strip()
+    if not first_receipt:
+        return finish(
+            BacklogResult(
+                "failed",
+                tuple(runs),
+                steps,
+                f"{first.task_id}: missing finalization receipt",
+            )
+        )
     first_commit = commit_task(first, bootstrap)
     if not first_commit.strip():
-        return BacklogResult("failed", tuple(runs), steps, f"{first.task_id}: missing commit evidence")
+        return finish(
+            BacklogResult(
+                "failed",
+                tuple(runs),
+                steps,
+                f"{first.task_id}: missing commit evidence",
+            )
+        )
     first_integration = integrate_task(first, bootstrap, first_commit)
     if not first_integration.strip():
-        return BacklogResult("failed", tuple(runs), steps, f"{first.task_id}: integration failed")
-    complete_task(first.task_id, first_commit)
+        return finish(
+            BacklogResult(
+                "failed", tuple(runs), steps, f"{first.task_id}: integration failed"
+            )
+        )
+    complete_task(first.task_id, first_commit, first_receipt)
 
     while len(runs) < limits.max_tasks:
         if monotonic() - started >= limits.max_seconds or steps >= limits.max_steps:
-            return BacklogResult("limit", tuple(runs), steps, "time or step budget reached")
+            return finish(
+                BacklogResult("limit", tuple(runs), steps, "time or step budget reached")
+            )
         batch: list[AssignedTask] = []
         while len(batch) < max_workers and len(runs) + len(batch) < limits.max_tasks:
             assignment = claim_next()
             if assignment is None:
                 break
             if assignment.workspace_kind != "worktree":
-                return BacklogResult("failed", tuple(runs), steps, "task 2+ must use a worktree")
+                return finish(
+                    BacklogResult(
+                        "failed", tuple(runs), steps, "task 2+ must use a worktree"
+                    )
+                )
             if assignment.workspace_path in {item.workspace_path for item in batch}:
-                return BacklogResult("failed", tuple(runs), steps, "duplicate active workspace")
+                return finish(
+                    BacklogResult(
+                        "failed", tuple(runs), steps, "duplicate active workspace"
+                    )
+                )
             batch.append(assignment)
         if not batch:
-            return BacklogResult("completed", tuple(runs), steps, "backlog is empty")
+            return finish(
+                BacklogResult("completed", tuple(runs), steps, "backlog is empty")
+            )
         remaining = limits.max_steps - steps
         per_task_budget = max(1, remaining // len(batch))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -140,24 +287,90 @@ def run_isolated_backlog(
         for assignment, run in zip(batch, outcomes):
             runs.append(run)
             if run.task_id != assignment.task_id:
-                return BacklogResult("failed", tuple(runs), steps, "executor returned the wrong task")
+                return finish(
+                    BacklogResult(
+                        "failed",
+                        tuple(runs),
+                        steps,
+                        "executor returned the wrong task",
+                    )
+                )
             if run.steps < 0 or run.steps > per_task_budget:
-                return BacklogResult(
-                    "failed",
-                    tuple(runs),
-                    steps,
-                    "executor exceeded its assigned step budget",
+                return finish(
+                    BacklogResult(
+                        "failed",
+                        tuple(runs),
+                        steps,
+                        "executor exceeded its assigned step budget",
+                    )
                 )
             steps += run.steps
             if steps > limits.max_steps:
-                return BacklogResult("failed", tuple(runs), steps, "executor exceeded step budget")
+                return finish(
+                    BacklogResult(
+                        "failed", tuple(runs), steps, "executor exceeded step budget"
+                    )
+                )
             if run.status != "done":
-                return BacklogResult(run.status, tuple(runs), steps, f"{run.task_id}: {run.status}")
+                return finish(
+                    BacklogResult(
+                        run.status,
+                        tuple(runs),
+                        steps,
+                        f"{run.task_id}: {run.status}",
+                    )
+                )
+            try:
+                finalization = finalize_task(run, assignment)
+            except Exception as exc:
+                return finish(
+                    BacklogResult(
+                        "failed",
+                        tuple(runs),
+                        steps,
+                        f"{run.task_id}: finalization error: "
+                        f"{type(exc).__name__}: {exc}",
+                    )
+                )
+            if finalization.status != "completed":
+                return finish(
+                    BacklogResult(
+                        finalization.status,
+                        tuple(runs),
+                        steps,
+                        finalization.reason
+                        or f"{run.task_id}: finalization {finalization.status}",
+                    )
+                )
+            receipt = (finalization.receipt_evidence or "").strip()
+            if not receipt:
+                return finish(
+                    BacklogResult(
+                        "failed",
+                        tuple(runs),
+                        steps,
+                        f"{run.task_id}: missing finalization receipt",
+                    )
+                )
             commit = commit_task(run, assignment)
             if not commit.strip():
-                return BacklogResult("failed", tuple(runs), steps, f"{run.task_id}: missing commit evidence")
+                return finish(
+                    BacklogResult(
+                        "failed",
+                        tuple(runs),
+                        steps,
+                        f"{run.task_id}: missing commit evidence",
+                    )
+                )
             integrated = integrate_task(run, assignment, commit)
             if not integrated.strip():
-                return BacklogResult("failed", tuple(runs), steps, f"{run.task_id}: integration failed")
-            complete_task(run.task_id, commit)
-    return BacklogResult("limit", tuple(runs), steps, "task budget reached")
+                return finish(
+                    BacklogResult(
+                        "failed",
+                        tuple(runs),
+                        steps,
+                        f"{run.task_id}: integration failed",
+                    )
+                )
+            complete_task(run.task_id, commit, receipt)
+    return finish(BacklogResult("limit", tuple(runs), steps, "task budget reached"))

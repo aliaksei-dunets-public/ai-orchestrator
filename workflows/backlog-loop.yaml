@@ -13,20 +13,23 @@ steps:
     - claim-next
     - retrieve-context
     - task-execution
+    - finalize-task
     - commit-task
     - complete-task
   isolated_parallel:
     - claim-main-bootstrap
     - retrieve-context
     - task-execution
+    - finalize-main-bootstrap
     - commit-main-bootstrap
     - allocate-task-worktrees
     - bounded-worktree-execution
+    - finalize-worktree-tasks
     - review-and-integrate
     - ownership-checked-cleanup
 stop_conditions: [empty, limit, waiting_user, blocked, failed]
 commit_per_task: true
 integration_conflicts: stop-and-preserve
-post_task:
+post_loop:
   - session-report
-  - propose-memory-candidates
+  - propose-session-memory-candidates

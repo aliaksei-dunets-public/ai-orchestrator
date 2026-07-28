@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .finalization import finalize_task, write_receipt
 from .task_manager import (
     ExecutionSettings,
     TaskManager,
@@ -37,6 +38,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     register = commands.add_parser("register")
     register.add_argument("--context", required=True)
+
+    finalize = commands.add_parser("finalize")
+    finalize.add_argument("task_id")
+    finalize.add_argument("--request", type=Path, required=True)
+    finalize.add_argument("--repository-root", type=Path)
 
     listing = commands.add_parser("list")
     listing.add_argument("--json", action="store_true", dest="as_json")
@@ -77,6 +83,7 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "complete":
             command.add_argument("--commit-evidence")
             command.add_argument("--repository-root", type=Path)
+            command.add_argument("--finalization-receipt", type=Path)
 
     assignment = commands.add_parser("assignment")
     assignment.add_argument("task_id")
@@ -102,6 +109,38 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "register":
             _print(_result(manager.register(args.context)))
+        elif args.command == "finalize":
+            repository = (
+                args.repository_root.resolve()
+                if args.repository_root is not None
+                else manager.tasks_root.parents[1].resolve()
+            )
+            request = json.loads(args.request.read_text(encoding="utf-8"))
+            if not isinstance(request, dict):
+                raise ValueError("finalization request must be an object")
+            task = manager.show(args.task_id)
+            receipt = finalize_task(
+                project_root=repository,
+                task_id=args.task_id,
+                context_path=manager.tasks_root / str(task["context"]),
+                checkpoint_path=manager.checkpoint_path(args.task_id),
+                changed_paths=request.get("changed_paths", []),
+                documentation_dispositions=request.get(
+                    "documentation_dispositions", []
+                ),
+                knowledge_proposal=request.get("knowledge_proposal"),
+                memory_candidates=request.get("memory_candidates", []),
+            )
+            destination = manager.tasks_root / "finalization" / f"{args.task_id}.json"
+            write_receipt(destination, receipt)
+            _print(
+                {
+                    "ok": True,
+                    "task_id": args.task_id,
+                    "receipt": destination.as_posix(),
+                    "result": receipt.to_dict(),
+                }
+            )
         elif args.command == "list":
             tasks = manager.list_tasks()
             _print({"ok": True, "tasks": tasks} if args.as_json else "\n".join(f"{t['id']} {t['status']} {t['title']}" for t in tasks), as_json=args.as_json)
@@ -136,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
                         args.task_id,
                         commit_evidence=args.commit_evidence,
                         repository_root=args.repository_root,
+                        finalization_receipt=args.finalization_receipt,
                     )
                 )
             )
@@ -184,6 +224,17 @@ def main(argv: list[str] | None = None) -> int:
     except TaskManagerError as exc:
         _print(exc.to_dict())
         return exc.exit_code
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        _print(
+            {
+                "ok": False,
+                "error": {
+                    "code": type(exc).__name__.upper(),
+                    "message": str(exc),
+                },
+            }
+        )
+        return 2
 
 
 if __name__ == "__main__":

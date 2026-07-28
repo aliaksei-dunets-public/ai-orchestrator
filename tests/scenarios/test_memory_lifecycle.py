@@ -85,6 +85,18 @@ class MemoryLifecycleTests(unittest.TestCase):
             supersede_entry(root, first.id, second.id, reason="updated")
             self.assertEqual([item.id for item in effective_entries(root)], [second.id])
             disable_entry(root, second.id, reason="invalidated")
+            with self.assertRaisesRegex(MemoryError, "inactive"):
+                promote_proposal(
+                    root,
+                    create_proposal(
+                        root,
+                        kind="decision",
+                        content="B",
+                        source=spec,
+                        confidence=1,
+                        supersedes=first.id,
+                    ),
+                )
             self.assertEqual(effective_entries(root), [])
             self.assertEqual(
                 len((root / ".orchestrator/memory/events.jsonl").read_text().splitlines()),

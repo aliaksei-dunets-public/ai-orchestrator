@@ -9,6 +9,9 @@
         "orchestrator/context_cli.py",
         "orchestrator/task_cli.py",
         "orchestrator/task_manager.py",
+        "orchestrator/finalization.py",
+        "orchestrator/documentation.py",
+        "orchestrator/session_report.py",
         "orchestrator/registry_lock.py",
         "orchestrator/worktree_manager.py",
         "orchestrator/backlog.py",
@@ -22,6 +25,9 @@
         "docs/migrations/cli-contract.md",
         "docs/migrations/1.3-task-workspaces.md",
         "docs/adr/0003-task-workspace-execution-modes.md",
+        "docs/migrations/1.4-task-finalization.md",
+        "docs/adr/0004-task-finalization-receipts.md",
+        "docs/guides/memory-and-knowledge-ru.md",
         "docs/architecture/component-contracts.md"
       ],
       "owner": "documentation-manager",
@@ -41,6 +47,7 @@
         "docs/specifications/orchestrator-specification-ru.md",
         "docs/specifications/task-layer-specification-ru.md",
         "docs/architecture/component-contracts.md",
+        "docs/guides/memory-and-knowledge-ru.md",
         "docs/guides/deployment-to-target-project-ru.md",
         "docs/migrations/1.2.md"
       ],

@@ -23,6 +23,21 @@ Execution checkpoints now use
 checkpoint after persisting `done` and may return `cleanup_warning` if cleanup
 fails. `cancel` preserves it.
 
+Новые completion transitions требуют двух команд:
+
+```powershell
+.\.venv\Scripts\orchestrator-task.exe finalize TASK-0003 `
+  --request finalization.json --repository-root .
+.\.venv\Scripts\orchestrator-task.exe complete TASK-0003 `
+  --finalization-receipt .orchestrator/tasks/finalization/TASK-0003.json
+```
+
+Для isolated task к `complete` также передаются прежние `--commit-evidence` и
+`--repository-root`. Receipt directory является operational state и должен быть
+исключён из Git. Historical `done` records без поля `finalization` остаются
+читаемыми; новый вызов `complete` без receipt возвращает
+`FINALIZATION_REQUIRED` с exit code `10`.
+
 `orchestrator telemetry [--path PATH] [--json]` is an additive command that
 summarizes optional local JSONL execution metrics. Existing Health Check and Task
 Manager commands, output fields and exit codes are unchanged, so no consumer

@@ -1,1 +1,2 @@
-
+{"enabled":true,"id":"task-finalization-coordinator","kind":"component","label":"Task Finalization Coordinator","schema_version":1,"source":"docs/architecture/component-contracts.md","source_digest":"d44580c735f681dc779eb2fffaf0d576471fa42280c55c96e9bfbf977b25bae4","supersedes":null}
+{"enabled":true,"id":"task-finalization-receipt-contract","kind":"contract","label":"Task Finalization Receipt","schema_version":1,"source":"docs/adr/0004-task-finalization-receipts.md","source_digest":"5d6d8455796ee8fbdf8bcfce584976d434294fbc8d1c9721a2fca5cf22868324","supersedes":null}

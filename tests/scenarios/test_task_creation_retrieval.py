@@ -33,7 +33,9 @@ class TaskCreationRetrievalTests(unittest.TestCase):
         self.assertLess(creation.index("id: retrieve-context"), creation.index("id: analyze"))
         self.assertLess(execution.index("- retrieve-context"), execution.index("- implement"))
         self.assertLess(backlog.index("- retrieve-context"), backlog.index("- task-execution"))
-        self.assertIn("propose-memory-candidates", backlog)
+        self.assertLess(backlog.index("- task-execution"), backlog.index("- finalize-task"))
+        self.assertLess(backlog.index("- finalize-task"), backlog.index("- commit-task"))
+        self.assertIn("propose-session-memory-candidates", backlog)
 
 
 if __name__ == "__main__":

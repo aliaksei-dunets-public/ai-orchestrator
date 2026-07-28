@@ -268,9 +268,18 @@ def create_proposal(
     }
     proposal_path = root / PROPOSALS_PATH
     existing = _read_jsonl(proposal_path)
+    proposal_hash = _canonical_hash(hash_input)
+    for raw in existing:
+        if raw.get("proposal_hash") == proposal_hash:
+            payload = dict(raw)
+            payload.pop("schema_version", None)
+            try:
+                return MemoryProposal(**payload)
+            except TypeError as exc:
+                raise MemoryError(f"invalid memory proposal: {exc}") from exc
     proposal = MemoryProposal(
         id=_next_id("PROP", existing),
-        proposal_hash=_canonical_hash(hash_input),
+        proposal_hash=proposal_hash,
         created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         **hash_input,
     )
@@ -327,6 +336,20 @@ def promote_proposal(
         raise MemoryError(str(exc)) from exc
     if authority.source_digest != proposal.source_digest:
         raise MemoryError("memory source is stale")
+    entries = load_entries(root / ENTRIES_PATH)
+    existing = next(
+        (
+            entry
+            for entry in entries
+            if entry.proposal_hash == proposal.proposal_hash
+        ),
+        None,
+    )
+    if existing is not None:
+        effective_ids = {entry.id for entry in effective_entries(root)}
+        if existing.id not in effective_ids:
+            raise MemoryError("proposal was previously promoted to an inactive entry")
+        return existing
     requires_approval = proposal.kind == "instruction" or not authority.authoritative
     if requires_approval:
         if approval is None or approval.decision != "approve":

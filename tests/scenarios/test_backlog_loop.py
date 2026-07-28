@@ -6,8 +6,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from orchestrator.backlog import BacklogLimits, TaskRun, run_backlog
+from orchestrator.backlog import (
+    BacklogLimits,
+    FinalizationRun,
+    TaskRun,
+    run_backlog,
+)
 from orchestrator.task_manager import TaskManager
+from tests.finalization_support import write_ready_receipt
 
 
 class BacklogLoopScenarioTests(unittest.TestCase):
@@ -35,15 +41,24 @@ class BacklogLoopScenarioTests(unittest.TestCase):
             events.append(f"commit:{run.task_id}")
             return f"commit-{run.task_id}"
 
-        def complete(task_id: str, evidence: str) -> None:
-            events.append(f"complete:{task_id}:{evidence}")
+        def finalize(run: TaskRun) -> FinalizationRun:
+            events.append(f"finalize:{run.task_id}")
+            return FinalizationRun("completed", f"receipt-{run.task_id}")
+
+        def complete(task_id: str, evidence: str, receipt: str) -> None:
+            events.append(f"complete:{task_id}:{evidence}:{receipt}")
+
+        def finalize_session(result) -> None:
+            events.append(f"session:{result.status}")
 
         result = run_backlog(
             limits=BacklogLimits(max_tasks, 60, 100),
             claim_next=claim,
             execute_task=execute,
+            finalize_task=finalize,
             commit_task=commit,
             complete_task=complete,
+            finalize_session=finalize_session,
         )
         return result, events
 
@@ -55,9 +70,18 @@ class BacklogLoopScenarioTests(unittest.TestCase):
         failed, _ = self._run(["failed", "done"])
         self.assertEqual(empty.status, "empty")
         self.assertEqual(limited.status, "limit")
-        self.assertEqual(events, ["execute:TASK-0001", "commit:TASK-0001", "complete:TASK-0001:commit-TASK-0001"])
+        self.assertEqual(
+            events,
+            [
+                "execute:TASK-0001",
+                "finalize:TASK-0001",
+                "commit:TASK-0001",
+                "complete:TASK-0001:commit-TASK-0001:receipt-TASK-0001",
+                "session:limit",
+            ],
+        )
         self.assertEqual(waiting.status, "waiting_user")
-        self.assertEqual(waiting_events, ["execute:TASK-0001"])
+        self.assertEqual(waiting_events, ["execute:TASK-0001", "session:waiting_user"])
         self.assertEqual(blocked.status, "blocked")
         self.assertEqual(failed.status, "failed")
 
@@ -68,13 +92,49 @@ class BacklogLoopScenarioTests(unittest.TestCase):
             events,
             [
                 "execute:TASK-0001",
+                "finalize:TASK-0001",
                 "commit:TASK-0001",
-                "complete:TASK-0001:commit-TASK-0001",
+                "complete:TASK-0001:commit-TASK-0001:receipt-TASK-0001",
                 "execute:TASK-0002",
+                "finalize:TASK-0002",
                 "commit:TASK-0002",
-                "complete:TASK-0002:commit-TASK-0002",
+                "complete:TASK-0002:commit-TASK-0002:receipt-TASK-0002",
+                "session:completed",
             ],
         )
+
+    def test_finalization_waiting_user_prevents_commit_and_complete(self) -> None:
+        events: list[str] = []
+        result = run_backlog(
+            limits=BacklogLimits(1, 60, 10),
+            claim_next=lambda: "TASK-0001",
+            execute_task=lambda task_id, remaining: TaskRun(task_id, "done", 1),
+            finalize_task=lambda run: FinalizationRun(
+                "waiting_user", reason="memory approval required"
+            ),
+            commit_task=lambda run: events.append("commit") or "commit",
+            complete_task=lambda task_id, commit, receipt: events.append("complete"),
+            finalize_session=lambda result: events.append("session"),
+        )
+        self.assertEqual(result.status, "waiting_user")
+        self.assertEqual(events, ["session"])
+
+    def test_finalization_exception_fails_before_commit(self) -> None:
+        events: list[str] = []
+        result = run_backlog(
+            limits=BacklogLimits(1, 60, 10),
+            claim_next=lambda: "TASK-0001",
+            execute_task=lambda task_id, remaining: TaskRun(task_id, "done", 1),
+            finalize_task=lambda run: (_ for _ in ()).throw(
+                ValueError("invalid receipt")
+            ),
+            commit_task=lambda run: events.append("commit") or "commit",
+            complete_task=lambda task_id, commit, receipt: events.append("complete"),
+            finalize_session=lambda result: events.append("session"),
+        )
+        self.assertEqual(result.status, "failed")
+        self.assertIn("invalid receipt", result.reason)
+        self.assertEqual(events, ["session"])
 
     def test_complete_after_commit_creates_no_tracked_git_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -84,12 +144,28 @@ class BacklogLoopScenarioTests(unittest.TestCase):
             (root / ".gitignore").write_text(
                 ".orchestrator/tasks/tasks.json\n"
                 ".orchestrator/tasks/*.tmp\n"
-                ".orchestrator/tasks/checkpoints/\n",
+                ".orchestrator/tasks/checkpoints/\n"
+                ".orchestrator/tasks/finalization/\n",
                 encoding="utf-8",
             )
             context = tasks / "contexts" / "TASK-0001.md"
             context.parent.mkdir()
-            context.write_text("# TASK-0001\n\n# Execution Record\n\nCompleted.\n", encoding="utf-8")
+            context.write_text(
+                "---\n"
+                "schema_version: 1\n"
+                "id: TASK-0001\n"
+                "revision: 1\n"
+                "title: Committed task\n"
+                "type: feature\n"
+                "mode: quick\n"
+                "risk: low\n"
+                "created_by: task-creation-workflow\n"
+                "---\n\n"
+                "# TASK-0001 — Committed task\n\n"
+                "# Execution Record\n\n"
+                "Status: completed.\n",
+                encoding="utf-8",
+            )
             checkpoints = tasks / "checkpoints"
             checkpoints.mkdir()
             checkpoint = checkpoints / "TASK-0001.checkpoint.lock"
@@ -126,6 +202,9 @@ class BacklogLoopScenarioTests(unittest.TestCase):
             git("add", ".")
             git("commit", "-q", "-m", "implementation commit")
             self.assertEqual(git("status", "--porcelain").stdout, "")
-            TaskManager(tasks).complete("TASK-0001")
+            TaskManager(tasks).complete(
+                "TASK-0001",
+                finalization_receipt=write_ready_receipt(tasks, "TASK-0001"),
+            )
             self.assertFalse(checkpoint.exists())
             self.assertEqual(git("status", "--porcelain").stdout, "")

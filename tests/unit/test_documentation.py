@@ -5,7 +5,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from orchestrator.documentation import broken_local_links, documentation_impact, load_documentation_map
+from orchestrator.documentation import (
+    broken_local_links,
+    documentation_impact,
+    evaluate_documentation_gate,
+    load_documentation_map,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,7 +51,9 @@ class DocumentationTests(unittest.TestCase):
             "docs/migrations/1.2.md",
             "docs/adr/0002-project-memory-knowledge-lifecycle.md",
             "docs/adr/0003-task-workspace-execution-modes.md",
+            "docs/adr/0004-task-finalization-receipts.md",
             "docs/migrations/1.3-task-workspaces.md",
+            "docs/migrations/1.4-task-finalization.md",
             "docs/plans/2026-07-28-task-storage-layout-design.md",
             "CHANGELOG.md",
         )
@@ -63,3 +70,54 @@ class DocumentationTests(unittest.TestCase):
         documents = {item.document for item in impacts}
         self.assertIn("docs/specifications/orchestrator-specification-ru.md", documents)
         self.assertIn("docs/migrations/1.2.md", documents)
+
+    def test_finalization_runtime_changes_have_canonical_owners(self) -> None:
+        mapping = load_documentation_map(ROOT / "config/documentation-map.json")
+        impacts = documentation_impact(["orchestrator/finalization.py"], mapping)
+        documents = {item.document for item in impacts}
+        self.assertIn("docs/adr/0004-task-finalization-receipts.md", documents)
+        self.assertIn("docs/migrations/1.4-task-finalization.md", documents)
+        self.assertIn("docs/guides/memory-and-knowledge-ru.md", documents)
+
+    def test_documentation_gate_requires_update_or_explicit_non_applicability(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "config").mkdir()
+            (root / "docs").mkdir()
+            (root / "docs/contract.md").write_text("# Contract\n", encoding="utf-8")
+            (root / "config/documentation-map.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "rules": [
+                            {
+                                "path_prefixes": ["src/"],
+                                "documents": ["docs/contract.md"],
+                                "owner": "documentation-manager",
+                                "reason": "Contract changed.",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "missing documentation disposition"):
+                evaluate_documentation_gate(root, ["src/runtime.py"], [])
+            with self.assertRaisesRegex(ValueError, "absent from changed paths"):
+                evaluate_documentation_gate(
+                    root,
+                    ["src/runtime.py"],
+                    [{"document": "docs/contract.md", "status": "updated"}],
+                )
+            evidence = evaluate_documentation_gate(
+                root,
+                ["src/runtime.py"],
+                [
+                    {
+                        "document": "docs/contract.md",
+                        "status": "not_applicable",
+                        "reason": "Internal-only behavior.",
+                    }
+                ],
+            )
+            self.assertEqual(evidence[0].status, "not_applicable")

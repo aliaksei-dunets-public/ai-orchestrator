@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.finalization_support import write_ready_receipt
 from tests.unit.test_task_manager import DRAFT
 
 
@@ -16,8 +17,44 @@ ROOT = Path(__file__).resolve().parents[2]
 class TaskCliScenarioTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
-        self.tasks = Path(self.temporary.name) / ".orchestrator" / "tasks"
+        self.project = Path(self.temporary.name)
+        self.tasks = self.project / ".orchestrator" / "tasks"
         (self.tasks / "drafts").mkdir(parents=True)
+        (self.project / "config").mkdir()
+        (self.project / "config/documentation-map.json").write_text(
+            json.dumps({"schema_version": 1, "rules": []}),
+            encoding="utf-8",
+        )
+        (self.project / "config/knowledge-ontology.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "immutable": True,
+                    "node_kinds": ["task"],
+                    "relations": ["affects"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        knowledge = self.project / ".orchestrator/knowledge"
+        knowledge.mkdir(parents=True)
+        (knowledge / "ontology.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "immutable": False,
+                    "node_kinds": [],
+                    "relations": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (knowledge / "nodes.jsonl").write_text("", encoding="utf-8")
+        (knowledge / "edges.jsonl").write_text("", encoding="utf-8")
+        memory = self.project / ".orchestrator/memory"
+        memory.mkdir()
+        for name in ("entries.jsonl", "events.jsonl", "approvals.jsonl"):
+            (memory / name).write_text("", encoding="utf-8")
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
@@ -49,8 +86,45 @@ class TaskCliScenarioTests(unittest.TestCase):
             ".orchestrator/tasks/contexts/TASK-0001.md",
         )
         checkpoint = self.tasks / "checkpoints" / "TASK-0001.checkpoint.lock"
-        checkpoint.write_text("checkpoint", encoding="utf-8")
-        completed = self.run_cli("complete", "TASK-0001")
+        write_ready_receipt(self.tasks, "TASK-0001")
+        missing = self.run_cli("complete", "TASK-0001")
+        self.assertEqual(missing.returncode, 10)
+        self.assertEqual(
+            json.loads(missing.stdout)["error"]["code"],
+            "FINALIZATION_REQUIRED",
+        )
+        request = self.project / "finalization-request.json"
+        request.write_text(
+            json.dumps(
+                {
+                    "changed_paths": [],
+                    "documentation_dispositions": [],
+                    "knowledge_proposal": {
+                        "schema_version": 1,
+                        "nodes": [],
+                        "edges": [],
+                    },
+                    "memory_candidates": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        finalized = self.run_cli(
+            "finalize",
+            "TASK-0001",
+            "--request",
+            str(request),
+            "--repository-root",
+            str(self.project),
+        )
+        self.assertEqual(finalized.returncode, 0, finalized.stderr)
+        receipt = Path(json.loads(finalized.stdout)["receipt"])
+        completed = self.run_cli(
+            "complete",
+            "TASK-0001",
+            "--finalization-receipt",
+            str(receipt),
+        )
         self.assertEqual(completed.returncode, 0)
         self.assertEqual(json.loads(completed.stdout)["task"]["status"], "done")
         self.assertFalse(checkpoint.exists())
@@ -71,6 +145,7 @@ class TaskCliScenarioTests(unittest.TestCase):
             ".orchestrator/tasks/tasks.json",
             ".orchestrator/tasks/probe.tmp",
             ".orchestrator/tasks/checkpoints/probe.lock",
+            ".orchestrator/tasks/finalization/probe.json",
         ):
             result = subprocess.run(
                 ["git", "check-ignore", relative],

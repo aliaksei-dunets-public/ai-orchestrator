@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
@@ -17,6 +18,12 @@ SECRET_PATTERNS = (
     re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"),
     re.compile(r"\b(?:ghp|github_pat|sk)-[A-Za-z0-9_-]{12,}\b"),
 )
+
+
+@dataclass(frozen=True)
+class SessionFinalization:
+    report_path: str
+    proposal_hashes: tuple[str, ...]
 
 
 def redact(text: str) -> str:
@@ -80,3 +87,37 @@ def session_memory_candidates(data: Mapping[str, object]) -> list[dict[str, obje
                 }
             )
     return candidates
+
+
+def finalize_session(
+    project_root: Path | str,
+    destination: Path | str,
+    data: Mapping[str, object],
+) -> SessionFinalization:
+    from .memory import create_proposal
+
+    root = Path(project_root).resolve()
+    report = Path(destination)
+    if not report.is_absolute():
+        report = root / report
+    report = report.resolve()
+    try:
+        report.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("session report destination is outside the project root") from exc
+    write_session_report(report, data)
+    relative = report.relative_to(root).as_posix()
+    proposals = [
+        create_proposal(
+            root,
+            kind=str(candidate["kind"]),  # type: ignore[arg-type]
+            content=str(candidate["content"]),
+            source=relative,
+            confidence=float(candidate["confidence"]),
+        )
+        for candidate in session_memory_candidates(data)
+    ]
+    return SessionFinalization(
+        relative,
+        tuple(proposal.proposal_hash for proposal in proposals),
+    )
