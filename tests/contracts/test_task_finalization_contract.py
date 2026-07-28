@@ -27,7 +27,7 @@ class TaskFinalizationContractTests(unittest.TestCase):
     def test_operational_receipts_are_ignored_without_hiding_canonical_stores(self) -> None:
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
         self.assertIn(".orchestrator/tasks/finalization/", ignore)
-        self.assertNotIn("\n.orchestrator/\n", f"\n{ignore}\n")
+        self.assertIn("\n.orchestrator/\n", f"\n{ignore}\n")
         self.assertNotIn("\n.orchestrator/memory/\n", f"\n{ignore}\n")
         self.assertNotIn("\n.orchestrator/knowledge/\n", f"\n{ignore}\n")
 

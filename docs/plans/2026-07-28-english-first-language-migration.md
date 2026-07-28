@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-28-english-first-language-migration.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-english-first-language-migration.ru.md))
+- Preserve baseline: `2026-07-28-english-first-language-migration.ru.md`
 
 **Interfaces:**
 

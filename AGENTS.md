@@ -15,6 +15,7 @@
 - Never weaken immutable security policies through local configuration.
 - Do not edit generated platform skill projections after canonical `skills/` sources exist.
 - Do not commit `.orchestrator/tasks/tasks.json`, temporary files or lock files.
+- The core repository does not version `.orchestrator/`; it is target-project-owned state initialized by onboarding.
 - Search canonical sources by default; `releases/` is excluded through `.rgignore` and must be searched explicitly for release validation.
 - Preserve unrelated user changes and avoid destructive Git operations.
 - Canonical project artifacts use English; user-facing guides may have Russian companions, which are not Knowledge Graph sources.

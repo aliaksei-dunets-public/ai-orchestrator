@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-28-knowledge-curator-onboarding-design.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-knowledge-curator-onboarding-design.ru.md))
+- Preserve baseline: `2026-07-28-knowledge-curator-onboarding-design.ru.md`
 
 **Interfaces:**
 

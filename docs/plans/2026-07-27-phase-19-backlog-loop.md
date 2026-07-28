@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-27-phase-19-backlog-loop.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-19-backlog-loop.ru.md))
+- Preserve baseline: `2026-07-27-phase-19-backlog-loop.ru.md`
 
 **Interfaces:**
 

@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-28-post-task-finalization-enforcement.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-post-task-finalization-enforcement.ru.md))
+- Preserve baseline: `2026-07-28-post-task-finalization-enforcement.ru.md`
 
 **Interfaces:**
 

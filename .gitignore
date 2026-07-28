@@ -13,6 +13,7 @@ __pycache__/
 docs/specifications/orchestrator/
 
 # Local AI Orchestrator operational state
+.orchestrator/
 .orchestrator/tasks/tasks.json
 .orchestrator/tasks/*.tmp
 .orchestrator/tasks/checkpoints/

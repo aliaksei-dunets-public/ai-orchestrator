@@ -160,9 +160,11 @@ ai-orchestrator/
 └── releases/
 ```
 
-Target-project operational state lives in `.orchestrator/`. Task Registry,
-temporary files, locks, proposals, indexes, and checkpoints are not portable
-source and are excluded from Git. Contexts, plans, code, tests, and canonical
+Target-project operational state lives in `.orchestrator/`. The core repository
+does not version that directory: release artifacts and managed installations
+must never import the core repository's local state. Task Registry, temporary
+files, locks, proposals, indexes, and checkpoints are not portable source and
+are excluded from Git. Contexts, plans, code, tests, and canonical
 documentation are versioned.
 
 ## 6. Project Onboarding

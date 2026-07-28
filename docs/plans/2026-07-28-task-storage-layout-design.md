@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-28-task-storage-layout-design.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-task-storage-layout-design.ru.md))
+- Preserve baseline: `2026-07-28-task-storage-layout-design.ru.md`
 
 **Interfaces:**
 

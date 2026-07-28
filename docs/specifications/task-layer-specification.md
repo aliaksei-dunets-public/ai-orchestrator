@@ -153,7 +153,10 @@ null and timestamps are RFC 3339 with a timezone. Array order is queue order.
 Only `backlog` tasks are candidates for `next` and `claim-next`.
 
 Registry state, temporary files, locks, and checkpoints are operational state
-and are excluded from Git. Contexts are versioned.
+and are excluded from Git. The core repository excludes the complete
+`.orchestrator/` tree; target onboarding creates fresh target-owned state while
+leaving canonical memory and Knowledge Graph stores visible to Git. Contexts
+are versioned only when they belong to an explicitly versioned target project.
 
 ## 6. Task Manager
 

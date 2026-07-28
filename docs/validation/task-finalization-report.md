@@ -4,7 +4,7 @@
 **Status:** canonical validation report
 
 This report is the English canonical maintainer artifact for $title. The paired
-$([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\validation\task-finalization-report.ru.md)) file is retained as a Russian
+`task-finalization-report.ru.md` is retained as a Russian
 historical baseline, is not canonical, and is excluded from Knowledge Graph
 retrieval and provenance.
 

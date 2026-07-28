@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-28-dec-005-platform-maturity-design.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-dec-005-platform-maturity-design.ru.md))
+- Preserve baseline: `2026-07-28-dec-005-platform-maturity-design.ru.md`
 
 **Interfaces:**
 

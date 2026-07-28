@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-27-phase-12-approval-gates.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-12-approval-gates.ru.md))
+- Preserve baseline: `2026-07-27-phase-12-approval-gates.ru.md`
 
 **Interfaces:**
 

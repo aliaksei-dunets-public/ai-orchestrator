@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-27-phase-09-task-review.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-27-phase-09-task-review.ru.md))
+- Preserve baseline: `2026-07-27-phase-09-task-review.ru.md`
 
 **Interfaces:**
 

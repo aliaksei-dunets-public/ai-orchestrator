@@ -346,6 +346,20 @@ def _jsonl_records(path: Path) -> list[dict[str, object]]:
 
 
 def _memory_knowledge_checks(root: Path) -> Iterable[Finding]:
+    ignore = root / ".gitignore"
+    ignore_text = ignore.read_text(encoding="utf-8") if ignore.exists() else ""
+    is_core_repository = (
+        (root / "orchestrator").is_dir()
+        and (root / "skills").is_dir()
+        and (root / "config/knowledge-ontology.json").is_file()
+        and ".orchestrator/" in {
+            line.strip()
+            for line in ignore_text.splitlines()
+            if line.strip() and not line.startswith("#")
+        }
+    )
+    if is_core_repository:
+        return
     lifecycle_root = root / ".orchestrator"
     if not (
         (lifecycle_root / "memory").exists()
@@ -372,8 +386,7 @@ def _memory_knowledge_checks(root: Path) -> Iterable[Finding]:
     if any(not path.is_file() for path in canonical):
         return
 
-    ignore = root / ".gitignore"
-    text = ignore.read_text(encoding="utf-8") if ignore.exists() else ""
+    text = ignore_text
     required_ignored = (
         ".orchestrator/memory/proposals/",
         ".orchestrator/knowledge/indexes/",

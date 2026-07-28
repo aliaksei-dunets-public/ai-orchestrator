@@ -46,7 +46,7 @@
 **Files:**
 
 - Modify: $(2026-07-28-phase-25-memory-knowledge-full-lifecycle.md.Name)
-- Preserve baseline: $([System.IO.Path]::GetFileName(C:\Users\aliak\Documents\development\ai-orchestrator\docs\plans\2026-07-28-phase-25-memory-knowledge-full-lifecycle.ru.md))
+- Preserve baseline: `2026-07-28-phase-25-memory-knowledge-full-lifecycle.ru.md`
 
 **Interfaces:**
 
