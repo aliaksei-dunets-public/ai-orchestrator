@@ -6,7 +6,12 @@
     "github-copilot-vscode",
     "claude-vscode"
   ],
-  "capabilities": ["memory", "knowledge", "context-retrieval"],
+  "capabilities": [
+    "memory",
+    "knowledge",
+    "context-retrieval",
+    "worktree-task-execution"
+  ],
   "cells": [
     {"platform": "codex", "technology": "python", "mode": "managed"},
     {"platform": "codex", "technology": "python", "mode": "standalone"},

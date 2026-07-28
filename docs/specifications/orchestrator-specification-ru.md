@@ -286,6 +286,14 @@ orchestrator telemetry --path <events.jsonl>
 
 Execution checkpoint хранится в локальном каталоге `.orchestrator/tasks/checkpoints/` под именем `<TASK-ID>.checkpoint.lock` и исключается из Git. Implementation Runner получает этот путь через Task Manager. Переход в `done` удаляет checkpoint после успешной записи статуса; `cancelled` сохраняет его для диагностики.
 
+Начиная с workspace-aware execution оркестратор поддерживает `serial` и
+`isolated_parallel`. Первый остаётся default. Во втором первая задача run
+выполняется и коммитится в main, а sequence 2+ получают отдельные Git worktrees
+и branches от проверенного post-bootstrap `HEAD`. Task Registry хранит
+assignment и commit evidence под cross-platform lock. Execution Runner
+привязывает freshness и checkpoint к назначенному workspace. Merge conflict
+останавливает run и сохраняет ветку/worktree для recovery.
+
 ## 8. Orchestrator Audit
 
 Audit — глубокий смысловой анализ, отличный от Health Check. Он ищет противоречия инструкций, дублирование навыков, недостижимые workflow, устаревшую документацию, архитектурный drift, недостаток тестов и повторяющиеся проблемы из Session Reports.
@@ -362,6 +370,10 @@ Repository-wide retrieval по умолчанию работает только 
 ### Фаза 4 — Минимальный Task Manager
 
 JSON Task Registry, статусы, переходы, CLI, `claim-next` и crash-safe записи для одного writer. Межпроцессная блокировка не входит в первую версию.
+
+Последующее workspace-aware расширение добавляет owner-aware registry lock и
+bounded isolated parallel mode без изменения serial default. Ограничение
+«один writer» теперь применяется к каждому workspace, а не ко всему run.
 
 ### Фаза 5 — Quick Task Creator
 

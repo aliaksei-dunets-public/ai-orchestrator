@@ -10,6 +10,7 @@ policy_inputs:
   documentation_impact: boolean
 mandatory_steps:
   - freshness
+  - workspace-binding
   - retrieve-context
   - implement
   - run-tests
@@ -28,7 +29,15 @@ stop_conditions:
   - scope_change
   - waiting_user
   - blocked
+  - workspace_mismatch
+  - integration_conflict
 evidence_required: true
+workspace_assignment:
+  serial: main
+  isolated_parallel:
+    sequence_1: main
+    sequence_2_plus: task-owned-worktree
+  checkpoint_scope: assigned-workspace
 context_pack:
   capability: context.retrieve
   freshness: required

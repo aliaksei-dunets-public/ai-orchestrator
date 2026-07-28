@@ -69,6 +69,11 @@ class ReleaseAcceptanceTests(unittest.TestCase):
         migration = (ROOT / "docs/migrations/1.2.md").read_text(encoding="utf-8")
         for section in ("Supported inputs", "Compatibility window", "Known limitations", "Rollback"):
             self.assertIn(section, migration)
+        workspaces = (
+            ROOT / "docs/migrations/1.3-task-workspaces.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("## Совместимость", workspaces)
+        self.assertIn("## Rollback", workspaces)
 
     def test_release_readme_links_resolve_inside_artifact(self) -> None:
         self.assertEqual(broken_local_links(ARTIFACT / "README.md", root=ARTIFACT), [])
@@ -142,3 +147,12 @@ class ReleaseAcceptanceTests(unittest.TestCase):
                 if path.is_file()
             }
             self.assertEqual(actual, expected)
+
+    def test_worktree_runtime_is_in_release_artifact(self) -> None:
+        for relative in (
+            "orchestrator/registry_lock.py",
+            "orchestrator/worktree_manager.py",
+            "docs/adr/0003-task-workspace-execution-modes.md",
+            "docs/migrations/1.3-task-workspaces.md",
+        ):
+            self.assertTrue((ARTIFACT / relative).is_file(), relative)

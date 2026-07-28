@@ -18,12 +18,30 @@
 - Выходы: локальный Task Registry result, ссылка `contexts/<TASK-ID>.md` на Task Context и canonical checkpoint path `checkpoints/<TASK-ID>.checkpoint.lock`.
 - Владеет: вычислением безопасных путей Task Context/checkpoint и удалением checkpoint после перехода в `done`; `cancelled` checkpoint сохраняет.
 - Не владеет: planning, implementation, reviews, commits и documentation.
+- В `serial` режиме сохраняет один active slot. В `isolated_parallel` хранит
+  run/sequence/workspace/branch/base/commit assignment и допускает несколько
+  active задач только при уникальных workspace и соблюдении `max_workers`.
+- Все registry mutations сериализуются `RegistryLock`; stale lock
+  восстанавливается только после проверки отсутствия live owner.
+
+## Worktree Manager
+
+- Входы: Git repository root, валидированный worktree root, task ID, run ID и
+  полный base commit.
+- Выходы: task-owned branch/worktree assignment, ownership inspection,
+  commit verification, explicit integration и guarded cleanup.
+- Владеет: безопасными Git argument arrays, path/branch derivation и ownership
+  manifest.
+- Не владеет: Task Registry status, автоматическим разрешением merge conflicts
+  или удалением failed worktrees.
 
 ## Task Execution Workflow
 
 - Входы: claimed Task Context, capabilities и limits.
 - Выходы: Execution Record, bounded test/review evidence, optional numeric telemetry и запрос status transition.
 - Не владеет: правила переходов Task Manager.
+- Проверяет, что Task Context и checkpoint находятся внутри назначенного
+  workspace; silent workspace switching запрещён.
 
 ## Telemetry
 

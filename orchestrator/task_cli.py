@@ -5,7 +5,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .task_manager import TaskManager, TaskManagerError, validate_registry
+from .task_manager import (
+    ExecutionSettings,
+    TaskManager,
+    TaskManagerError,
+    validate_registry,
+)
 
 
 def _result(task: dict[str, Any]) -> dict[str, object]:
@@ -45,6 +50,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     claim = commands.add_parser("claim-next")
     claim.add_argument("--json", action="store_true", dest="as_json")
+    claim.add_argument(
+        "--mode",
+        choices=("serial", "isolated_parallel"),
+        default="serial",
+    )
+    claim.add_argument("--run-id")
+    claim.add_argument("--max-workers", type=int, default=1)
+    claim.add_argument("--worktree-root")
+    claim.add_argument("--repository-root", type=Path)
 
     status = commands.add_parser("status")
     status.add_argument("task_id")
@@ -60,6 +74,22 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("task_id")
         if name == "cancel":
             command.add_argument("--note")
+        if name == "complete":
+            command.add_argument("--commit-evidence")
+            command.add_argument("--repository-root", type=Path)
+
+    assignment = commands.add_parser("assignment")
+    assignment.add_argument("task_id")
+    assignment.add_argument("--json", action="store_true", dest="as_json")
+
+    cleanup = commands.add_parser("cleanup")
+    cleanup.add_argument("task_id")
+    cleanup.add_argument(
+        "--outcome",
+        choices=("completed", "cancelled", "failed"),
+        required=True,
+    )
+    cleanup.add_argument("--repository-root", type=Path)
 
     validate = commands.add_parser("validate")
     validate.add_argument("--json", action="store_true", dest="as_json")
@@ -82,7 +112,16 @@ def main(argv: list[str] | None = None) -> int:
             task = manager.next_task()
             _print(_result(task) if args.as_json else f"{task['id']} {task['title']}", as_json=args.as_json)
         elif args.command == "claim-next":
-            task = manager.claim_next()
+            settings = ExecutionSettings(
+                mode=args.mode,
+                run_id=args.run_id,
+                max_workers=args.max_workers,
+                worktree_root=args.worktree_root,
+            )
+            task = manager.claim_next(
+                settings,
+                repository_root=args.repository_root,
+            )
             _print(_result(task) if args.as_json else f"{task['id']} {task['context']}", as_json=args.as_json)
         elif args.command == "status":
             _print(_result(manager.set_status(args.task_id, args.status, args.note)))
@@ -91,9 +130,40 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "resume":
             _print(_result(manager.resume(args.task_id)))
         elif args.command == "complete":
-            _print(_result(manager.complete(args.task_id)))
+            _print(
+                _result(
+                    manager.complete(
+                        args.task_id,
+                        commit_evidence=args.commit_evidence,
+                        repository_root=args.repository_root,
+                    )
+                )
+            )
         elif args.command == "cancel":
             _print(_result(manager.cancel(args.task_id, args.note)))
+        elif args.command == "assignment":
+            assignment = manager.assignment(args.task_id)
+            payload = {"ok": True, "task_id": args.task_id, "assignment": assignment}
+            _print(
+                payload
+                if args.as_json
+                else json.dumps(assignment, ensure_ascii=False, sort_keys=True),
+                as_json=args.as_json,
+            )
+        elif args.command == "cleanup":
+            removed = manager.cleanup_assignment(
+                args.task_id,
+                repository_root=args.repository_root,
+                outcome=args.outcome,
+            )
+            _print(
+                {
+                    "ok": True,
+                    "task_id": args.task_id,
+                    "removed": removed,
+                    "preserved": not removed,
+                }
+            )
         elif args.command == "validate":
             issues = validate_registry(args.tasks_root)
             payload = {

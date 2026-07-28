@@ -13,6 +13,10 @@ backlog:
   max_seconds: 3600
   max_steps: 200
   continue_backlog_while_waiting_user: false
+execution:
+  mode: serial
+  max_workers: 1
+  worktree_root: .orchestrator/worktrees
 memory_knowledge:
   memory_entries: .orchestrator/memory/entries.jsonl
   memory_events: .orchestrator/memory/events.jsonl

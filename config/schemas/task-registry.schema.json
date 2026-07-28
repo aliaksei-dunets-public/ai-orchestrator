@@ -33,7 +33,7 @@
           },
           "context": {
             "type": "string",
-            "pattern": "^TASK-[0-9]{4,}\\.md$"
+            "pattern": "^contexts/TASK-[0-9]{4,}\\.md$"
           },
           "status_note": {
             "type": ["string", "null"]
@@ -45,6 +45,41 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "assignment": {
+            "type": ["object", "null"],
+            "required": [
+              "mode",
+              "run_id",
+              "sequence",
+              "max_workers",
+              "workspace_kind",
+              "workspace_path",
+              "branch",
+              "base_commit",
+              "commit_evidence"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {"const": "isolated_parallel"},
+              "run_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+              },
+              "sequence": {"type": "integer", "minimum": 1},
+              "max_workers": {"type": "integer", "minimum": 1, "maximum": 16},
+              "workspace_kind": {"enum": ["main", "worktree"]},
+              "workspace_path": {"type": "string", "minLength": 1},
+              "branch": {"type": ["string", "null"]},
+              "base_commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "commit_evidence": {
+                "type": ["string", "null"],
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
           }
         }
       }

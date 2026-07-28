@@ -380,6 +380,27 @@ Task Manager проверяет только допустимость перех
 
 ## 9. Task Manager CLI
 
+### 9.0. Режимы выполнения workspace
+
+Нормативный default остаётся `serial`: одна активная задача, main workspace и
+прежние status/checkpoint semantics. Историческое ограничение первой версии на
+одного writer сохраняется внутри каждого workspace.
+
+`isolated_parallel` задаётся явно и требует `run_id`, `max_workers` от 2 до 16
+и `worktree_root`. Задача sequence 1 получает main только после clean-state и
+freshness checks. Её подтверждённый commit становится base commit для
+sequence 2+, каждая из которых получает уникальные branch и worktree.
+
+Registry assignment содержит `mode`, `run_id`, `sequence`, `max_workers`,
+`workspace_kind`, `workspace_path`, `branch`, `base_commit` и
+`commit_evidence`. Legacy records без assignment валидны как serial.
+Concurrent registry read-modify-write операции сериализуются owner-aware lock.
+Live lock не перезаписывается; stale lock восстанавливается fail-closed.
+
+Конфликт интеграции или отсутствующий commit переводит workflow в stop
+condition и сохраняет worktree. Cleanup проверяет ownership, не удаляет main и
+не удаляет failed worktree автоматически.
+
 Предпочтительный интерфейс:
 
 ```bash
@@ -395,10 +416,13 @@ python .orchestrator/bin/task.py list --json
 python .orchestrator/bin/task.py show TASK-0003
 python .orchestrator/bin/task.py next --json
 python .orchestrator/bin/task.py claim-next --json
+python .orchestrator/bin/task.py claim-next --json --mode isolated_parallel --run-id RUN --max-workers 2 --worktree-root .orchestrator/worktrees --repository-root .
+python .orchestrator/bin/task.py assignment TASK-0003 --json
 python .orchestrator/bin/task.py status TASK-0003 waiting_user --note "..."
 python .orchestrator/bin/task.py block TASK-0003 --note "..."
 python .orchestrator/bin/task.py resume TASK-0003
-python .orchestrator/bin/task.py complete TASK-0003
+python .orchestrator/bin/task.py complete TASK-0003 --commit-evidence <sha> --repository-root .
+python .orchestrator/bin/task.py cleanup TASK-0003 --outcome completed --repository-root .
 python .orchestrator/bin/task.py cancel TASK-0003
 python .orchestrator/bin/task.py validate --json
 ```
@@ -443,6 +467,9 @@ python .orchestrator/bin/task.py validate --json
 - `4` — registry повреждён;
 - `5` — уже есть активная задача;
 - `6` — доступных задач нет.
+- `7` — недопустимая конфигурация execution mode;
+- `8` — workspace/commit/ownership gate не пройден;
+- `9` — Task Registry занят live lock.
 
 ### 9.4. Надёжность записи
 

@@ -45,6 +45,8 @@ class DocumentationTests(unittest.TestCase):
             "docs/migrations/1.1.md",
             "docs/migrations/1.2.md",
             "docs/adr/0002-project-memory-knowledge-lifecycle.md",
+            "docs/adr/0003-task-workspace-execution-modes.md",
+            "docs/migrations/1.3-task-workspaces.md",
             "docs/plans/2026-07-28-task-storage-layout-design.md",
             "CHANGELOG.md",
         )

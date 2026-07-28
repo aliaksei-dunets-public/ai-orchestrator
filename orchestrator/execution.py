@@ -222,8 +222,21 @@ def execute_plan(
     checkpoint_path: Path | str,
     telemetry_sink: TelemetrySink | None = None,
     run_id: str | None = None,
+    workspace_root: Path | str | None = None,
     clock: Callable[[], float] = time.perf_counter,
 ) -> ExecutionResult:
+    if workspace_root is not None:
+        resolved_workspace = Path(workspace_root).resolve()
+        for label, candidate in (
+            ("Task Context", Path(context_path).resolve()),
+            ("checkpoint", Path(checkpoint_path).resolve()),
+        ):
+            try:
+                candidate.relative_to(resolved_workspace)
+            except ValueError as exc:
+                raise ExecutionError(
+                    f"{label} is outside the assigned workspace: {candidate}"
+                ) from exc
     validate_freshness(
         context_path,
         expected_revision=expected_revision,

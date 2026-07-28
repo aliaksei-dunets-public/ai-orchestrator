@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+`claim-next` получил additive параметры `--mode`, `--run-id`,
+`--max-workers`, `--worktree-root` и `--repository-root`. Без них сохраняется
+прежний serial contract. Для isolated assignment `complete` требует
+`--commit-evidence` и проверяет SHA против назначенного workspace.
+
+Добавлены `assignment`/`cleanup` в Task Manager CLI и
+`orchestrator workspace inspect|cleanup`. Новые стабильные exit codes:
+`7 INVALID_EXECUTION_MODE`, `8 WORKSPACE_ERROR`, `9 REGISTRY_LOCKED`.
+Legacy consumers, не включающие isolated mode, менять не требуется.
+
 Task Context paths returned by Task Manager commands moved from
 `.orchestrator/tasks/<TASK-ID>.md` to
 `.orchestrator/tasks/contexts/<TASK-ID>.md`. Consumers must treat the returned

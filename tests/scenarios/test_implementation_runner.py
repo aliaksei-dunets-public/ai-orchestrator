@@ -62,6 +62,19 @@ class ImplementationRunnerScenarioTests(unittest.TestCase):
             )
         self.assertEqual(calls, [])
 
+    def test_workspace_binding_rejects_external_checkpoint(self) -> None:
+        outside = self.root.parent / "external-checkpoint.json"
+        with self.assertRaisesRegex(ExecutionError, "assigned workspace"):
+            execute_plan(
+                context_path=self.context,
+                expected_revision=1,
+                expected_baseline_hash=self.digest,
+                steps=[ExecutionStep("one", "First")],
+                run_step=lambda step, attempt: StepOutcome("completed", "ok"),
+                checkpoint_path=outside,
+                workspace_root=self.root,
+            )
+
     def test_attempt_budget_has_a_hard_upper_bound(self) -> None:
         with self.assertRaisesRegex(ValueError, str(MAX_STEP_ATTEMPTS)):
             ExecutionStep("one", "First", max_attempts=MAX_STEP_ATTEMPTS + 1)

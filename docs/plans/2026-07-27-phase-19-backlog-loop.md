@@ -6,6 +6,12 @@
 
 **Architecture:** Loop вызывает claim и execution как black boxes, считает task/time/step budgets и останавливается на waiting_user, blocked или error. Tracked Task Context и implementation changes фиксируются до `complete`, после чего меняется только исключённый из Git registry.
 
+**Workspace-aware extension:** `serial` сохраняет этот алгоритм. В
+`isolated_parallel` bootstrap-задача выполняется и коммитится в main, после
+чего bounded batch задач выполняется в уникальных worktrees. Commit evidence
+проверяется до explicit integration; conflict останавливает loop и сохраняет
+worktree.
+
 **Tech Stack:** Python 3.11+, Python standard library for runtime-critical Task Manager paths, Markdown, JSON/JSON Schema, YAML profiles and `unittest`.
 
 ## Global Constraints

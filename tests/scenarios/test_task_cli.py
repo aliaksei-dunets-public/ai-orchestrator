@@ -80,3 +80,15 @@ class TaskCliScenarioTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, relative)
+
+    def test_invalid_isolated_arguments_have_stable_json_error(self) -> None:
+        self.run_cli("register", "--context", str(self.draft("one.md", "One")))
+        result = self.run_cli(
+            "claim-next",
+            "--mode",
+            "isolated_parallel",
+            "--json",
+        )
+        self.assertEqual(result.returncode, 7)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["error"]["code"], "INVALID_EXECUTION_MODE")

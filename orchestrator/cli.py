@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .health import format_json, format_text, run_health_checks
+from .task_manager import TaskManager, TaskManagerError
 from .telemetry import TelemetryError, format_summary_text, load_events, summarize_events
 from . import context_cli, knowledge_cli, memory_cli
 
@@ -44,6 +45,25 @@ def build_parser() -> argparse.ArgumentParser:
     knowledge_cli.configure(knowledge)
     context = subcommands.add_parser("context", help="Build a bounded context pack")
     context_cli.configure(context)
+    workspace = subcommands.add_parser(
+        "workspace",
+        help="Inspect or clean a task workspace assignment",
+    )
+    workspace.add_argument(
+        "action",
+        choices=("inspect", "cleanup"),
+    )
+    workspace.add_argument("task_id")
+    workspace.add_argument(
+        "--tasks-root",
+        type=Path,
+        default=Path.cwd() / ".orchestrator" / "tasks",
+    )
+    workspace.add_argument("--repository-root", type=Path)
+    workspace.add_argument(
+        "--outcome",
+        choices=("completed", "cancelled", "failed"),
+    )
     return parser
 
 
@@ -104,6 +124,50 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
             return 2
+    if args.command == "workspace":
+        try:
+            manager = TaskManager(args.tasks_root)
+            if args.action == "inspect":
+                payload = {
+                    "task_id": args.task_id,
+                    "assignment": manager.assignment(args.task_id),
+                }
+            else:
+                if args.outcome is None:
+                    raise ValueError("workspace cleanup requires --outcome")
+                removed = manager.cleanup_assignment(
+                    args.task_id,
+                    repository_root=args.repository_root,
+                    outcome=args.outcome,
+                )
+                payload = {
+                    "task_id": args.task_id,
+                    "removed": removed,
+                    "preserved": not removed,
+                }
+            print(
+                json.dumps(
+                    {"ok": True, "result": payload},
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+        except (TaskManagerError, OSError, UnicodeError, ValueError) as exc:
+            code = exc.code if isinstance(exc, TaskManagerError) else type(exc).__name__.upper()
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "error": {"code": code, "message": str(exc)},
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return exc.exit_code if isinstance(exc, TaskManagerError) else 2
     return 1
 
 

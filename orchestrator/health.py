@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -194,6 +195,97 @@ def _task_checks(root: Path) -> Iterable[Finding]:
             yield _finding(issue.code, issue.severity, issue.message, issue.path)
     except Exception as exc:  # defensive boundary: health must never expose a traceback
         yield _finding("TASK_REGISTRY_CHECK_FAILED", "ERROR", f"Task Registry check failed: {exc}", registry)
+
+
+def _task_workspace_checks(root: Path) -> Iterable[Finding]:
+    tasks_root = root / ".orchestrator" / "tasks"
+    registry = tasks_root / "tasks.json"
+    if not registry.is_file():
+        return
+    try:
+        payload = json.loads(registry.read_text(encoding="utf-8"))
+        tasks = payload.get("tasks", []) if isinstance(payload, dict) else []
+        if not isinstance(tasks, list):
+            return
+        for task in tasks:
+            if not isinstance(task, dict):
+                continue
+            assignment = task.get("assignment")
+            if not isinstance(assignment, dict):
+                continue
+            task_id = str(task.get("id"))
+            workspace = Path(str(assignment.get("workspace_path", ""))).resolve()
+            kind = assignment.get("workspace_kind")
+            if kind == "main" and workspace != root:
+                yield _finding(
+                    "TASK_MAIN_WORKSPACE_MISMATCH",
+                    "CRITICAL",
+                    f"Main assignment for {task_id} does not point to repository root",
+                    registry,
+                )
+            if kind == "worktree" and workspace == root:
+                yield _finding(
+                    "TASK_WORKTREE_IS_MAIN",
+                    "CRITICAL",
+                    f"Worktree assignment for {task_id} points to main",
+                    registry,
+                )
+            if task.get("status") in {"in_progress", "waiting_user"} and not workspace.is_dir():
+                yield _finding(
+                    "TASK_WORKSPACE_MISSING",
+                    "ERROR",
+                    f"Active assignment for {task_id} has no workspace",
+                    workspace,
+                )
+            base_commit = assignment.get("base_commit")
+            if isinstance(base_commit, str) and (root / ".git").exists():
+                check = subprocess.run(
+                    ["git", "cat-file", "-e", f"{base_commit}^{{commit}}"],
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    check=False,
+                )
+                if check.returncode != 0:
+                    yield _finding(
+                        "TASK_BASE_COMMIT_MISSING",
+                        "ERROR",
+                        f"Assignment base commit is unavailable for {task_id}",
+                        registry,
+                    )
+        from .registry_lock import RegistryLock, RegistryLockError
+
+        try:
+            state = RegistryLock(tasks_root).inspect()
+            if state.status == "invalid":
+                yield _finding(
+                    "TASK_REGISTRY_LOCK_INVALID",
+                    "ERROR",
+                    "Task Registry lock metadata is invalid",
+                    tasks_root / "checkpoints/registry.lock",
+                )
+            elif state.status == "stale":
+                yield _finding(
+                    "TASK_REGISTRY_LOCK_STALE",
+                    "WARNING",
+                    "Task Registry has a recoverable stale lock",
+                    tasks_root / "checkpoints/registry.lock",
+                )
+        except RegistryLockError as exc:
+            yield _finding(
+                "TASK_REGISTRY_LOCK_INVALID",
+                "ERROR",
+                f"Task Registry lock inspection failed: {exc}",
+                tasks_root / "checkpoints/registry.lock",
+            )
+    except (OSError, UnicodeError, json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
+        yield _finding(
+            "TASK_WORKSPACE_CHECK_FAILED",
+            "ERROR",
+            f"Task workspace validation failed: {exc}",
+            registry,
+        )
 
 
 def _jsonl_records(path: Path) -> list[dict[str, object]]:
@@ -403,12 +495,14 @@ def run_health_checks(root: Path | str = ".", *, scope: str = "all") -> HealthRe
         findings.append(_finding("INVALID_SCOPE", "ERROR", f"Unsupported health scope: {scope}"))
     elif scope == "tasks":
         findings.extend(_task_checks(project_root))
+        findings.extend(_task_workspace_checks(project_root))
     else:
         findings.extend(_required_structure(project_root))
         findings.extend(_schema_checks(project_root))
         findings.extend(_registry_checks(project_root))
         findings.extend(_skill_projection_checks(project_root))
         findings.extend(_task_checks(project_root))
+        findings.extend(_task_workspace_checks(project_root))
         findings.extend(_memory_knowledge_checks(project_root))
     findings.sort(key=lambda item: (SEVERITY_ORDER[item.severity], item.code, item.path or "", item.message))
     return HealthReport(tuple(findings))

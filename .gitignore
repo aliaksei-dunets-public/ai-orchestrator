@@ -16,6 +16,7 @@ docs/specifications/orchestrator/
 .orchestrator/tasks/tasks.json
 .orchestrator/tasks/*.tmp
 .orchestrator/tasks/checkpoints/
+.orchestrator/worktrees/
 .orchestrator/telemetry/
 .orchestrator/releases/
 .orchestrator/memory/proposals/

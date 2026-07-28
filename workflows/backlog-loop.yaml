@@ -4,14 +4,29 @@ limits:
   max_tasks: required
   max_seconds: required
   max_steps: required
+execution:
+  mode: [serial, isolated_parallel]
+  default: serial
+  max_workers: bounded
 steps:
-  - claim-next
-  - retrieve-context
-  - task-execution
-  - commit-task
-  - complete-task
+  serial:
+    - claim-next
+    - retrieve-context
+    - task-execution
+    - commit-task
+    - complete-task
+  isolated_parallel:
+    - claim-main-bootstrap
+    - retrieve-context
+    - task-execution
+    - commit-main-bootstrap
+    - allocate-task-worktrees
+    - bounded-worktree-execution
+    - review-and-integrate
+    - ownership-checked-cleanup
 stop_conditions: [empty, limit, waiting_user, blocked, failed]
 commit_per_task: true
+integration_conflicts: stop-and-preserve
 post_task:
   - session-report
   - propose-memory-candidates
