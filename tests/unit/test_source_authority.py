@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class SourceAuthorityTests(unittest.TestCase):
-    def test_spec_and_accepted_adr_are_authoritative(self) -> None:
+    def test_canonical_documentation_and_accepted_adr_are_authoritative(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            spec = root / "docs/specifications/system.md"
+            spec = root / "docs/architecture/system.md"
             adr = root / "docs/adr/0001.md"
             spec.parent.mkdir(parents=True)
             adr.parent.mkdir(parents=True)
@@ -23,6 +23,15 @@ class SourceAuthorityTests(unittest.TestCase):
             adr.write_text("**Status:** accepted", encoding="utf-8")
             self.assertTrue(classify_source(root, spec).authoritative)
             self.assertTrue(classify_source(root, adr).authoritative)
+
+    def test_development_artifacts_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / ".orchestrator/specifications/system.md"
+            source.parent.mkdir(parents=True)
+            source.write_text("# Draft", encoding="utf-8")
+            with self.assertRaisesRegex(SourceAuthorityError, "development artifacts"):
+                classify_source(root, source)
 
     def test_dialogue_is_not_authoritative_and_escape_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -10,8 +10,8 @@ approved instructions. Knowledge Graph stores structured project entities and
 relations. Retrieval selects relevant current data and builds a bounded Context
 Pack for the agent.
 
-The architecture contract is in [the orchestrator specification](../specifications/orchestrator-specification.md),
-the task workflow is in [the Task Layer specification](../specifications/task-layer-specification.md),
+The architecture contract is in [core architecture](../architecture/orchestrator-core.md),
+the task workflow is in [the Task Layer contract](../architecture/task-layer.md),
 and the design decision is in [ADR-0002](../adr/0002-project-memory-knowledge-lifecycle.md).
 
 ## 1. Task creation comes first
@@ -198,7 +198,7 @@ python -m orchestrator memory --root . list
 ```
 
 ```powershell
-python -m orchestrator knowledge --root . add-node --id reports-api --kind component --label "Reports API" --source docs/specifications/api-contract.md
+python -m orchestrator knowledge --root . add-node --id reports-api --kind component --label "Reports API" --source docs/architecture/api-contract.md
 ```
 
 ```powershell

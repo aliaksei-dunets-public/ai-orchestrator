@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-ORCHESTRATOR_SPEC = ROOT / "docs" / "specifications" / "orchestrator-specification.md"
-TASK_SPEC = ROOT / "docs" / "specifications" / "task-layer-specification.md"
+ORCHESTRATOR_SPEC = ROOT / "docs" / "architecture" / "orchestrator-core.md"
+TASK_SPEC = ROOT / "docs" / "architecture" / "task-layer.md"
 
 
 class SpecificationContractTests(unittest.TestCase):

@@ -19,8 +19,8 @@ Task Manager.
 ## Workflow
 
 1. Read the normative requirements and relevant project files. Use
-   `docs/specifications/task-layer-specification.md` and
-   `docs/specifications/orchestrator-specification.md` as sources of truth.
+   `docs/architecture/task-layer.md`, `docs/architecture/orchestrator-core.md`,
+   `docs/roadmap.md`, and `docs/documentation-policy.md` as sources of truth.
 2. Choose `quick` for obvious low-risk local work, `standard` for normal bugs
    and features, or `deep` for architectural, high-risk, ambiguous, or
    irreversible changes.

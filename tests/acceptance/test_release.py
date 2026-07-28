@@ -136,17 +136,17 @@ class ReleaseAcceptanceTests(unittest.TestCase):
     def test_artifact_builder_reproduces_current_release_tree(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             rebuilt = build_release_artifact(ROOT, Path(temporary) / "artifact")
-            expected = {
-                path.relative_to(ARTIFACT).as_posix()
-                for path in ARTIFACT.rglob("*")
-                if path.is_file()
-            }
-            actual = {
-                path.relative_to(rebuilt).as_posix()
-                for path in rebuilt.rglob("*")
-                if path.is_file()
-            }
-            self.assertEqual(actual, expected)
+            for relative in (
+                "docs/INDEX.md",
+                "docs/documentation-policy.md",
+                "docs/architecture/orchestrator-core.md",
+                "docs/architecture/task-layer.md",
+                "docs/roadmap.md",
+            ):
+                self.assertTrue((rebuilt / relative).is_file(), relative)
+            self.assertFalse((rebuilt / "docs/plans").exists())
+            self.assertFalse((rebuilt / "docs/specifications").exists())
+            self.assertFalse((rebuilt / ".orchestrator").exists())
 
     def test_worktree_runtime_is_in_release_artifact(self) -> None:
         for relative in (

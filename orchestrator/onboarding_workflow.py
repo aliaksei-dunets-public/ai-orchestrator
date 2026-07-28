@@ -625,6 +625,13 @@ def plan_onboarding(
     )
     add_change(".orchestrator/project-context.md", context_content)
 
+    for relative in ("docs/INDEX.md", "docs/documentation-policy.md"):
+        destination = _safe_target(target, relative)
+        if destination.exists():
+            continue
+        template = core / "templates" / "documentation" / Path(relative).name
+        add_change(relative, template.read_text(encoding="utf-8"))
+
     for relative in (
         ".orchestrator/memory/entries.jsonl",
         ".orchestrator/memory/events.jsonl",

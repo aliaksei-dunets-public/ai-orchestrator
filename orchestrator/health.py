@@ -62,8 +62,11 @@ def _required_structure(root: Path) -> Iterable[Finding]:
         "config/schemas",
         "registries",
         "skills",
-        "docs/specifications/orchestrator-specification.md",
-        "docs/specifications/task-layer-specification.md",
+        "docs/INDEX.md",
+        "docs/documentation-policy.md",
+        "docs/architecture/orchestrator-core.md",
+        "docs/architecture/task-layer.md",
+        "docs/roadmap.md",
     )
     for relative in required:
         path = root / relative

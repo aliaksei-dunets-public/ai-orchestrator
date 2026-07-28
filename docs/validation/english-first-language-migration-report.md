@@ -7,8 +7,8 @@
 ## Canonical path migration
 
 Architecture and Task Layer specifications are now canonical at
-`docs/specifications/orchestrator-specification.md` and
-`docs/specifications/task-layer-specification.md`. The previous Russian
+`docs/architecture/orchestrator-core.md` and
+`docs/architecture/task-layer.md`. The previous Russian
 specifications remain preserved as `*-ru.md` historical baselines and are not
 graph sources. Russian maintainer plans and validation reports are preserved as
 `.ru.md` baselines; their same-name English files are canonical.

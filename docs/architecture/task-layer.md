@@ -2,7 +2,7 @@
 language: en
 ---
 
-# Task Layer Specification
+# Task Layer contract
 
 ## Task Creator, Task Context, Task Manager, and Task Execution
 
@@ -21,7 +21,8 @@ Task Context, Task Manager, and Task Execution Workflow.
 ### 1.1. Normative boundaries
 
 This document is the source of truth for Task Layer contracts. Architecture and
-roadmap boundaries are defined by `orchestrator-specification.md`. Task Creator
+roadmap boundaries are defined by [core architecture](orchestrator-core.md) and
+[project roadmap](../roadmap.md). Task Creator
 coordinates atomic classification, analysis, specification, planning, review,
 and validation skills; their logic does not move into Task Manager. Current
 status exists only in Task Registry; evidence exists only in Task Context.

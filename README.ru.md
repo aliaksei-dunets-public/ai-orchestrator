@@ -10,10 +10,10 @@ translation_of: README.md
 
 ## Документация
 
-- [Архитектурная спецификация на английском](docs/specifications/orchestrator-specification.md)
-- [Спецификация Task Layer на английском](docs/specifications/task-layer-specification.md)
-- [Русская версия архитектурной спецификации](docs/specifications/orchestrator-specification-ru.md)
-- [Русская версия спецификации Task Layer](docs/specifications/task-layer-specification-ru.md)
+- [Архитектура orchestrator на английском](docs/architecture/orchestrator-core.md)
+- [Контракт Task Layer на английском](docs/architecture/task-layer.md)
+- [Индекс документации](docs/INDEX.md)
+- [Политика документации](docs/documentation-policy.md)
 - [English README](README.md)
 
 English README является каноническим пользовательским документом. Эта версия

@@ -2,9 +2,9 @@
 language: en
 ---
 
-# Universal AI Orchestrator
+# Orchestrator core architecture
 
-## Architecture specification and roadmap
+## Normative architecture and lifecycle
 
 **Version:** 0.5
 **Status:** normative architecture specification
@@ -37,10 +37,11 @@ updates) and standalone mode (an independently evolved copy).
 
 ### 2.1. Normative sources of truth
 
-This document defines architecture boundaries, the product lifecycle, and the
-roadmap. `task-layer-specification.md` is the source of truth for Task Context,
-Task Registry, statuses, transitions, and the Task Manager CLI. When the two
-documents overlap, the narrower Task Layer contract governs its own interfaces.
+This document defines architecture boundaries and the product lifecycle. The
+[Task Layer contract](task-layer.md) is the source of truth for Task Context,
+Task Registry, statuses, transitions, and the Task Manager CLI. The
+[project roadmap](../roadmap.md) is the source of truth for phase order. When
+documents overlap, the narrower contract governs its own interfaces.
 
 The terms **MUST**, **MUST NOT**, and **SHOULD** are normative. Examples and
 target commands are not implemented capabilities until their roadmap phase is
@@ -56,7 +57,7 @@ enforces mandatory checks; and produces a session result.
 ### 3.2. Task Layer
 
 Contains Task Creator, Task Context, Task Manager, and Task Execution Workflow.
-The detailed contract is in `task-layer-specification.md`. Serial execution
+The detailed contract is in the [Task Layer contract](task-layer.md). Serial execution
 uses the primary workspace and the user-selected current branch; task-owned
 branch, worktree, integration, and cleanup lifecycle require an explicit
 isolated assignment.
@@ -162,9 +163,9 @@ ai-orchestrator/
 
 Target-project operational state lives in `.orchestrator/`. The core repository
 does not version that directory: release artifacts and managed installations
-must never import the core repository's local state. Task Registry, temporary
-files, locks, proposals, indexes, and checkpoints are not portable source and
-are excluded from Git. Contexts, plans, code, tests, and canonical
+must never import the core repository's local state. Task Registry, plans,
+specifications, temporary files, locks, proposals, indexes, and checkpoints
+are not portable source and are excluded from Git. Code, tests, and canonical
 documentation are versioned.
 
 ## 6. Project Onboarding

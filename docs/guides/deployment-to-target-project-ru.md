@@ -423,6 +423,6 @@ read-only inventory проекта и возвращает `answers.knowledge_gr
 ignored graph index и откатывает graph вместе с остальными файлами при
 `ERROR`/`CRITICAL`. Пустой proposal допустим и не создаёт выдуманных сущностей.
 
-Нормативные контракты: [английская спецификация оркестратора](../specifications/orchestrator-specification.md),
-[Task Layer](../specifications/task-layer-specification.md) и
+Нормативные контракты: [английская архитектура оркестратора](../architecture/orchestrator-core.md),
+[Task Layer](../architecture/task-layer.md) и
 [контракты компонентов](../architecture/component-contracts.md).

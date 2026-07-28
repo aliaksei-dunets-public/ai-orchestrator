@@ -17,7 +17,7 @@ translation_of: docs/guides/memory-and-knowledge.md
 - **Knowledge Graph** хранит структурированные сущности проекта и связи между ними.
 - **Retrieval** выбирает только релевантную и актуальную часть этих данных и формирует ограниченный Context Pack для агента.
 
-Контракт реализации описан в [английской спецификации оркестратора](../specifications/orchestrator-specification.md), workflow задач — в [английской спецификации Task Layer](../specifications/task-layer-specification.md), а архитектурное решение — в [ADR-0002](../adr/0002-project-memory-knowledge-lifecycle.md).
+Контракт реализации описан в [английской архитектуре оркестратора](../architecture/orchestrator-core.md), workflow задач — в [английском контракте Task Layer](../architecture/task-layer.md), а архитектурное решение — в [ADR-0002](../adr/0002-project-memory-knowledge-lifecycle.md).
 
 ## 1. Пользователь приходит с задачей
 
@@ -366,7 +366,7 @@ python -m orchestrator memory --root . list
 Добавить узел графа:
 
 ```powershell
-python -m orchestrator knowledge --root . add-node --id reports-api --kind component --label "Reports API" --source docs/specifications/api-contract.md
+python -m orchestrator knowledge --root . add-node --id reports-api --kind component --label "Reports API" --source docs/architecture/api-contract.md
 ```
 
 Перестроить производные индексы:

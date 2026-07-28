@@ -118,7 +118,7 @@ def build_release_artifact(root: Path | str, destination: Path | str) -> Path:
             relative = current.relative_to(repository).as_posix()
         except ValueError:
             return []
-        if relative in {"docs/plans", "docs/validation", "docs/specifications"}:
+        if relative in {"docs/validation"}:
             return [name for name in names if name.endswith(".ru.md")]
         return []
 

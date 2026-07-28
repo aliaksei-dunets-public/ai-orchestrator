@@ -1,6 +1,6 @@
 # Task Context contract
 
-The normative source is `docs/specifications/task-layer-specification.md`.
+The normative source is `docs/architecture/task-layer.md`.
 Use this file as a compact checklist; the specification wins if they differ.
 
 ## Frontmatter

@@ -52,4 +52,4 @@ Normative specifications: Orchestrator 0.5 and Task Layer 0.3
 
 The matrix proves the shared capability contracts, installation modes and project fixtures in the current Windows/Python environment. Codex is the observed host and is marked `stable`; Google Antigravity, GitHub Copilot VS Code and Claude VS Code are marked `experimental` because they have not yet been executed inside independent vendor hosts.
 
-[DEC-005](../plans/2026-07-27-decisions.md#dec-005--уровень-зрелости-внешних-platform-adapters) accepts this boundary. Promotion of an external adapter requires one successful native smoke run with host/version, OS/runtime, date, executed check and result evidence; it is follow-up validation, not a blocker for the stable 1.0 core and shared profile contracts.
+DEC-005 accepts this boundary. Promotion of an external adapter requires one successful native smoke run with host/version, OS/runtime, date, executed check and result evidence; it is follow-up validation, not a blocker for the stable 1.0 core and shared profile contracts.

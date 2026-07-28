@@ -44,7 +44,7 @@ later Knowledge Graph maintenance task.
       "id": "reports-api",
       "kind": "component",
       "label": "Reports API",
-      "source": "docs/specifications/api-contract.md",
+      "source": "docs/architecture/api-contract.md",
       "supersedes": null,
       "enabled": true
     }

@@ -2,9 +2,9 @@
 
 ## Sources of truth
 
-1. Follow `docs/specifications/orchestrator-specification.md` for architecture and roadmap.
-2. Follow `docs/specifications/task-layer-specification.md` for task contracts and state transitions.
-3. Treat `docs/plans/2026-07-27-roadmap-index.md` as the ordered implementation plan set.
+1. Follow `docs/architecture/orchestrator-core.md` for architecture and lifecycle.
+2. Follow `docs/architecture/task-layer.md` for task contracts and state transitions.
+3. Follow `docs/roadmap.md` for ordered delivery phases and `docs/documentation-policy.md` for documentation ownership.
 
 ## Development workflow
 
@@ -29,4 +29,4 @@
 
 ## Completion evidence
 
-A phase is complete only when its plan deliverables exist, acceptance criteria have direct evidence, relevant tests pass, specifications and registries agree, and Health Check has no `ERROR` or `CRITICAL`.
+A phase is complete only when its delivered documentation, acceptance criteria, registries, and tests agree, with direct evidence and no Health Check `ERROR` or `CRITICAL`.

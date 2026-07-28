@@ -24,8 +24,8 @@ class ArchitectureFoundationScenarioTests(unittest.TestCase):
             self.assertIn(evolution_rule, adr.lower())
 
     def test_normative_documents_reference_both_contracts_without_broken_links(self) -> None:
-        orchestrator = (ROOT / "docs/specifications/orchestrator-specification.md").read_text(encoding="utf-8")
-        task_layer = (ROOT / "docs/specifications/task-layer-specification.md").read_text(encoding="utf-8")
-        self.assertIn("task-layer-specification.md", orchestrator)
-        self.assertIn("orchestrator-specification.md", task_layer)
+        orchestrator = (ROOT / "docs/architecture/orchestrator-core.md").read_text(encoding="utf-8")
+        task_layer = (ROOT / "docs/architecture/task-layer.md").read_text(encoding="utf-8")
+        self.assertIn("task-layer.md", orchestrator)
+        self.assertIn("orchestrator-core.md", task_layer)
         self.assertNotIn("\ufffd", orchestrator + task_layer)

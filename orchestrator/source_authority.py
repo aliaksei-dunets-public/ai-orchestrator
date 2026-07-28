@@ -72,12 +72,14 @@ def classify_source(project_root: Path | str, source: Path | str) -> SourceAutho
     category = "other"
     authoritative = False
     posix = relative.as_posix()
-    if posix.startswith("docs/specifications/"):
-        category, authoritative = "specification", True
-    elif posix.startswith("docs/adr/"):
+    if posix.startswith((".orchestrator/plans/", ".orchestrator/specifications/")):
+        raise SourceAuthorityError("development artifacts are not memory or knowledge sources")
+    if posix.startswith("docs/adr/"):
         text = path.read_text(encoding="utf-8").lower()
         accepted = "status:** accepted" in text
         category, authoritative = "accepted_adr", accepted
+    elif posix.startswith("docs/"):
+        category, authoritative = "canonical_documentation", True
     elif posix.startswith(".orchestrator/tasks/contexts/"):
         text = path.read_text(encoding="utf-8").lower()
         completed = (

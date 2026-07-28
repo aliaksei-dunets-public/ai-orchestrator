@@ -8,10 +8,12 @@ translation_of: README.ru.md
 Portable, configurable orchestrator for skills, workflows, tasks, memory, and
 Project Context across agent platforms and technology stacks.
 
-## Specifications
+## Documentation
 
-- [Architecture specification](docs/specifications/orchestrator-specification.md)
-- [Task Layer specification](docs/specifications/task-layer-specification.md)
+- [Documentation index](docs/INDEX.md)
+- [Core architecture](docs/architecture/orchestrator-core.md)
+- [Task Layer contract](docs/architecture/task-layer.md)
+- [Project roadmap](docs/roadmap.md)
 - [Russian README](README.ru.md)
 
 ## Status

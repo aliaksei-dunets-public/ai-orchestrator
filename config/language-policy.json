@@ -29,8 +29,6 @@
     "skills/optional/*/README.ru.md"
   ],
   "legacy_russian_patterns": [
-    "docs/specifications/*-ru.md",
-    "docs/plans/*.ru.md",
     "docs/validation/*.ru.md"
   ],
   "user_canonical_patterns": [

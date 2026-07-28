@@ -17,11 +17,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DocumentationTests(unittest.TestCase):
-    def test_public_cli_change_requires_specification_and_migration(self) -> None:
+    def test_public_cli_change_requires_canonical_contract_and_migration(self) -> None:
         mapping = load_documentation_map(ROOT / "config/documentation-map.json")
         impacts = documentation_impact(["orchestrator/task_manager.py"], mapping)
         documents = {item.document for item in impacts}
-        self.assertIn("docs/specifications/task-layer-specification.md", documents)
+        self.assertIn("docs/architecture/task-layer.md", documents)
         self.assertIn("docs/migrations/cli-contract.md", documents)
 
     def test_generated_and_hand_written_docs_have_owners(self) -> None:
@@ -42,8 +42,10 @@ class DocumentationTests(unittest.TestCase):
 
     def test_task_storage_contract_documents_have_no_broken_links(self) -> None:
         documents = (
-            "docs/specifications/orchestrator-specification.md",
-            "docs/specifications/task-layer-specification.md",
+            "docs/INDEX.md",
+            "docs/documentation-policy.md",
+            "docs/architecture/orchestrator-core.md",
+            "docs/architecture/task-layer.md",
             "docs/guides/deployment-to-target-project-ru.md",
             "docs/architecture/component-contracts.md",
             "docs/migrations/cli-contract.md",
@@ -54,7 +56,7 @@ class DocumentationTests(unittest.TestCase):
             "docs/adr/0004-task-finalization-receipts.md",
             "docs/migrations/1.3-task-workspaces.md",
             "docs/migrations/1.4-task-finalization.md",
-            "docs/plans/2026-07-28-task-storage-layout-design.md",
+            "docs/roadmap.md",
             "CHANGELOG.md",
         )
         for relative in documents:
@@ -68,7 +70,7 @@ class DocumentationTests(unittest.TestCase):
         mapping = load_documentation_map(ROOT / "config/documentation-map.json")
         impacts = documentation_impact(["orchestrator/retrieval.py"], mapping)
         documents = {item.document for item in impacts}
-        self.assertIn("docs/specifications/orchestrator-specification.md", documents)
+        self.assertIn("docs/architecture/orchestrator-core.md", documents)
         self.assertIn("docs/migrations/1.2.md", documents)
 
     def test_finalization_runtime_changes_have_canonical_owners(self) -> None:

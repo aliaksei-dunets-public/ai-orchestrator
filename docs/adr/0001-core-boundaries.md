@@ -20,8 +20,8 @@ portability unverifiable.
 - `skills/` is the canonical skill source; platform directories are installable projections.
 - `registries/` maps logical identifiers to existing artifacts.
 - `profiles/` describes platform and stack capabilities without changing Core.
-- `docs/specifications/orchestrator-specification.md` defines architecture and roadmap.
-- `docs/specifications/task-layer-specification.md` defines Task Layer contracts.
+- `docs/architecture/orchestrator-core.md` defines architecture and lifecycle.
+- `docs/architecture/task-layer.md` defines Task Layer contracts.
 - `.orchestrator/tasks/tasks.json` is local operational state and is not stored in Git.
 - Task Context and Execution Record remain versioned.
 
