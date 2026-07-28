@@ -11,4 +11,7 @@ description: Review changed flows for correctness, compatibility, maintainabilit
 4. Report only findings with file, evidence, impact, and remediation.
 5. Mark demonstrable correctness, compatibility, data-loss, or acceptance defects as blocking.
 6. Use an isolated reviewer only when the routed skill's admission contract requires it; otherwise stay in the current context.
-7. Call `orchestrator.review.code_review` and return `rework` on a blocking finding.
+7. Build only the bounded `ReviewerRequest` fields when independent review is
+   admitted; the delegated reviewer is read-only and receives no conversation
+   history, raw logs, secrets, or write-capable tools.
+8. Call `orchestrator.review.code_review` and return `rework` on a blocking finding.

@@ -53,6 +53,22 @@ language: en
 - Outputs: project-local JSONL events and CLI summaries.
 - Does not own Task Registry status, Task Context, review verdicts, or permanent memory.
 
+## Independent Reviewer
+
+- Inputs: one bounded `ReviewerRequest` containing task scope, acceptance
+  criteria, compact context, changed paths, diff summary, and test evidence.
+- Outputs: structured `IndependentReviewerResult` findings and numeric token
+  usage only; the request is read-only and grants no Core, Git, registry,
+  memory, knowledge, approval, or finalization authority.
+- Admission is limited to one reviewer for deep, high/critical, security,
+  migration, persistence, public-API, irreversible, or challenged-blocking
+  work. Unsupported native isolation uses the clean-context fallback.
+- Native invocation is supplied by the active platform adapter; Core does not
+  import a host API or store reviewer prompts, raw tool output, or evidence in
+  telemetry.
+- Does not own implementation writes, Git state, Task Registry transitions,
+  approvals, finalization, memory, or Knowledge Graph content.
+
 ## Workflow Engine
 
 - Inputs: declarative workflow, capability registry, and current workflow state.

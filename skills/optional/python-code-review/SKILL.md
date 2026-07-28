@@ -61,6 +61,13 @@ new findings, validation, risks, blockers and required next actions.
 If required isolation is unavailable, perform the clean-context fallback from
 `references/review-workflow.md` and disclose it.
 
+The Core boundary is `ReviewerRequest` → injected platform adapter →
+`IndependentReviewerResult`. The request is immutable, bounded, read-only, and
+contains only task scope, acceptance criteria, compact context, changed paths,
+diff summary, and test evidence. Provider token counters and handoff count may
+be recorded as numeric telemetry; prompts, raw tool output, and review
+evidence must not be stored in telemetry.
+
 ## Result contract
 
 Return findings first, ordered by severity. Each finding includes:

@@ -270,6 +270,13 @@ attempts have a hard limit, checkpoints keep compact head/tail and digests, and
 the receipt binds task ID, context revision, baseline hash, checkpoint, and
 changed paths. Missing or stale receipts block completion.
 
+Independent review is an optional workflow step admitted at most once for deep,
+high/critical, security-, migration-, persistence-, public-API-, irreversible-,
+or challenged-blocking work. Its immutable request is read-only and contains
+only task scope, acceptance criteria, bounded context, changed paths, diff
+summary, and test evidence. The active platform's `review_isolation` capability
+routes the request to a native adapter or the same-agent clean-context fallback.
+
 ## 11. Backlog Loop
 
 The loop is finite: it has task/time/step limits, stop conditions, one commit

@@ -200,8 +200,9 @@ Automatic repair is limited to safe, deterministic operations.
 
 Runtime may write numeric events to `.orchestrator/telemetry/events.jsonl`.
 Telemetry can include duration, attempts, retries, tool calls, handoffs, and
-provider-reported usage, but MUST NOT contain prompts, tool output, or evidence
-payloads. It is operational state and never replaces Task Context or the
+provider-reported usage, including independent-reviewer token counters, but
+MUST NOT contain prompts, tool output, or evidence payloads. It is operational
+state and never replaces Task Context or the
 Execution Record.
 
 ## 8. Orchestrator Audit
@@ -223,7 +224,10 @@ user request → task creation → context validation → registration → claim
 Freshness, implementation, tests, security review, and task finalization are
 mandatory for every route. Quick low-risk work may use review fast paths;
 standard work uses task and code review; deep or high-risk work requires
-independent review. `done` is allowed only after a valid finalization receipt.
+independent review. Independent review is a single bounded, read-only
+delegation routed through the active platform's `review_isolation` capability;
+unsupported native isolation uses same-agent clean-context review. `done` is
+allowed only after a valid finalization receipt.
 
 ## 10. Memory and knowledge
 

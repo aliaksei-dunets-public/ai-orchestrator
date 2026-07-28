@@ -38,9 +38,10 @@ class ReviewResult:
     criteria: tuple[CriterionReview, ...]
     findings: tuple[ReviewFinding, ...]
     reviewer_mode: str
+    reviewer_reason: str | None = None
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload = {
             "schema_version": 1,
             "kind": self.kind,
             "verdict": self.verdict,
@@ -48,6 +49,9 @@ class ReviewResult:
             "findings": [asdict(item) for item in self.findings],
             "reviewer_mode": self.reviewer_mode,
         }
+        if self.reviewer_reason is not None:
+            payload["reviewer_reason"] = self.reviewer_reason
+        return payload
 
 
 def _in_scope(path: str, allowed: Sequence[str]) -> bool:
@@ -108,8 +112,49 @@ def task_review(
 def code_review(
     findings: Sequence[ReviewFinding],
     *,
-    isolated_reviewer_available: bool,
+    isolated_reviewer_available: bool | None = None,
+    reviewer_request: object | None = None,
+    reviewer_capability_mode: str | None = None,
+    reviewer_capability_adapter: str | None = None,
+    reviewer_adapter: object | None = None,
+    reviewer_telemetry_sink: object | None = None,
+    reviewer_run_id: str = "independent-reviewer",
+    reviewer_security_sensitive: bool = False,
+    reviewer_boundaries: Sequence[str] = (),
+    reviewer_challenged_blocking: bool = False,
+    reviewer_dispatch_count: int = 0,
 ) -> ReviewResult:
+    if reviewer_request is not None:
+        from .reviewer import ReviewerRequest, dispatch_independent_reviewer
+
+        if not isinstance(reviewer_request, ReviewerRequest):
+            raise TypeError("reviewer_request must be a ReviewerRequest")
+        if reviewer_capability_mode is None:
+            reviewer_capability_mode = "native" if isolated_reviewer_available else "fallback"
+        dispatch = dispatch_independent_reviewer(
+            reviewer_request,
+            capability_mode=reviewer_capability_mode,
+            capability_adapter=reviewer_capability_adapter,
+            adapter=reviewer_adapter,
+            security_sensitive=reviewer_security_sensitive,
+            boundaries=reviewer_boundaries,
+            challenged_blocking=reviewer_challenged_blocking,
+            dispatch_count=reviewer_dispatch_count,
+            telemetry_sink=reviewer_telemetry_sink,
+            run_id=reviewer_run_id,
+        )
+        all_findings = tuple(findings) + dispatch.result.findings
+        verdict = "rework" if any(finding.blocking for finding in all_findings) else "approved"
+        return ReviewResult(
+            "code",
+            verdict,
+            (),
+            all_findings,
+            dispatch.mode,
+            dispatch.fallback_reason,
+        )
+    if isolated_reviewer_available is None:
+        raise TypeError("isolated_reviewer_available is required without a reviewer request")
     mode = "isolated" if isolated_reviewer_available else "same-agent-clean-context"
     verdict = "rework" if any(finding.blocking for finding in findings) else "approved"
     return ReviewResult("code", verdict, (), tuple(findings), mode)
