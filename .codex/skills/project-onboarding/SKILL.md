@@ -17,18 +17,26 @@ the target project.
 3. When the result is `needs_input`, ask only the returned questions. Present
    every choice with its description and identify the recommended choice.
    Preserve the returned question IDs and choice IDs exactly.
-4. Run `plan` with the collected answers. If new questions appear, continue the
+4. Invoke the bundled `knowledge-curator` skill for a read-only source inventory.
+   Ask it to produce a small evidence-based `knowledge_graph` proposal with
+   project-relative source paths. It may return an empty proposal when evidence is
+   insufficient. Do not let discovery write target files.
+5. Add the proposal under `answers.knowledge_graph` without credentials,
+   secret-like labels or agent-supplied source digests. The proposal is validated by
+   Core and becomes part of the onboarding preview.
+6. Run `plan` with the collected answers. If new questions appear, continue the
    dialogue one question at a time.
-5. Present the complete preview: Core path and version, selected profiles,
+7. Present the complete preview: Core path and version, selected profiles,
+   proposed graph nodes/edges and their sources,
    every file diff, validation steps, rollback paths and `plan_hash`.
-6. Ask for one explicit approval bound to that exact `plan_hash`. Explain that
-   approval includes automatic rollback when validation reports `ERROR` or
-   `CRITICAL`.
-7. Only after approval, run `apply --approved-plan-hash <hash>` with the same
+8. Ask for one explicit approval bound to that exact `plan_hash`. Explain that
+   approval includes graph writes and automatic rollback when validation reports
+   `ERROR` or `CRITICAL`.
+9. Only after approval, run `apply --approved-plan-hash <hash>` with the same
    answers.
-8. Report `completed`, `rolled_back` or `rollback_failed`, including findings
+10. Report `completed`, `rolled_back` or `rollback_failed`, including findings
    and the report path. Never describe a rolled-back installation as complete.
-9. Verify that canonical memory entries/events/approvals and knowledge
+11. Verify that canonical memory entries/events/approvals and knowledge
    ontology/nodes/edges are tracked, while proposals, indexes, and migration
    backups are ignored.
 

@@ -32,6 +32,7 @@
 | 23 | [Stable Release 1.0](2026-07-27-phase-23-stable-release-1-0.md) | Фазы 0–22. |
 | 24 | [Изоляция ядра и распределение навыков](2026-07-28-phase-24-skill-distribution.md) | Фаза 23 и [согласованный дизайн](2026-07-28-skill-distribution-design.md). |
 | 25 | [Полный lifecycle памяти и графа знаний](2026-07-28-phase-25-memory-knowledge-full-lifecycle.md) | Фазы 17–19 и 24, [утверждённый дизайн](2026-07-28-memory-knowledge-full-lifecycle-design.md). |
+| 26 | [Интеграция Knowledge Curator в onboarding](2026-07-28-knowledge-curator-onboarding.md) | Фаза 25 и утверждённое решение о едином graph owner. |
 
 ## Общая проверка
 

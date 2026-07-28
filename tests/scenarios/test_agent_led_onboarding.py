@@ -130,6 +130,89 @@ class AgentLedOnboardingScenarioTests(unittest.TestCase):
             self.assertEqual(second.status, "preview_ready")
             self.assertEqual(second.changes, ())
 
+    def test_graph_proposal_is_previewed_applied_and_indexed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary)
+            self._python_project(target)
+            answers = {
+                "platform_profile": "codex",
+                "external_core_path": "confirm",
+                "knowledge_graph": {
+                    "schema_version": 1,
+                    "nodes": [
+                        {
+                            "id": "app-component",
+                            "kind": "component",
+                            "label": "Application",
+                            "source": "src/app.py",
+                        },
+                        {
+                            "id": "project-document",
+                            "kind": "document",
+                            "label": "Project metadata",
+                            "source": "pyproject.toml",
+                        },
+                    ],
+                    "edges": [
+                        {
+                            "id": "app-defined-by-project",
+                            "source_node": "app-component",
+                            "target_node": "project-document",
+                            "relation": "defined_by",
+                            "source": "pyproject.toml",
+                        }
+                    ],
+                },
+            }
+            preview = plan_onboarding(SKILL, target, answers)
+            self.assertEqual(preview.status, "preview_ready")
+            node_change = next(
+                item for item in preview.changes
+                if item.path == ".orchestrator/knowledge/nodes.jsonl"
+            )
+            self.assertIn('"id":"app-component"', node_change.content)
+            self.assertIn("knowledge-graph", preview.validation_steps)
+            result = apply_onboarding(
+                SKILL,
+                target,
+                answers,
+                approved_plan_hash=preview.plan_hash,
+            )
+            self.assertEqual(result.status, "completed")
+            self.assertIn(
+                '"id":"app-component"',
+                (target / ".orchestrator/knowledge/nodes.jsonl").read_text(encoding="utf-8"),
+            )
+            self.assertTrue(
+                (target / ".orchestrator/knowledge/indexes/index.json").is_file()
+            )
+            self.assertEqual(plan_onboarding(SKILL, target, answers).changes, ())
+
+    def test_graph_proposal_digest_is_rejected_before_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary)
+            self._python_project(target)
+            answers = {
+                "platform_profile": "codex",
+                "external_core_path": "confirm",
+                "knowledge_graph": {
+                    "schema_version": 1,
+                    "nodes": [
+                        {
+                            "id": "app-component",
+                            "kind": "component",
+                            "label": "Application",
+                            "source": "src/app.py",
+                            "source_digest": "0" * 64,
+                        }
+                    ],
+                    "edges": [],
+                },
+            }
+            with self.assertRaisesRegex(OnboardingError, "source_digest"):
+                plan_onboarding(SKILL, target, answers)
+            self.assertFalse((target / ".orchestrator/config.json").exists())
+
     def test_stale_approval_is_rejected_before_writes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary)

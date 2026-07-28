@@ -481,6 +481,11 @@ bounded context pack из effective Project Memory и Knowledge Graph. Empty и�
 irrelevant stores являются корректным no-op. Context pack не изменяет Task Context
 baseline и не заменяет canonical source evidence.
 
+Для нового target project первичная graph curation выполняется в onboarding:
+`knowledge-curator` возвращает proposal, а `project-onboarding` включает его в
+preview, hash-bound approval, apply и rollback. Graph proposal не записывается
+напрямую skill-ом и может быть пустым.
+
 После остановки task execution Session Reporter может сформировать secret-safe
 memory candidates. Эти candidates остаются proposals и проходят source-authority
 и approval gates; workflow не записывает их непосредственно в canonical memory.

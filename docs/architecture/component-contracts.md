@@ -72,3 +72,8 @@
   без embeddings или внешней базы данных.
 - Не превращает observation в instruction автоматически и не использует graph
   как второй источник истины.
+
+`knowledge-curator` дополнительно владеет read-only source inventory, onboarding
+`knowledge_graph` proposal, provenance/ontology validation, canonical graph merge
+и deterministic index rebuild. `project-onboarding` владеет только target
+bootstrap, preview, approval, apply и rollback boundary.

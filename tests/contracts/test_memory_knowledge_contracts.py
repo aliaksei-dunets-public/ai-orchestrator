@@ -17,6 +17,7 @@ class MemoryKnowledgeContractTests(unittest.TestCase):
             "memory-approval.schema.json",
             "knowledge-ontology.schema.json",
             "knowledge-index.schema.json",
+            "knowledge-bootstrap.schema.json",
             "context-pack.schema.json",
         }
         self.assertEqual(

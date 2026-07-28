@@ -21,8 +21,9 @@
     {
       "path_prefixes": [
         "orchestrator/memory.py",
-        "orchestrator/knowledge.py",
-        "orchestrator/ontology.py",
+            "orchestrator/knowledge.py",
+            "orchestrator/knowledge_bootstrap.py",
+            "orchestrator/ontology.py",
         "orchestrator/retrieval.py",
         "orchestrator/source_authority.py",
         "orchestrator/memory_knowledge_migration.py"

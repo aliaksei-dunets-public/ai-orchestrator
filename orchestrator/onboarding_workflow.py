@@ -13,7 +13,10 @@ from pathlib import Path
 from typing import Callable, Mapping
 
 from .health import run_health_checks
+from .knowledge import effective_graph, rebuild_indexes
+from .knowledge_bootstrap import prepare_graph_update
 from .onboarding import ProjectFacts, collect_facts, render_project_context
+from .ontology import load_core_ontology, load_project_ontology, merge_ontology
 from .platforms import load_platform_profile
 from .technologies import detect_technology, load_technology_profile
 
@@ -30,6 +33,7 @@ ALLOWED_ANSWER_KEYS = {
     "platform_profile",
     "technology_profiles",
     "external_core_path",
+    "knowledge_graph",
 }
 CREDENTIAL_KEY_RE = re.compile(
     r"(?:credential|password|passwd|secret|token|api[_-]?key|private[_-]?key)",
@@ -565,6 +569,7 @@ def plan_onboarding(
     target_root: Path | str,
     answers: Mapping[str, object] | None = None,
 ) -> OnboardingInspection | OnboardingPlan:
+    resolved_answers = _validate_answers(answers or {})
     inspection = inspect_onboarding(skill_path, target_root, answers)
     if inspection.status != "ready":
         return inspection
@@ -592,6 +597,8 @@ def plan_onboarding(
             "knowledge_nodes": ".orchestrator/knowledge/nodes.jsonl",
             "knowledge_edges": ".orchestrator/knowledge/edges.jsonl",
             "index_directory": ".orchestrator/knowledge/indexes",
+            "knowledge_bootstrap_schema": "config/schemas/knowledge-bootstrap.schema.json",
+            "knowledge_curator_skill": "knowledge-curator",
         },
     }
 
@@ -622,8 +629,6 @@ def plan_onboarding(
         ".orchestrator/memory/entries.jsonl",
         ".orchestrator/memory/events.jsonl",
         ".orchestrator/memory/approvals.jsonl",
-        ".orchestrator/knowledge/nodes.jsonl",
-        ".orchestrator/knowledge/edges.jsonl",
     ):
         add_change(relative, _read_text(_safe_target(target, relative)))
     ontology_path = ".orchestrator/knowledge/ontology.json"
@@ -641,6 +646,29 @@ def plan_onboarding(
             sort_keys=True,
         ) + "\n"
     add_change(ontology_path, ontology_existing)
+
+    try:
+        ontology = merge_ontology(
+            load_core_ontology(core / "config/knowledge-ontology.json"),
+            load_project_ontology(_safe_target(target, ontology_path)),
+        )
+        graph_update = prepare_graph_update(
+            target,
+            _safe_target(target, ".orchestrator/knowledge/nodes.jsonl"),
+            _safe_target(target, ".orchestrator/knowledge/edges.jsonl"),
+            resolved_answers.get("knowledge_graph"),
+            ontology=ontology,
+        )
+    except Exception as exc:
+        raise OnboardingError(f"invalid knowledge graph proposal: {exc}") from exc
+    add_change(
+        ".orchestrator/knowledge/nodes.jsonl",
+        graph_update.nodes_content,
+    )
+    add_change(
+        ".orchestrator/knowledge/edges.jsonl",
+        graph_update.edges_content,
+    )
 
     instruction_target = onboarding["instruction_target"]
     bootstrap = "\n".join(
@@ -720,6 +748,7 @@ def plan_onboarding(
             "managed-instructions",
             "core-health",
             "task-registry-health",
+            "knowledge-graph",
             "idempotency",
         ),
         target_fingerprint,
@@ -750,6 +779,14 @@ def _write_json(path: Path, payload: Mapping[str, object]) -> None:
 
 def _timestamp() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _rebuild_target_knowledge_index(target: Path) -> None:
+    rebuild_indexes(
+        _safe_target(target, ".orchestrator/knowledge/nodes.jsonl"),
+        _safe_target(target, ".orchestrator/knowledge/edges.jsonl"),
+        _safe_target(target, ".orchestrator/knowledge/indexes/index.json"),
+    )
 
 
 def _create_backup(target: Path, plan: OnboardingPlan, session_id: str) -> Path:
@@ -890,6 +927,8 @@ def _default_validation(
                 "knowledge_nodes": ".orchestrator/knowledge/nodes.jsonl",
                 "knowledge_edges": ".orchestrator/knowledge/edges.jsonl",
                 "index_directory": ".orchestrator/knowledge/indexes",
+                "knowledge_bootstrap_schema": "config/schemas/knowledge-bootstrap.schema.json",
+                "knowledge_curator_skill": "knowledge-curator",
             },
         }
         if config != expected_config:
@@ -907,6 +946,16 @@ def _default_validation(
     ):
         if not _safe_target(target, relative).is_file():
             findings.append(f"ERROR canonical memory/knowledge store is missing: {relative}")
+
+    try:
+        knowledge_nodes = _safe_target(target, ".orchestrator/knowledge/nodes.jsonl")
+        knowledge_edges = _safe_target(target, ".orchestrator/knowledge/edges.jsonl")
+        effective_graph(knowledge_nodes, knowledge_edges)
+        index = _safe_target(target, ".orchestrator/knowledge/indexes/index.json")
+        if not index.is_file():
+            findings.append("ERROR derived knowledge index is missing")
+    except Exception as exc:
+        findings.append(f"ERROR knowledge graph is invalid: {exc}")
 
     context = target / ".orchestrator/project-context.md"
     try:
@@ -991,6 +1040,7 @@ def apply_onboarding(
                 destination,
                 change.content,
             )
+        _rebuild_target_knowledge_index(target)
         session["status"] = "validating"
         session["updated_at"] = _timestamp()
         _write_json(session_path, session)
@@ -1009,11 +1059,15 @@ def apply_onboarding(
             for finding in findings
         ):
             rollback_verified = _restore_backup(target, manifest_path)
+            if rollback_verified:
+                _rebuild_target_knowledge_index(target)
             status = "rolled_back" if rollback_verified else "rollback_failed"
     except Exception as exc:
         findings = findings + (f"ERROR onboarding apply failed: {type(exc).__name__}: {exc}",)
         try:
             rollback_verified = _restore_backup(target, manifest_path)
+            if rollback_verified:
+                _rebuild_target_knowledge_index(target)
             status = "rolled_back" if rollback_verified else "rollback_failed"
         except Exception as rollback_exc:
             findings = findings + (

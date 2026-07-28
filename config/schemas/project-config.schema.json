@@ -32,7 +32,9 @@
         "knowledge_ontology": {"type": "string", "minLength": 1},
         "knowledge_nodes": {"type": "string", "minLength": 1},
         "knowledge_edges": {"type": "string", "minLength": 1},
-        "index_directory": {"type": "string", "minLength": 1}
+        "index_directory": {"type": "string", "minLength": 1},
+        "knowledge_bootstrap_schema": {"type": "string", "minLength": 1},
+        "knowledge_curator_skill": {"type": "string", "minLength": 1}
       },
       "additionalProperties": false
     }

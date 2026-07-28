@@ -147,6 +147,15 @@ pack. Retrieval детерминирован, исключает stale/disabled/
 и ограничен соответственно 2048/6144/12288 символами. Embeddings, external DB и
 cross-project shared memory не поддерживаются.
 
+При Project Onboarding bundled skill `knowledge-curator` выполняет read-only
+инвентаризацию canonical sources и формирует optional `knowledge_graph` proposal.
+Proposal входит в общий onboarding preview и `plan_hash`; до explicit approval он
+не записывается в target. Core пересчитывает provenance digests, валидирует
+ontology, conflicts, supersede cycles и effective edge endpoints. После approval
+onboarding атомарно применяет graph changes, перестраивает ignored indexes и
+включает их в общий rollback при `ERROR`/`CRITICAL`. Отсутствующий или пустой
+proposal является корректным no-op.
+
 ## 4. Иерархия конфигурации
 
 Порядок загрузки:

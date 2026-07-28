@@ -409,6 +409,13 @@ onboarding.
 - `python -m orchestrator context --root . --mode standard` возвращает bounded
   schema-version-1 context pack.
 
+Во время первого onboarding `knowledge-curator` дополнительно выполняет
+read-only inventory проекта и возвращает `answers.knowledge_graph`. Proposal
+показывается в полном preview рядом с остальными file diffs и входит в тот же
+`plan_hash`. После approval onboarding создаёт canonical nodes/edges, перестраивает
+ignored graph index и откатывает graph вместе с остальными файлами при
+`ERROR`/`CRITICAL`. Пустой proposal допустим и не создаёт выдуманных сущностей.
+
 Нормативные контракты: [спецификация оркестратора](../specifications/orchestrator-specification-ru.md),
 [Task Layer](../specifications/task-layer-specification-ru.md) и
 [контракты компонентов](../architecture/component-contracts.md).
