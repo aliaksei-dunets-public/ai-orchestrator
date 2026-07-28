@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 class DocumentationTests(unittest.TestCase):
     def test_public_cli_change_requires_specification_and_migration(self) -> None:
         mapping = load_documentation_map(ROOT / "config/documentation-map.json")
-        impacts = documentation_impact(["orchestrator/task_cli.py"], mapping)
+        impacts = documentation_impact(["orchestrator/task_manager.py"], mapping)
         documents = {item.document for item in impacts}
         self.assertIn("docs/specifications/task-layer-specification-ru.md", documents)
         self.assertIn("docs/migrations/cli-contract.md", documents)
@@ -34,3 +34,21 @@ class DocumentationTests(unittest.TestCase):
             (root / "docs").mkdir()
             (root / "docs/missing.md").write_text("ok", encoding="utf-8")
             self.assertEqual(broken_local_links(document, root=root), [])
+
+    def test_task_storage_contract_documents_have_no_broken_links(self) -> None:
+        documents = (
+            "docs/specifications/orchestrator-specification-ru.md",
+            "docs/specifications/task-layer-specification-ru.md",
+            "docs/guides/deployment-to-target-project-ru.md",
+            "docs/architecture/component-contracts.md",
+            "docs/migrations/cli-contract.md",
+            "docs/migrations/1.1.md",
+            "docs/plans/2026-07-28-task-storage-layout-design.md",
+            "CHANGELOG.md",
+        )
+        for relative in documents:
+            self.assertEqual(
+                broken_local_links(ROOT / relative, root=ROOT),
+                [],
+                relative,
+            )

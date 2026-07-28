@@ -84,11 +84,16 @@ class BacklogLoopScenarioTests(unittest.TestCase):
             (root / ".gitignore").write_text(
                 ".orchestrator/tasks/tasks.json\n"
                 ".orchestrator/tasks/*.tmp\n"
-                ".orchestrator/tasks/*.lock\n",
+                ".orchestrator/tasks/checkpoints/\n",
                 encoding="utf-8",
             )
-            context = tasks / "TASK-0001.md"
+            context = tasks / "contexts" / "TASK-0001.md"
+            context.parent.mkdir()
             context.write_text("# TASK-0001\n\n# Execution Record\n\nCompleted.\n", encoding="utf-8")
+            checkpoints = tasks / "checkpoints"
+            checkpoints.mkdir()
+            checkpoint = checkpoints / "TASK-0001.checkpoint.lock"
+            checkpoint.write_text("checkpoint", encoding="utf-8")
             registry = {
                 "schema_version": 1,
                 "next_id": 2,
@@ -97,7 +102,7 @@ class BacklogLoopScenarioTests(unittest.TestCase):
                         "id": "TASK-0001",
                         "title": "Committed task",
                         "status": "in_progress",
-                        "context": "TASK-0001.md",
+                        "context": "contexts/TASK-0001.md",
                         "status_note": None,
                         "created_at": "2026-07-27T00:00:00+00:00",
                         "updated_at": "2026-07-27T00:00:00+00:00",
@@ -122,4 +127,5 @@ class BacklogLoopScenarioTests(unittest.TestCase):
             git("commit", "-q", "-m", "implementation commit")
             self.assertEqual(git("status", "--porcelain").stdout, "")
             TaskManager(tasks).complete("TASK-0001")
+            self.assertFalse(checkpoint.exists())
             self.assertEqual(git("status", "--porcelain").stdout, "")

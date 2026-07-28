@@ -65,10 +65,16 @@ class TaskManagerTests(unittest.TestCase):
         draft = self.create_draft()
         task = self.manager.register(draft)
         self.assertEqual(task["id"], "TASK-0001")
+        self.assertEqual(task["context"], "contexts/TASK-0001.md")
         self.assertFalse(draft.exists())
-        context = self.tasks / "TASK-0001.md"
+        context = self.tasks / "contexts" / "TASK-0001.md"
         self.assertIn("id: TASK-0001", context.read_text(encoding="utf-8"))
         self.assertIn("revision: 1", context.read_text(encoding="utf-8"))
+        self.assertTrue((self.tasks / "checkpoints").is_dir())
+        self.assertEqual(
+            self.manager.checkpoint_path("TASK-0001"),
+            self.tasks / "checkpoints" / "TASK-0001.checkpoint.lock",
+        )
         self.assertEqual(validate_registry(self.tasks), [])
 
     def test_registration_rejects_critical_open_question(self) -> None:
@@ -102,6 +108,55 @@ class TaskManagerTests(unittest.TestCase):
         with self.assertRaises(TaskManagerError):
             self.manager.resume(task["id"])
 
+    def test_complete_removes_checkpoint_but_cancel_preserves_it(self) -> None:
+        first = self.manager.register(self.create_draft("complete.md"))
+        self.manager.claim_next()
+        first_checkpoint = self.manager.checkpoint_path(first["id"])
+        first_checkpoint.write_text("checkpoint", encoding="utf-8")
+        self.manager.complete(first["id"])
+        self.assertFalse(first_checkpoint.exists())
+
+        second_draft = self.create_draft("cancel.md")
+        second_draft.write_text(DRAFT.replace("Test task", "Cancelled task"), encoding="utf-8")
+        second = self.manager.register(second_draft)
+        self.manager.claim_next()
+        second_checkpoint = self.manager.checkpoint_path(second["id"])
+        second_checkpoint.write_text("checkpoint", encoding="utf-8")
+        self.manager.cancel(second["id"], "No longer needed")
+        self.assertTrue(second_checkpoint.is_file())
+
+    def test_complete_reports_checkpoint_cleanup_warning_after_status_persists(self) -> None:
+        task = self.manager.register(self.create_draft())
+        self.manager.claim_next()
+        checkpoint = self.manager.checkpoint_path(task["id"])
+        checkpoint.write_text("checkpoint", encoding="utf-8")
+        original_unlink = Path.unlink
+
+        def failing_unlink(path: Path, *args: object, **kwargs: object) -> None:
+            if path == checkpoint:
+                raise PermissionError("checkpoint is in use")
+            original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "unlink", failing_unlink):
+            result = self.manager.complete(task["id"])
+        self.assertEqual(result["status"], "done")
+        self.assertIn("cleanup_warning", result)
+        self.assertEqual(self.manager.show(task["id"])["status"], "done")
+        self.assertTrue(checkpoint.is_file())
+
+    def test_complete_reports_checkpoint_path_failure_after_status_persists(self) -> None:
+        task = self.manager.register(self.create_draft())
+        self.manager.claim_next()
+        with mock.patch.object(
+            self.manager,
+            "checkpoint_path",
+            side_effect=TaskManagerError("GENERAL_ERROR", "unsafe checkpoint directory"),
+        ):
+            result = self.manager.complete(task["id"])
+        self.assertEqual(result["status"], "done")
+        self.assertIn("cleanup_warning", result)
+        self.assertEqual(self.manager.show(task["id"])["status"], "done")
+
     def test_atomic_write_leaves_no_temporary_file(self) -> None:
         self.manager.register(self.create_draft())
         self.assertEqual(list(self.tasks.glob("*.tmp")), [])
@@ -120,7 +175,7 @@ class TaskManagerTests(unittest.TestCase):
             self.manager.register(draft)
         self.manager._write = original_write  # type: ignore[method-assign]
         self.assertTrue(draft.exists())
-        self.assertFalse((self.tasks / "TASK-0001.md").exists())
+        self.assertFalse((self.tasks / "contexts" / "TASK-0001.md").exists())
         self.assertEqual(json.loads((self.tasks / "tasks.json").read_text(encoding="utf-8"))["tasks"], [])
 
     def test_registration_keeps_registry_valid_when_draft_cleanup_fails(self) -> None:
@@ -135,18 +190,28 @@ class TaskManagerTests(unittest.TestCase):
         with mock.patch.object(Path, "unlink", failing_unlink):
             result = self.manager.register(draft)
         self.assertIn("cleanup_warning", result)
-        self.assertEqual(self.manager.show("TASK-0001")["context"], "TASK-0001.md")
-        self.assertTrue((self.tasks / "TASK-0001.md").is_file())
+        self.assertEqual(self.manager.show("TASK-0001")["context"], "contexts/TASK-0001.md")
+        self.assertTrue((self.tasks / "contexts" / "TASK-0001.md").is_file())
         self.assertTrue(draft.is_file())
         self.assertEqual(validate_registry(self.tasks), [])
 
     def test_validation_detects_orphan_and_missing_context(self) -> None:
-        (self.tasks / "TASK-0099.md").write_text("# orphan", encoding="utf-8")
+        orphan = self.tasks / "contexts" / "TASK-0099.md"
+        orphan.write_text("# orphan", encoding="utf-8")
         self.assertTrue(any(issue.code == "ORPHAN_CONTEXT" for issue in validate_registry(self.tasks)))
-        (self.tasks / "TASK-0099.md").unlink()
+        orphan.unlink()
         task = self.manager.register(self.create_draft())
         (self.tasks / task["context"]).unlink()
         self.assertTrue(any(issue.code == "MISSING_CONTEXT" for issue in validate_registry(self.tasks)))
+
+    def test_validation_rejects_legacy_context_location(self) -> None:
+        task = self.manager.register(self.create_draft())
+        payload = json.loads((self.tasks / "tasks.json").read_text(encoding="utf-8"))
+        payload["tasks"][0]["context"] = f"{task['id']}.md"
+        (self.tasks / "tasks.json").write_text(json.dumps(payload), encoding="utf-8")
+        self.assertTrue(
+            any(issue.code == "INVALID_CONTEXT_PATH" for issue in validate_registry(self.tasks))
+        )
 
     def test_corrupt_json_has_exit_code_four(self) -> None:
         (self.tasks / "tasks.json").write_text("{", encoding="utf-8")

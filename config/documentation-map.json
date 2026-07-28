@@ -2,7 +2,11 @@
   "schema_version": 1,
   "rules": [
     {
-      "path_prefixes": ["orchestrator/cli.py", "orchestrator/task_cli.py"],
+      "path_prefixes": [
+        "orchestrator/cli.py",
+        "orchestrator/task_cli.py",
+        "orchestrator/task_manager.py"
+      ],
       "documents": [
         "docs/specifications/orchestrator-specification-ru.md",
         "docs/specifications/task-layer-specification-ru.md",

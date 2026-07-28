@@ -263,6 +263,11 @@ target-project/
 │   ├── project-context.md            # tracked
 │   ├── skills.json                   # approved optional skills, tracked
 │   ├── project-skills/               # project-owned skill sources, tracked
+│   ├── tasks/
+│   │   ├── contexts/                 # Task Context, tracked
+│   │   ├── checkpoints/              # execution state, ignored
+│   │   ├── drafts/                   # Task Context drafts
+│   │   └── tasks.json                # registry, ignored
 │   └── onboarding/
 │       ├── report.json               # итог
 │       ├── session.json              # operational state
@@ -303,7 +308,7 @@ Operational state исключается:
 .orchestrator/onboarding/backups/
 .orchestrator/tasks/tasks.json
 .orchestrator/tasks/*.tmp
-.orchestrator/tasks/*.lock
+.orchestrator/tasks/checkpoints/
 .orchestrator/telemetry/
 # AI Orchestrator operational state: end
 ```

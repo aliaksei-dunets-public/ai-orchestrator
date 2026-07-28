@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Separated tracked Task Contexts into `.orchestrator/tasks/contexts/` and ignored execution checkpoints into `.orchestrator/tasks/checkpoints/`.
+- Removed a task checkpoint after successful `done` persistence while preserving `cancelled` checkpoints for diagnostics.
+
 ## 1.1.0 — 2026-07-28
 
 - Split canonical skills into system, bundled and optional distribution groups.

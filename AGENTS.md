@@ -18,6 +18,12 @@
 - Search canonical sources by default; `releases/` is excluded through `.rgignore` and must be searched explicitly for release validation.
 - Preserve unrelated user changes and avoid destructive Git operations.
 
+## Python environment
+
+- Use the workspace-local `.venv` for Python development and validation.
+- Do not depend on a global `python` command being available in `PATH`.
+- For setup, package installation and test commands, follow [the development environment guide](docs/guides/development-environment-ru.md).
+
 ## Completion evidence
 
 A phase is complete only when its plan deliverables exist, acceptance criteria have direct evidence, relevant tests pass, specifications and registries agree, and Health Check has no `ERROR` or `CRITICAL`.

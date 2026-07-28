@@ -484,7 +484,7 @@ def _gitignore_content(existing: str) -> str:
         (
             ".orchestrator/tasks/tasks.json",
             ".orchestrator/tasks/*.tmp",
-            ".orchestrator/tasks/*.lock",
+            ".orchestrator/tasks/checkpoints/",
             ".orchestrator/telemetry/",
             ".orchestrator/onboarding/session.json",
             ".orchestrator/onboarding/backups/",

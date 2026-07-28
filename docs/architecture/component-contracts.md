@@ -15,7 +15,8 @@
 ## Task Manager
 
 - Входы: валидированный Task Context или допустимая status transition.
-- Выходы: локальный Task Registry result и ссылка на Task Context.
+- Выходы: локальный Task Registry result, ссылка `contexts/<TASK-ID>.md` на Task Context и canonical checkpoint path `checkpoints/<TASK-ID>.checkpoint.lock`.
+- Владеет: вычислением безопасных путей Task Context/checkpoint и удалением checkpoint после перехода в `done`; `cancelled` checkpoint сохраняет.
 - Не владеет: planning, implementation, reviews, commits и documentation.
 
 ## Task Execution Workflow

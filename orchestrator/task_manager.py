@@ -10,6 +10,8 @@ from typing import Any
 
 
 TASK_ID_RE = re.compile(r"TASK-(\d{4,})")
+CONTEXTS_DIRNAME = "contexts"
+CHECKPOINTS_DIRNAME = "checkpoints"
 CRITICAL_QUESTION_RE = re.compile(
     r"(?im)^\s*-\s*(?:\[critical\]|critical\s*:|критическ(?:ий|ая)\s*:)",
 )
@@ -75,7 +77,14 @@ def _safe_context_path(tasks_root: Path, relative: object) -> Path | None:
     if not isinstance(relative, str) or not relative:
         return None
     pure = PurePosixPath(relative)
-    if pure.is_absolute() or ".." in pure.parts or pure.parts[0] == "drafts":
+    if (
+        pure.is_absolute()
+        or ".." in pure.parts
+        or len(pure.parts) != 2
+        or pure.parts[0] != CONTEXTS_DIRNAME
+        or pure.suffix != ".md"
+        or not TASK_ID_RE.fullmatch(pure.stem)
+    ):
         return None
     path = (tasks_root / Path(*pure.parts)).resolve()
     try:
@@ -130,7 +139,12 @@ def validate_registry(tasks_root: Path | str) -> list[RegistryIssue]:
         if status in SLOT_STATUSES:
             active += 1
         context = _safe_context_path(root, task.get("context"))
-        if context is None:
+        expected_context = (
+            f"{CONTEXTS_DIRNAME}/{task_id}.md"
+            if TASK_ID_RE.fullmatch(str(task_id))
+            else None
+        )
+        if context is None or task.get("context") != expected_context:
             issues.append(RegistryIssue("INVALID_CONTEXT_PATH", "ERROR", f"Invalid context path for {task_id}", registry_path))
         else:
             referenced.add(context)
@@ -140,8 +154,9 @@ def validate_registry(tasks_root: Path | str) -> list[RegistryIssue]:
         issues.append(RegistryIssue("MULTIPLE_ACTIVE_TASKS", "ERROR", "More than one task occupies the execution slot", registry_path))
     if isinstance(next_id, int) and next_id <= max_number:
         issues.append(RegistryIssue("INVALID_NEXT_ID", "ERROR", "next_id must exceed every allocated task id", registry_path))
-    if root.exists():
-        for context in root.glob("TASK-*.md"):
+    contexts_root = root / CONTEXTS_DIRNAME
+    if contexts_root.exists():
+        for context in contexts_root.glob("TASK-*.md"):
             if context.resolve() not in referenced:
                 issues.append(RegistryIssue("ORPHAN_CONTEXT", "ERROR", "Context is not registered", context))
     return issues
@@ -198,6 +213,20 @@ class TaskManager:
     def __init__(self, tasks_root: Path | str):
         self.tasks_root = Path(tasks_root).resolve()
         self.registry_path = self.tasks_root / "tasks.json"
+        self.contexts_root = self.tasks_root / CONTEXTS_DIRNAME
+        self.checkpoints_root = self.tasks_root / CHECKPOINTS_DIRNAME
+
+    def _ensure_task_directory(self, directory: Path) -> Path:
+        directory.mkdir(parents=True, exist_ok=True)
+        resolved = directory.resolve()
+        try:
+            resolved.relative_to(self.tasks_root)
+        except ValueError as exc:
+            raise TaskManagerError(
+                "GENERAL_ERROR",
+                f"Task storage directory escapes tasks root: {directory}",
+            ) from exc
+        return resolved
 
     def _read(self) -> dict[str, Any]:
         payload = _read_registry_file(self.registry_path)
@@ -222,8 +251,16 @@ class TaskManager:
                 temporary.unlink()
 
     def initialize(self) -> None:
+        self._ensure_task_directory(self.contexts_root)
+        self._ensure_task_directory(self.checkpoints_root)
         if not self.registry_path.exists():
             self._write(empty_registry())
+
+    def checkpoint_path(self, task_id: str) -> Path:
+        if not TASK_ID_RE.fullmatch(task_id):
+            raise TaskManagerError("GENERAL_ERROR", f"Invalid task id: {task_id}")
+        checkpoints_root = self._ensure_task_directory(self.checkpoints_root)
+        return checkpoints_root / f"{task_id}.checkpoint.lock"
 
     def list_tasks(self) -> list[dict[str, Any]]:
         return [dict(task) for task in self._read()["tasks"]]
@@ -273,18 +310,19 @@ class TaskManager:
                 raise TaskManagerError("GENERAL_ERROR", "Critical open question blocks registration")
         number = int(payload["next_id"])
         task_id = f"TASK-{number:04d}"
-        target = self.tasks_root / f"{task_id}.md"
+        contexts_root = self._ensure_task_directory(self.contexts_root)
+        self._ensure_task_directory(self.checkpoints_root)
+        target = contexts_root / f"{task_id}.md"
         if target.exists():
-            raise TaskManagerError("REGISTRY_CORRUPT", f"Target context already exists: {target.name}")
+            raise TaskManagerError("REGISTRY_CORRUPT", f"Target context already exists: {target}")
         registered = _registered_context(text, task_id, 1, fields["title"])
-        self.tasks_root.mkdir(parents=True, exist_ok=True)
         target.write_text(registered, encoding="utf-8", newline="\n")
         now = _now()
         record = {
             "id": task_id,
             "title": fields["title"],
             "status": "backlog",
-            "context": target.name,
+            "context": target.relative_to(self.tasks_root).as_posix(),
             "status_note": None,
             "created_at": now,
             "updated_at": now,
@@ -350,7 +388,15 @@ class TaskManager:
         return self.set_status(task_id, "in_progress")
 
     def complete(self, task_id: str) -> dict[str, Any]:
-        return self.set_status(task_id, "done", terminal_command=True)
+        result = self.set_status(task_id, "done", terminal_command=True)
+        try:
+            checkpoint = self.checkpoint_path(task_id)
+            checkpoint.unlink(missing_ok=True)
+        except (OSError, TaskManagerError) as exc:
+            result["cleanup_warning"] = (
+                f"Task completed but checkpoint could not be removed: {exc}"
+            )
+        return result
 
     def cancel(self, task_id: str, note: str | None = None) -> dict[str, Any]:
         return self.set_status(task_id, "cancelled", note, terminal_command=True)

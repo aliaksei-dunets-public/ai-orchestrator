@@ -4,11 +4,12 @@
 __pycache__/
 *.py[cod]
 .env
+.venv/
 
 # Local AI Orchestrator operational state
 .orchestrator/tasks/tasks.json
 .orchestrator/tasks/*.tmp
-.orchestrator/tasks/*.lock
+.orchestrator/tasks/checkpoints/
 .orchestrator/telemetry/
 .orchestrator/releases/
 

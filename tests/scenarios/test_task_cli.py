@@ -44,9 +44,16 @@ class TaskCliScenarioTests(unittest.TestCase):
         claimed = self.run_cli("claim-next", "--json")
         payload = json.loads(claimed.stdout)
         self.assertEqual(payload["task"]["status"], "in_progress")
+        self.assertEqual(
+            payload["task"]["context"],
+            ".orchestrator/tasks/contexts/TASK-0001.md",
+        )
+        checkpoint = self.tasks / "checkpoints" / "TASK-0001.checkpoint.lock"
+        checkpoint.write_text("checkpoint", encoding="utf-8")
         completed = self.run_cli("complete", "TASK-0001")
         self.assertEqual(completed.returncode, 0)
         self.assertEqual(json.loads(completed.stdout)["task"]["status"], "done")
+        self.assertFalse(checkpoint.exists())
         validated = self.run_cli("validate", "--json")
         self.assertEqual(validated.returncode, 0, validated.stdout)
 
@@ -63,7 +70,7 @@ class TaskCliScenarioTests(unittest.TestCase):
         for relative in (
             ".orchestrator/tasks/tasks.json",
             ".orchestrator/tasks/probe.tmp",
-            ".orchestrator/tasks/probe.lock",
+            ".orchestrator/tasks/checkpoints/probe.lock",
         ):
             result = subprocess.run(
                 ["git", "check-ignore", relative],

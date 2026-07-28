@@ -163,7 +163,7 @@ Task Context создаётся как черновик до регистрац�
 В черновике поле `id` отсутствует или равно `null`, а заголовок не содержит фиктивный ID. После успешной валидации Task Manager выделяет ID, записывает его во frontmatter и заголовок, затем переносит документ:
 
 ```text
-.orchestrator/tasks/TASK-0007.md
+.orchestrator/tasks/contexts/TASK-0007.md
 ```
 
 ### 4.1. Контракт Task Context
@@ -270,7 +270,7 @@ Frontmatter использует ограниченное YAML-подмноже�
       "id": "TASK-0002",
       "title": "Реализовать Task Manager",
       "status": "in_progress",
-      "context": "TASK-0002.md",
+      "context": "contexts/TASK-0002.md",
       "status_note": "Реализуется CLI",
       "created_at": "2026-07-26T12:35:00+02:00",
       "updated_at": "2026-07-26T13:10:00+02:00"
@@ -287,7 +287,7 @@ JSON выбран потому, что:
 - не зависит от YAML-библиотеки;
 - остаётся читаемым человеком.
 
-`next_id` — следующий ещё не выделенный числовой идентификатор; после успешной регистрации он монотонно увеличивается и не переиспользуется после удаления или отмены задачи. Поле `context` хранит POSIX-путь относительно `.orchestrator/tasks/` и не может указывать в `drafts/` или выходить из корня. `status_note` — строка или `null`, а timestamps записываются в RFC 3339 с timezone.
+`next_id` — следующий ещё не выделенный числовой идентификатор; после успешной регистрации он монотонно увеличивается и не переиспользуется после удаления или отмены задачи. Поле `context` хранит точный POSIX-путь `contexts/<TASK-ID>.md` относительно `.orchestrator/tasks/`; другие каталоги и выход из корня запрещены. `status_note` — строка или `null`, а timestamps записываются в RFC 3339 с timezone.
 
 Порядок массива является порядком очереди первой версии. Команды `next` и `claim-next` рассматривают только элементы со статусом `backlog`.
 
@@ -296,10 +296,10 @@ Task Registry является локальным operational state и искл�
 ```gitignore
 .orchestrator/tasks/tasks.json
 .orchestrator/tasks/*.tmp
-.orchestrator/tasks/*.lock
+.orchestrator/tasks/checkpoints/
 ```
 
-Task Context не игнорируется и остаётся версионируемым. История operational-статусов в первой версии не хранится; Git фиксирует baseline, Execution Record и результаты реализации, но не переходы `tasks.json`.
+Task Context из `.orchestrator/tasks/contexts/` не игнорируется и остаётся версионируемым. Checkpoint хранится как `.orchestrator/tasks/checkpoints/<TASK-ID>.checkpoint.lock`. История operational-статусов в первой версии не хранится; Git фиксирует baseline, Execution Record и результаты реализации, но не переходы `tasks.json` и не checkpoints.
 
 ## 6. Task Manager
 
@@ -417,7 +417,7 @@ python .orchestrator/bin/task.py validate --json
   "task": {
     "id": "TASK-0003",
     "status": "in_progress",
-    "context": ".orchestrator/tasks/TASK-0003.md"
+    "context": ".orchestrator/tasks/contexts/TASK-0003.md"
   }
 }
 ```
@@ -481,7 +481,7 @@ claim-next
 
 Freshness, implementation, tests и Security Review обязательны для каждого маршрута. `quick` low/medium-risk task не запускает semantic Task Review и Code Review, если нет security-sensitive или другого escalation signal; `standard` запускает оба review, а `deep` и high/critical-risk task требуют независимого review. Approval и documentation добавляются только при соответствующем impact.
 
-При замечании review выполнение возвращается к реализации. При необходимости решения пользователя ставится `waiting_user`. При невозможности продолжать — `blocked` с причиной. Execution evidence каждой попытки ограничивается по размеру, а число попыток шага имеет жёсткий верхний предел; полный диагностический output хранится отдельным artifact с source pointer, а checkpoint сохраняет компактные head/tail, длину и digest. Execution Record финализируется до commit; после успешного commit `complete` изменяет только незатреканный Task Registry.
+При замечании review выполнение возвращается к реализации. При необходимости решения пользователя ставится `waiting_user`. При невозможности продолжать — `blocked` с причиной. Execution evidence каждой попытки ограничивается по размеру, а число попыток шага имеет жёсткий верхний предел; полный диагностический output хранится отдельным artifact с source pointer, а checkpoint сохраняет компактные head/tail, длину и digest. Execution Record финализируется до commit; после успешного commit `complete` атомарно переводит задачу в `done`, затем удаляет её checkpoint. Ошибка очистки возвращается как `cleanup_warning` и не откатывает терминальный статус. `cancel` сохраняет checkpoint для диагностики.
 
 Числовая execution telemetry является локальным operational state и не является источником статуса, определения задачи или review evidence. Она не хранит prompt/evidence payload и может отсутствовать, если platform provider не сообщает usage counters.
 

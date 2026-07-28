@@ -254,6 +254,8 @@ orchestrator telemetry --path <events.jsonl>
 
 Отсутствующие provider counters остаются неизвестными и не подменяются оценками. Ошибка telemetry sink отражается в execution result, но не отменяет успешно сохранённый checkpoint.
 
+Execution checkpoint хранится в локальном каталоге `.orchestrator/tasks/checkpoints/` под именем `<TASK-ID>.checkpoint.lock` и исключается из Git. Implementation Runner получает этот путь через Task Manager. Переход в `done` удаляет checkpoint после успешной записи статуса; `cancelled` сохраняет его для диагностики.
+
 ## 8. Orchestrator Audit
 
 Audit — глубокий смысловой анализ, отличный от Health Check. Он ищет противоречия инструкций, дублирование навыков, недостижимые workflow, устаревшую документацию, архитектурный drift, недостаток тестов и повторяющиеся проблемы из Session Reports.
