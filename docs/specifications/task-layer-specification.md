@@ -196,11 +196,13 @@ python .orchestrator/bin/task.py <command>
 
 ### 9.0. Workspace execution modes
 
-`serial` preserves the default single-active-task behavior in the main
-workspace. Explicit `isolated_parallel` requires `run_id`, `max_workers` from
-2 through 16, and `worktree_root`. Sequence 1 runs in main only after clean and
-freshness checks. Its confirmed commit becomes the base for sequence 2+; each
-later task receives a unique branch and worktree.
+`serial` preserves the default single-active-task behavior in the primary
+workspace and retains the user-selected current branch. A serial agent does not
+create or switch to a task branch or worktree, and it does not integrate or
+clean up task-owned Git state. Explicit `isolated_parallel` requires `run_id`,
+`max_workers` from 2 through 16, and `worktree_root`. Sequence 1 runs in main
+only after clean and freshness checks. Its confirmed commit becomes the base for
+sequence 2+; each later task receives a unique branch and worktree.
 
 Assignments contain `mode`, `run_id`, `sequence`, `max_workers`,
 `workspace_kind`, `workspace_path`, `branch`, `base_commit`, and

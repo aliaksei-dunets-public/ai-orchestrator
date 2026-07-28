@@ -20,6 +20,11 @@ Two modes are supported:
 - `serial` remains the default and preserves the single-slot contract;
 - `isolated_parallel` requires `run_id`, `max_workers`, and `worktree_root`.
 
+Serial runs in the primary workspace on the user-selected current branch. Its
+agent policy forbids task-branch creation or switching, task worktrees,
+integration, and cleanup. It does not force a checkout of `main`; task-owned
+Git lifecycle belongs only to an explicit isolated assignment.
+
 In an isolated run, `sequence=1` executes in the main workspace. No later task
 is assigned until its commit succeeds. Tasks with `sequence>=2` receive unique
 branches and Git worktrees based on the verified first-task commit.

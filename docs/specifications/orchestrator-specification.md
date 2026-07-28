@@ -56,7 +56,10 @@ enforces mandatory checks; and produces a session result.
 ### 3.2. Task Layer
 
 Contains Task Creator, Task Context, Task Manager, and Task Execution Workflow.
-The detailed contract is in `task-layer-specification.md`.
+The detailed contract is in `task-layer-specification.md`. Serial execution
+uses the primary workspace and the user-selected current branch; task-owned
+branch, worktree, integration, and cleanup lifecycle require an explicit
+isolated assignment.
 
 ### 3.3. Workflow Engine
 

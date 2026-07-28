@@ -5,6 +5,14 @@ description: Execute an approved Task Context plan step by step with a freshness
 
 # Implementation Runner
 
+## Workspace and Git policy
+
+Serial execution retains the user-selected current branch in the primary
+workspace. Do not run `git switch`, `git checkout -b`, `git branch`,
+`git worktree add`, merge, integration, or worktree cleanup for a serial task.
+Only an explicit `isolated_parallel` assignment may use the registered
+task-owned branch, worktree, integration, and cleanup lifecycle.
+
 1. Read the registered Task Context and capture its revision and baseline hash.
 2. Build a fresh bounded pack with `retrieve_execution_context` after freshness
    validation and before implementation. Empty or irrelevant stores are a valid no-op.

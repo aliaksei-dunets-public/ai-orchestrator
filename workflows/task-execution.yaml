@@ -39,7 +39,13 @@ stop_conditions:
   - integration_conflict
 evidence_required: true
 workspace_assignment:
-  serial: main
+  serial:
+    workspace: primary
+    branch: current
+    task_branch_operations: forbidden
+    worktree_operations: forbidden
+    integration: forbidden
+    cleanup: forbidden
   isolated_parallel:
     sequence_1: main
     sequence_2_plus: task-owned-worktree

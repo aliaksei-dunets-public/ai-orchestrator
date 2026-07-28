@@ -8,6 +8,10 @@ execution:
   mode: [serial, isolated_parallel]
   default: serial
   max_workers: bounded
+serial_branch_policy:
+  workspace: primary
+  branch: current
+  forbidden: [task-branch, worktree, integration, cleanup]
 steps:
   serial:
     - claim-next
