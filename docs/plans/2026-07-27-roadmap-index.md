@@ -31,6 +31,7 @@
 | 22 | [Multi-Project Validation](2026-07-27-phase-22-multi-project-validation.md) | Фазы 14–21. |
 | 23 | [Stable Release 1.0](2026-07-27-phase-23-stable-release-1-0.md) | Фазы 0–22. |
 | 24 | [Изоляция ядра и распределение навыков](2026-07-28-phase-24-skill-distribution.md) | Фаза 23 и [согласованный дизайн](2026-07-28-skill-distribution-design.md). |
+| 25 | [Полный lifecycle памяти и графа знаний](2026-07-28-phase-25-memory-knowledge-full-lifecycle.md) | Фазы 17–19 и 24, [утверждённый дизайн](2026-07-28-memory-knowledge-full-lifecycle-design.md). |
 
 ## Общая проверка
 

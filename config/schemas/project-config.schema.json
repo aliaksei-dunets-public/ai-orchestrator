@@ -22,6 +22,19 @@
       "minItems": 1,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
+    },
+    "memory_knowledge": {
+      "type": "object",
+      "properties": {
+        "memory_entries": {"type": "string", "minLength": 1},
+        "memory_events": {"type": "string", "minLength": 1},
+        "memory_approvals": {"type": "string", "minLength": 1},
+        "knowledge_ontology": {"type": "string", "minLength": 1},
+        "knowledge_nodes": {"type": "string", "minLength": 1},
+        "knowledge_edges": {"type": "string", "minLength": 1},
+        "index_directory": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

@@ -49,12 +49,36 @@ def _finding(code: str, severity: Severity, message: str, evidence: Iterable[str
     return AuditFinding(code, severity, message, pointers, proposal, digest)
 
 
-def audit_repository(root: Path | str, *, known_fingerprints: Iterable[str] = ()) -> AuditReport:
+def audit_repository(
+    root: Path | str,
+    *,
+    known_fingerprints: Iterable[str] = (),
+    context_pack: dict[str, object] | None = None,
+) -> AuditReport:
     project = Path(root).resolve()
     known = set(known_fingerprints)
     findings: list[AuditFinding] = []
     normative: dict[str, tuple[str, str]] = {}
     expected_tests: list[tuple[str, str]] = []
+    if context_pack is not None:
+        used = context_pack.get("used_chars")
+        budget = context_pack.get("budget_chars")
+        if (
+            not isinstance(used, int)
+            or not isinstance(budget, int)
+            or used < 0
+            or budget < 0
+            or used > budget
+        ):
+            findings.append(
+                _finding(
+                    "INVALID_CONTEXT_PACK",
+                    "high",
+                    "Audit context pack is malformed or exceeds its budget.",
+                    ("context-pack",),
+                    "Rebuild the pack from validated effective stores.",
+                )
+            )
 
     for document in sorted((project / "docs").rglob("*.md")) if (project / "docs").exists() else []:
         relative = document.relative_to(project).as_posix()

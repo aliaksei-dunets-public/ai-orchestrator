@@ -488,6 +488,9 @@ def _gitignore_content(existing: str) -> str:
             ".orchestrator/telemetry/",
             ".orchestrator/onboarding/session.json",
             ".orchestrator/onboarding/backups/",
+            ".orchestrator/memory/proposals/",
+            ".orchestrator/knowledge/indexes/",
+            ".orchestrator/migrations/backups/",
         )
     )
     start = existing.find(GITIGNORE_START)
@@ -581,13 +584,22 @@ def plan_onboarding(
         "core_version": inspection.core_version,
         "platform_profile": inspection.platform_profile,
         "technology_profiles": list(inspection.technology_profiles),
+        "memory_knowledge": {
+            "memory_entries": ".orchestrator/memory/entries.jsonl",
+            "memory_events": ".orchestrator/memory/events.jsonl",
+            "memory_approvals": ".orchestrator/memory/approvals.jsonl",
+            "knowledge_ontology": ".orchestrator/knowledge/ontology.json",
+            "knowledge_nodes": ".orchestrator/knowledge/nodes.jsonl",
+            "knowledge_edges": ".orchestrator/knowledge/edges.jsonl",
+            "index_directory": ".orchestrator/knowledge/indexes",
+        },
     }
 
     changes: list[PlannedChange] = []
 
     def add_change(relative: str, content: str) -> None:
         change = _change(target, relative, content)
-        if change.diff:
+        if change.diff or change.before_sha256 is None:
             changes.append(change)
 
     config_content = json.dumps(
@@ -605,6 +617,30 @@ def plan_onboarding(
         existing=existing_context,
     )
     add_change(".orchestrator/project-context.md", context_content)
+
+    for relative in (
+        ".orchestrator/memory/entries.jsonl",
+        ".orchestrator/memory/events.jsonl",
+        ".orchestrator/memory/approvals.jsonl",
+        ".orchestrator/knowledge/nodes.jsonl",
+        ".orchestrator/knowledge/edges.jsonl",
+    ):
+        add_change(relative, _read_text(_safe_target(target, relative)))
+    ontology_path = ".orchestrator/knowledge/ontology.json"
+    ontology_existing = _read_text(_safe_target(target, ontology_path))
+    if not ontology_existing:
+        ontology_existing = json.dumps(
+            {
+                "schema_version": 1,
+                "immutable": False,
+                "node_kinds": [],
+                "relations": [],
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        ) + "\n"
+    add_change(ontology_path, ontology_existing)
 
     instruction_target = onboarding["instruction_target"]
     bootstrap = "\n".join(
@@ -846,11 +882,31 @@ def _default_validation(
             "core_version": plan.core_version,
             "platform_profile": plan.platform_profile,
             "technology_profiles": list(plan.technology_profiles),
+            "memory_knowledge": {
+                "memory_entries": ".orchestrator/memory/entries.jsonl",
+                "memory_events": ".orchestrator/memory/events.jsonl",
+                "memory_approvals": ".orchestrator/memory/approvals.jsonl",
+                "knowledge_ontology": ".orchestrator/knowledge/ontology.json",
+                "knowledge_nodes": ".orchestrator/knowledge/nodes.jsonl",
+                "knowledge_edges": ".orchestrator/knowledge/edges.jsonl",
+                "index_directory": ".orchestrator/knowledge/indexes",
+            },
         }
         if config != expected_config:
             findings.append("ERROR project configuration does not match approved plan")
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         findings.append(f"ERROR project configuration is unreadable: {exc}")
+
+    for relative in (
+        ".orchestrator/memory/entries.jsonl",
+        ".orchestrator/memory/events.jsonl",
+        ".orchestrator/memory/approvals.jsonl",
+        ".orchestrator/knowledge/ontology.json",
+        ".orchestrator/knowledge/nodes.jsonl",
+        ".orchestrator/knowledge/edges.jsonl",
+    ):
+        if not _safe_target(target, relative).is_file():
+            findings.append(f"ERROR canonical memory/knowledge store is missing: {relative}")
 
     context = target / ".orchestrator/project-context.md"
     try:

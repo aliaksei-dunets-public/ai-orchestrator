@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/context-pack.schema.json",
+  "type": "object",
+  "required": ["schema_version", "query_digest", "store_digest", "generated_at", "budget_chars", "used_chars", "memory", "nodes", "edges"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "query_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "store_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "generated_at": {"type": "string", "minLength": 1},
+    "budget_chars": {"type": "integer", "minimum": 0},
+    "used_chars": {"type": "integer", "minimum": 0},
+    "memory": {"type": "array", "items": {"type": "object"}},
+    "nodes": {"type": "array", "items": {"type": "object"}},
+    "edges": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": false
+}

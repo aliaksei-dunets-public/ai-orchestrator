@@ -10,6 +10,7 @@ policy_inputs:
   documentation_impact: boolean
 mandatory_steps:
   - freshness
+  - retrieve-context
   - implement
   - run-tests
   - security-review
@@ -28,3 +29,11 @@ stop_conditions:
   - waiting_user
   - blocked
 evidence_required: true
+context_pack:
+  capability: context.retrieve
+  freshness: required
+  empty_store: valid_noop
+  budgets:
+    quick_chars: 2048
+    standard_chars: 6144
+    deep_chars: 12288

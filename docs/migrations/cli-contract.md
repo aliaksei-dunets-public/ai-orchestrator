@@ -20,3 +20,15 @@ migration is required.
 
 An absent telemetry file returns a successful zero summary. Invalid JSONL fails
 closed with a diagnostic error.
+
+## 1.2 additive commands
+
+`orchestrator memory --root ROOT {propose,approve,promote,disable,supersede,list}`,
+`orchestrator knowledge --root ROOT {add-node,add-edge,rebuild,list}`, and
+`orchestrator context --root ROOT [--mode MODE] [--budget-chars N]` are additive.
+Domain failures return exit code 2 and a JSON object with `ok=false`; they do not
+print a traceback. Successful operations return exit code 0 and `ok=true`.
+
+Existing Health, telemetry, and Task Manager commands and exit codes remain
+compatible. Context budgets default to 2048/6144/12288 characters for
+quick/standard/deep routes.

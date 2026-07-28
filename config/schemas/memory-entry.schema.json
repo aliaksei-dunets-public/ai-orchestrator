@@ -13,7 +13,10 @@
     "confidence": {"type": "number", "minimum": 0, "maximum": 1},
     "timestamp": {"type": "string", "minLength": 1},
     "supersedes": {"type": ["string", "null"]},
-    "enabled": {"type": "boolean"}
+    "enabled": {"type": "boolean"},
+    "proposal_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "approval_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "source_authority": {"type": ["string", "null"]}
   },
   "additionalProperties": false
 }

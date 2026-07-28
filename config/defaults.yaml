@@ -13,3 +13,19 @@ backlog:
   max_seconds: 3600
   max_steps: 200
   continue_backlog_while_waiting_user: false
+memory_knowledge:
+  memory_entries: .orchestrator/memory/entries.jsonl
+  memory_events: .orchestrator/memory/events.jsonl
+  memory_approvals: .orchestrator/memory/approvals.jsonl
+  memory_proposals: .orchestrator/memory/proposals
+  knowledge_ontology: .orchestrator/knowledge/ontology.json
+  knowledge_nodes: .orchestrator/knowledge/nodes.jsonl
+  knowledge_edges: .orchestrator/knowledge/edges.jsonl
+  index_directory: .orchestrator/knowledge/indexes
+  migration_backups: .orchestrator/migrations/backups
+  retrieval:
+    quick_chars: 2048
+    standard_chars: 6144
+    deep_chars: 12288
+    max_records: 32
+    graph_depth: 2

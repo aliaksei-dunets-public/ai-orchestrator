@@ -9,7 +9,9 @@
     "source_node": {"type": "string", "minLength": 1},
     "target_node": {"type": "string", "minLength": 1},
     "relation": {"type": "string", "minLength": 1},
-    "source": {"type": "string", "minLength": 1}
+    "source": {"type": "string", "minLength": 1},
+    "source_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "enabled": {"type": "boolean"}
   },
   "additionalProperties": false
 }

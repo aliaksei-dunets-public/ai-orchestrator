@@ -3,4 +3,4 @@
 from .health import Finding, HealthReport, run_health_checks
 
 __all__ = ["Finding", "HealthReport", "run_health_checks"]
-__version__ = "1.1.0"
+__version__ = "1.2.0"

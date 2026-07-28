@@ -1,8 +1,12 @@
 schema_version: 1
 id: task-creation-standard
 steps:
+  - id: retrieve-context
+    capability: context.retrieve
+    applies_to: [quick, standard, deep]
   - id: analyze
     skill: task-analyzer
+    depends_on: [retrieve-context]
   - id: plan
     skill: plan-writer
     depends_on: [analyze]

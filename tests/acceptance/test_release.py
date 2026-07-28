@@ -66,7 +66,7 @@ class ReleaseAcceptanceTests(unittest.TestCase):
             self.assertNotIn("optimizer", managed_skills)
 
     def test_supported_upgrade_and_rollback_are_documented(self) -> None:
-        migration = (ROOT / "docs/migrations/1.1.md").read_text(encoding="utf-8")
+        migration = (ROOT / "docs/migrations/1.2.md").read_text(encoding="utf-8")
         for section in ("Supported inputs", "Compatibility window", "Known limitations", "Rollback"):
             self.assertIn(section, migration)
 

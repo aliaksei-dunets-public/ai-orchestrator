@@ -5,6 +5,10 @@ description: Формировать компактный отчёт сессии
 
 # Session Reporter
 
+After evidence is validated, build structured, secret-safe candidates with
+`orchestrator.session_report.session_memory_candidates`. Candidates remain
+proposals; never bypass source-authority or approval policy.
+
 1. Получить только подтверждённые дельты текущей сессии.
 2. Передать данные в `orchestrator.session_report.render_session_report`.
 3. Проверить отсутствие secrets и пустых секций.

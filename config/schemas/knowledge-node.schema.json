@@ -9,7 +9,9 @@
     "kind": {"type": "string", "minLength": 1},
     "label": {"type": "string", "minLength": 1},
     "source": {"type": "string", "minLength": 1},
-    "supersedes": {"type": ["string", "null"]}
+    "supersedes": {"type": ["string", "null"]},
+    "source_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "enabled": {"type": "boolean"}
   },
   "additionalProperties": false
 }

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Callable, Literal
 
 from .telemetry import RunTelemetry, TelemetryEvent, TelemetrySink, TokenUsage
+from .retrieval import build_context_pack
 
 
 StepStatus = Literal["completed", "failed", "scope_change", "waiting_user", "blocked"]
@@ -362,3 +363,21 @@ def execute_plan(
 
     _write_checkpoint(checkpoint, "completed", records, None)
     return finish("completed")
+
+
+def retrieve_execution_context(
+    project_root: Path | str,
+    *,
+    mode: str,
+    task_context: str,
+    affected_paths: list[str] | tuple[str, ...] = (),
+) -> dict[str, object]:
+    budgets = {"quick": 2048, "standard": 6144, "deep": 12288}
+    if mode not in budgets:
+        raise ExecutionError(f"Unsupported execution mode: {mode}")
+    return build_context_pack(
+        project_root,
+        task_context=task_context,
+        affected_paths=affected_paths,
+        budget_chars=budgets[mode],
+    )

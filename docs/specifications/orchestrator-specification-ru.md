@@ -126,6 +126,27 @@ Skill entrypoint содержит только назначение, routing, о
 
 Содержит session reports, observations, decisions, lessons, project memory, knowledge graph и improvement proposals.
 
+Начиная с Core 1.2 target project владеет tracked canonical stores:
+`.orchestrator/memory/{entries,events,approvals}.jsonl`,
+`.orchestrator/knowledge/{ontology.json,nodes.jsonl,edges.jsonl}`. Proposals,
+derived indexes и migration backups являются operational state и не попадают в Git.
+
+Promotion observation/lesson/decision без approval допустим только из неизменившейся
+спецификации, принятого ADR, завершённого Task Context или approved review.
+Instruction и любой non-authoritative source всегда требуют explicit approval,
+привязанного к proposal hash и source digest. Исправления выполняются append-only
+disable/supersede events.
+
+Core ontology фиксирует node kinds `document`, `component`, `contract`, `decision`,
+`task`, `risk` и relations `defined_by`, `depends_on`, `implements`, `affects`,
+`supersedes`, `produced_by`. Project ontology может только добавлять новые
+неконфликтующие identifiers.
+
+Перед quick/standard/deep Task Creation и Task Execution формируется fresh context
+pack. Retrieval детерминирован, исключает stale/disabled/superseded/secret records
+и ограничен соответственно 2048/6144/12288 символами. Embeddings, external DB и
+cross-project shared memory не поддерживаются.
+
 ## 4. Иерархия конфигурации
 
 Порядок загрузки:

@@ -17,8 +17,8 @@ class RoadmapCompletionAcceptanceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.plans = sorted((ROOT / "docs/plans").glob("2026-*-phase-*.md"))
 
-    def test_all_25_plans_have_acceptance_and_all_named_artifacts_exist(self) -> None:
-        self.assertEqual(len(self.plans), 25)
+    def test_all_26_plans_have_acceptance_and_all_named_artifacts_exist(self) -> None:
+        self.assertEqual(len(self.plans), 26)
         registry = json.loads((ROOT / "registries/skills.json").read_text(encoding="utf-8"))
         current_skill_roots = {
             entry["id"]: Path(entry["path"]).parent

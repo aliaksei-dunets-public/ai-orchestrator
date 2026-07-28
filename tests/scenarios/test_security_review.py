@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from orchestrator.security import policy_allows_override, route_security_review, security_review
+from orchestrator.security import (
+    memory_knowledge_security_review,
+    policy_allows_override,
+    route_security_review,
+    security_review,
+)
 
 
 class SecurityReviewScenarioTests(unittest.TestCase):
@@ -27,3 +32,23 @@ class SecurityReviewScenarioTests(unittest.TestCase):
 
     def test_immutable_policy_has_no_local_override(self) -> None:
         self.assertFalse(policy_allows_override({"allow_local_bypass": False}))
+
+    def test_memory_knowledge_boundary_blocks_escape_secret_and_unbounded_context(self) -> None:
+        result = memory_knowledge_security_review(
+            ".",
+            source_paths=("../outside.md", ".orchestrator/memory/proposals/x.json"),
+            content="api_key=super-secret",
+            budget_chars=50000,
+        )
+        self.assertEqual(result.verdict, "blocked")
+        codes = {item.code for item in result.findings}
+        self.assertEqual(
+            codes,
+            {
+                "SEC_CONTEXT_PATH_ESCAPE",
+                "SEC_CONTEXT_EXCLUDED_SOURCE",
+                "SEC_CONTEXT_CREDENTIAL",
+                "SEC_CONTEXT_UNBOUNDED",
+            },
+        )
+        self.assertNotIn("super-secret", str(result.to_dict()))

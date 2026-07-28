@@ -4,7 +4,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from orchestrator.session_report import redact, render_session_report, write_session_report
+from orchestrator.session_report import (
+    redact,
+    render_session_report,
+    session_memory_candidates,
+    write_session_report,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,3 +59,17 @@ class SessionReportTests(unittest.TestCase):
 
     def test_standalone_redaction(self) -> None:
         self.assertEqual(redact("refresh_token=secret"), "refresh_token=[REDACTED]")
+
+    def test_memory_candidates_remain_approval_gated_proposals(self) -> None:
+        candidates = session_memory_candidates(
+            {
+                "decisions": ["Use JSONL"],
+                "changes": ["Added CLI"],
+                "validation": ["tests pass"],
+            }
+        )
+        self.assertEqual(
+            {item["kind"] for item in candidates},
+            {"decision", "lesson", "observation"},
+        )
+        self.assertTrue(all(item["requires_approval"] for item in candidates))

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/knowledge-ontology.schema.json",
+  "type": "object",
+  "required": ["schema_version", "immutable", "node_kinds", "relations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "immutable": {"type": "boolean"},
+    "node_kinds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    },
+    "relations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    }
+  },
+  "additionalProperties": false
+}

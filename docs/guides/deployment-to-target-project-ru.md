@@ -1,7 +1,7 @@
 # Развёртывание AI Orchestrator в целевом проекте
 
 **Версия гайда:** 2.0
-**Целевая версия оркестратора:** 1.1.0
+**Целевая версия оркестратора:** 1.2.0
 **Основной сценарий:** agent-led onboarding с core, подключённым на месте
 
 ## 1. Что получится в результате
@@ -403,6 +403,11 @@ onboarding.
 - повторный plan не предлагает изменений;
 - Health Check не содержит `ERROR` или `CRITICAL`;
 - onboarding report доступен пользователю.
+- canonical memory/knowledge stores существуют и не исключены из Git;
+- `.orchestrator/memory/proposals/`, `.orchestrator/knowledge/indexes/` и
+  `.orchestrator/migrations/backups/` исключены из Git;
+- `python -m orchestrator context --root . --mode standard` возвращает bounded
+  schema-version-1 context pack.
 
 Нормативные контракты: [спецификация оркестратора](../specifications/orchestrator-specification-ru.md),
 [Task Layer](../specifications/task-layer-specification-ru.md) и

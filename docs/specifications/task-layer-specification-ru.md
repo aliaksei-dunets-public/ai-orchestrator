@@ -475,6 +475,15 @@ claim-next
 → user review when required
 → documentation
 → memory and knowledge
+
+До анализа и до implementation каждый quick/standard/deep route получает fresh
+bounded context pack из effective Project Memory и Knowledge Graph. Empty или
+irrelevant stores являются корректным no-op. Context pack не изменяет Task Context
+baseline и не заменяет canonical source evidence.
+
+После остановки task execution Session Reporter может сформировать secret-safe
+memory candidates. Эти candidates остаются proposals и проходят source-authority
+и approval gates; workflow не записывает их непосредственно в canonical memory.
 → commit
 → complete
 ```

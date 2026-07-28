@@ -43,6 +43,8 @@ class DocumentationTests(unittest.TestCase):
             "docs/architecture/component-contracts.md",
             "docs/migrations/cli-contract.md",
             "docs/migrations/1.1.md",
+            "docs/migrations/1.2.md",
+            "docs/adr/0002-project-memory-knowledge-lifecycle.md",
             "docs/plans/2026-07-28-task-storage-layout-design.md",
             "CHANGELOG.md",
         )
@@ -52,3 +54,10 @@ class DocumentationTests(unittest.TestCase):
                 [],
                 relative,
             )
+
+    def test_memory_knowledge_runtime_changes_have_canonical_owners(self) -> None:
+        mapping = load_documentation_map(ROOT / "config/documentation-map.json")
+        impacts = documentation_impact(["orchestrator/retrieval.py"], mapping)
+        documents = {item.document for item in impacts}
+        self.assertIn("docs/specifications/orchestrator-specification-ru.md", documents)
+        self.assertIn("docs/migrations/1.2.md", documents)

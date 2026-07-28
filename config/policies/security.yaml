@@ -4,5 +4,10 @@ allow_local_bypass: false
 blocking_severities: [critical, high]
 triggers:
   paths: [auth, security, permission, credential, secret, token, crypto, payment]
-  content: [credential-like-material, eval, shell-true, tls-verification-disabled]
+  content: [credential-like-material, eval, shell-true, tls-verification-disabled, unbounded-context]
+memory_knowledge:
+  project_relative_sources_only: true
+  excluded_parts: [.git, .env, secrets, credentials, proposals, indexes, backups]
+  max_context_chars: 12288
+  instruction_approval_required: true
 redact_credentials: true

@@ -28,6 +28,9 @@ the target project.
    answers.
 8. Report `completed`, `rolled_back` or `rollback_failed`, including findings
    and the report path. Never describe a rolled-back installation as complete.
+9. Verify that canonical memory entries/events/approvals and knowledge
+   ontology/nodes/edges are tracked, while proposals, indexes, and migration
+   backups are ignored.
 
 ## Script interface
 

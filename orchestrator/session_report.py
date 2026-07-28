@@ -58,3 +58,25 @@ def write_session_report(path: Path | str, data: Mapping[str, object]) -> Path:
     content = render_session_report(data)
     destination.write_text(content, encoding="utf-8", newline="\n")
     return destination
+
+
+def session_memory_candidates(data: Mapping[str, object]) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    for kind, key, confidence in (
+        ("decision", "decisions", 1.0),
+        ("lesson", "validation", 0.8),
+        ("observation", "changes", 0.7),
+    ):
+        for content in _items(data.get(key)):
+            safe = redact(content)
+            if safe != content:
+                continue
+            candidates.append(
+                {
+                    "kind": kind,
+                    "content": safe,
+                    "confidence": confidence,
+                    "requires_approval": True,
+                }
+            )
+    return candidates

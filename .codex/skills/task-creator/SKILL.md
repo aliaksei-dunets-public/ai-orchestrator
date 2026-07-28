@@ -5,6 +5,12 @@ description: Создавать и проверять Task Context и отдел
 
 # Task Creator
 
+## Memory and knowledge context
+
+Before repository analysis in every quick, standard, or deep route, build a fresh
+bounded context pack with `orchestrator.task_creation.retrieve_task_creation_context`.
+Treat an empty pack as a valid no-op and never substitute stale or unbounded data.
+
 Преобразовать требования в один или несколько самодостаточных Task Context и планов. Не выполнять реализацию и не менять Task Registry: регистрация остаётся обязанностью Task Manager.
 
 ## Рабочий процесс

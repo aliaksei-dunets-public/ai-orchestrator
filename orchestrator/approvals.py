@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Literal
 
 
 Decision = Literal["approved", "rejected", "waiting"]
+MemoryApprovalDecision = Literal["approve", "reject"]
 
 
 class ApprovalError(ValueError):
@@ -44,6 +47,44 @@ class ApprovalEvidence:
 
     def to_dict(self) -> dict[str, object]:
         return {"schema_version": 1, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class MemoryApproval:
+    proposal_hash: str
+    source_digest: str
+    decision: MemoryApprovalDecision
+    approved_by: str
+    approved_at: str
+    approval_hash: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {"schema_version": 1, **asdict(self)}
+
+
+def create_memory_approval(
+    *,
+    proposal_hash: str,
+    source_digest: str,
+    approved_by: str,
+    decision: MemoryApprovalDecision,
+) -> MemoryApproval:
+    if len(proposal_hash) != 64 or len(source_digest) != 64:
+        raise ApprovalError("memory approval requires proposal and source SHA-256 hashes")
+    if not approved_by.strip():
+        raise ApprovalError("memory approval actor is required")
+    approved_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    payload = {
+        "proposal_hash": proposal_hash,
+        "source_digest": source_digest,
+        "decision": decision,
+        "approved_by": approved_by,
+        "approved_at": approved_at,
+    }
+    digest = hashlib.sha256(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return MemoryApproval(**payload, approval_hash=digest)
 
 
 def resolve_approval(

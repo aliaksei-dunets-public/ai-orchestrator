@@ -61,6 +61,14 @@
 
 ## Memory and Knowledge
 
-- Входы: подтверждённые observations, decisions, lessons и provenance.
-- Выходы: versioned records и navigation indexes.
-- Не превращает observation в instruction автоматически.
+- Входы: proposal, project-relative provenance и source digest; для instruction
+  и non-authoritative source — approval, привязанный к proposal/source hashes.
+- Выходы: tracked canonical entries/events/approvals, ontology/nodes/edges и
+  воспроизводимые derived indexes.
+- Target project владеет canonical stores; Core владеет только runtime,
+  схемами, immutable Core ontology и policy.
+- Effective state исключает disabled, superseded, stale и secret-like records.
+- Retrieval выполняет deterministic lexical selection и bounded graph traversal
+  без embeddings или внешней базы данных.
+- Не превращает observation в instruction автоматически и не использует graph
+  как второй источник истины.

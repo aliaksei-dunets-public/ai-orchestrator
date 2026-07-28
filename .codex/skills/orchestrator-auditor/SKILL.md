@@ -5,9 +5,11 @@ description: Audit the orchestrator for evidenced contradictions, dead workflows
 
 # Orchestrator Auditor
 
-1. Build a deterministic inventory and run `orchestrator.audit.audit_repository`.
+1. Build a bounded read-only context pack, then a deterministic inventory and run
+   `orchestrator.audit.audit_repository`.
 2. For deep instruction, skill, agent, or workflow analysis, route the semantic pass through the atomic `optimizer` skill.
 3. Keep only findings with concrete source pointers and a severity.
 4. Deduplicate findings by stable fingerprint, including against the previous report.
 5. Add an improvement proposal to each finding, but never apply it.
 6. Route accepted proposals through the ordinary Task Creator and approval workflow.
+7. Never mutate memory or knowledge during audit; emit proposals for later curation.

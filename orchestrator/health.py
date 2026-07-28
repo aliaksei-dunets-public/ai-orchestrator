@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
@@ -194,6 +196,206 @@ def _task_checks(root: Path) -> Iterable[Finding]:
         yield _finding("TASK_REGISTRY_CHECK_FAILED", "ERROR", f"Task Registry check failed: {exc}", registry)
 
 
+def _jsonl_records(path: Path) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError(f"record {number} is not an object")
+        records.append(value)
+    return records
+
+
+def _memory_knowledge_checks(root: Path) -> Iterable[Finding]:
+    lifecycle_root = root / ".orchestrator"
+    if not (
+        (lifecycle_root / "memory").exists()
+        or (lifecycle_root / "knowledge").exists()
+        or (lifecycle_root / "config.json").exists()
+    ):
+        return
+    canonical = (
+        lifecycle_root / "memory/entries.jsonl",
+        lifecycle_root / "memory/events.jsonl",
+        lifecycle_root / "memory/approvals.jsonl",
+        lifecycle_root / "knowledge/ontology.json",
+        lifecycle_root / "knowledge/nodes.jsonl",
+        lifecycle_root / "knowledge/edges.jsonl",
+    )
+    for path in canonical:
+        if not path.is_file():
+            yield _finding(
+                "MEMORY_KNOWLEDGE_STORE_MISSING",
+                "ERROR",
+                "Canonical memory/knowledge store is missing",
+                path,
+            )
+    if any(not path.is_file() for path in canonical):
+        return
+
+    ignore = root / ".gitignore"
+    text = ignore.read_text(encoding="utf-8") if ignore.exists() else ""
+    required_ignored = (
+        ".orchestrator/memory/proposals/",
+        ".orchestrator/knowledge/indexes/",
+        ".orchestrator/migrations/backups/",
+    )
+    if any(value not in text for value in required_ignored):
+        yield _finding(
+            "MEMORY_KNOWLEDGE_GIT_POLICY",
+            "ERROR",
+            "Operational memory/knowledge artifacts are not fully ignored",
+            ignore,
+        )
+    broad = {".orchestrator/", ".orchestrator/memory/", ".orchestrator/knowledge/"}
+    lines = {line.strip() for line in text.splitlines() if line.strip() and not line.startswith("#")}
+    if broad & lines:
+        yield _finding(
+            "MEMORY_KNOWLEDGE_GIT_POLICY",
+            "CRITICAL",
+            "Git ignore rules hide canonical memory/knowledge stores",
+            ignore,
+        )
+
+    try:
+        for path in (*canonical[:3], *canonical[4:]):
+            _jsonl_records(path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        yield _finding(
+            "MEMORY_KNOWLEDGE_INVALID_JSONL",
+            "ERROR",
+            f"Canonical JSONL is invalid: {exc}",
+            path,
+        )
+        return
+
+    try:
+        from .memory import effective_entries
+
+        entries = effective_entries(root)
+        for entry in entries:
+            source = Path(entry.source)
+            if not source.is_absolute():
+                source = root / source
+            source = source.resolve()
+            try:
+                source.relative_to(root)
+            except ValueError:
+                yield _finding(
+                    "MEMORY_PROVENANCE_UNSAFE",
+                    "CRITICAL",
+                    f"Memory source escapes project root: {entry.id}",
+                    canonical[0],
+                )
+                continue
+            if (
+                not source.is_file()
+                or hashlib.sha256(source.read_bytes()).hexdigest() != entry.source_digest
+            ):
+                yield _finding(
+                    "MEMORY_PROVENANCE_STALE",
+                    "ERROR",
+                    f"Memory source is missing or stale: {entry.id}",
+                    source,
+                )
+    except Exception as exc:
+        yield _finding(
+            "MEMORY_LIFECYCLE_INVALID",
+            "ERROR",
+            f"Memory effective state is invalid: {exc}",
+            canonical[0],
+        )
+
+    try:
+        from .knowledge import effective_graph, rebuild_indexes
+        from .ontology import load_core_ontology, load_project_ontology, merge_ontology
+
+        ontology = merge_ontology(
+            load_core_ontology(root / "config/knowledge-ontology.json"),
+            load_project_ontology(canonical[3]),
+        )
+        nodes, edges = effective_graph(canonical[4], canonical[5])
+        for node in nodes:
+            if node.kind not in ontology.node_kinds:
+                raise ValueError(f"unknown node kind: {node.kind}")
+            source = Path(node.source)
+            if not source.is_absolute():
+                source = root / source
+            source = source.resolve()
+            try:
+                source.relative_to(root)
+            except ValueError:
+                yield _finding(
+                    "KNOWLEDGE_PROVENANCE_UNSAFE",
+                    "CRITICAL",
+                    f"Knowledge node source escapes project root: {node.id}",
+                    canonical[4],
+                )
+                continue
+            if (
+                not source.is_file()
+                or node.source_digest is not None
+                and hashlib.sha256(source.read_bytes()).hexdigest() != node.source_digest
+            ):
+                yield _finding(
+                    "KNOWLEDGE_PROVENANCE_STALE",
+                    "ERROR",
+                    f"Knowledge node source is missing or stale: {node.id}",
+                    source,
+                )
+        for edge in edges:
+            if edge.relation not in ontology.relations:
+                raise ValueError(f"unknown edge relation: {edge.relation}")
+            source = Path(edge.source)
+            if not source.is_absolute():
+                source = root / source
+            source = source.resolve()
+            try:
+                source.relative_to(root)
+            except ValueError:
+                yield _finding(
+                    "KNOWLEDGE_PROVENANCE_UNSAFE",
+                    "CRITICAL",
+                    f"Knowledge edge source escapes project root: {edge.id}",
+                    canonical[5],
+                )
+                continue
+            if (
+                not source.is_file()
+                or edge.source_digest is not None
+                and hashlib.sha256(source.read_bytes()).hexdigest() != edge.source_digest
+            ):
+                yield _finding(
+                    "KNOWLEDGE_PROVENANCE_STALE",
+                    "ERROR",
+                    f"Knowledge edge source is missing or stale: {edge.id}",
+                    source,
+                )
+        index = lifecycle_root / "knowledge/indexes/index.json"
+        if index.exists():
+            with tempfile.TemporaryDirectory() as temporary:
+                rebuilt = rebuild_indexes(
+                    canonical[4], canonical[5], Path(temporary) / "index.json"
+                )
+                if index.read_bytes() != rebuilt.read_bytes():
+                    yield _finding(
+                        "KNOWLEDGE_INDEX_STALE",
+                        "ERROR",
+                        "Derived knowledge index does not match canonical stores",
+                        index,
+                    )
+    except Exception as exc:
+        yield _finding(
+            "KNOWLEDGE_GRAPH_INVALID",
+            "ERROR",
+            f"Knowledge ontology or graph is invalid: {exc}",
+            canonical[3],
+        )
+
+
+
 def run_health_checks(root: Path | str = ".", *, scope: str = "all") -> HealthReport:
     project_root = Path(root).resolve()
     findings: list[Finding] = []
@@ -207,6 +409,7 @@ def run_health_checks(root: Path | str = ".", *, scope: str = "all") -> HealthRe
         findings.extend(_registry_checks(project_root))
         findings.extend(_skill_projection_checks(project_root))
         findings.extend(_task_checks(project_root))
+        findings.extend(_memory_knowledge_checks(project_root))
     findings.sort(key=lambda item: (SEVERITY_ORDER[item.severity], item.code, item.path or "", item.message))
     return HealthReport(tuple(findings))
 

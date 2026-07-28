@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.2.0 — 2026-07-28
+
+- Added target-owned tracked Project Memory and Knowledge Graph JSONL stores.
+- Added source-authority classification, hash-bound approvals, append-only disable/supersede events and effective-state resolution.
+- Added immutable Core ontology with additive project extensions and complete deterministic indexes.
+- Added lexical, graph-aware context retrieval with quick/standard/deep character budgets and stale/secret filtering.
+- Added onboarding and migration preview/apply/rollback support with explicit Git policy.
+- Added JSON-first `memory`, `knowledge`, and `context` CLI commands.
+- Routed fresh context packs into task creation, execution, backlog and read-only audit flows.
+- Extended Health and security checks for lifecycle, provenance, graph, index, path, secret and budget defects.
 - Separated tracked Task Contexts into `.orchestrator/tasks/contexts/` and ignored execution checkpoints into `.orchestrator/tasks/checkpoints/`.
 - Removed a task checkpoint after successful `done` persistence while preserving `cancelled` checkpoints for diagnostics.
 

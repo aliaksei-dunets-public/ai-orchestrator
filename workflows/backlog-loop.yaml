@@ -6,8 +6,12 @@ limits:
   max_steps: required
 steps:
   - claim-next
+  - retrieve-context
   - task-execution
   - commit-task
   - complete-task
 stop_conditions: [empty, limit, waiting_user, blocked, failed]
 commit_per_task: true
+post_task:
+  - session-report
+  - propose-memory-candidates

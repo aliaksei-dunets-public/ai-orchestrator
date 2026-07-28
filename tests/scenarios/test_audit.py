@@ -91,3 +91,19 @@ class AuditScenarioTests(unittest.TestCase):
                     "UNTESTED_RUNTIME_MODULE",
                 }.issubset(codes)
             )
+
+    def test_audit_accepts_bounded_context_read_only_and_rejects_over_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            before = list(root.iterdir())
+            clean = audit_repository(
+                root,
+                context_pack={"used_chars": 10, "budget_chars": 10},
+            )
+            self.assertNotIn("INVALID_CONTEXT_PACK", {item.code for item in clean.findings})
+            invalid = audit_repository(
+                root,
+                context_pack={"used_chars": 11, "budget_chars": 10},
+            )
+            self.assertIn("INVALID_CONTEXT_PACK", {item.code for item in invalid.findings})
+            self.assertEqual(list(root.iterdir()), before)

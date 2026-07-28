@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
+from .retrieval import build_context_pack
+
 
 MODES = {"quick", "standard", "deep"}
 RISKS = {"low", "medium", "high", "critical"}
@@ -184,3 +186,21 @@ def write_task_context(path: Path | str, definition: TaskContextDefinition) -> P
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(render_task_context(definition), encoding="utf-8", newline="\n")
     return destination
+
+
+def retrieve_task_creation_context(
+    project_root: Path | str,
+    *,
+    mode: str,
+    request: str,
+    affected_paths: Iterable[str] = (),
+) -> dict[str, object]:
+    if mode not in MODES:
+        raise TaskCreationError(f"Unsupported mode: {mode}")
+    budgets = {"quick": 2048, "standard": 6144, "deep": 12288}
+    return build_context_pack(
+        project_root,
+        task_context=request,
+        affected_paths=tuple(affected_paths),
+        budget_chars=budgets[mode],
+    )

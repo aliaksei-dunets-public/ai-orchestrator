@@ -4,6 +4,9 @@
     {
       "path_prefixes": [
         "orchestrator/cli.py",
+        "orchestrator/memory_cli.py",
+        "orchestrator/knowledge_cli.py",
+        "orchestrator/context_cli.py",
         "orchestrator/task_cli.py",
         "orchestrator/task_manager.py"
       ],
@@ -14,6 +17,25 @@
       ],
       "owner": "documentation-manager",
       "reason": "Public CLI contract changed."
+    },
+    {
+      "path_prefixes": [
+        "orchestrator/memory.py",
+        "orchestrator/knowledge.py",
+        "orchestrator/ontology.py",
+        "orchestrator/retrieval.py",
+        "orchestrator/source_authority.py",
+        "orchestrator/memory_knowledge_migration.py"
+      ],
+      "documents": [
+        "docs/specifications/orchestrator-specification-ru.md",
+        "docs/specifications/task-layer-specification-ru.md",
+        "docs/architecture/component-contracts.md",
+        "docs/guides/deployment-to-target-project-ru.md",
+        "docs/migrations/1.2.md"
+      ],
+      "owner": "documentation-manager",
+      "reason": "Project Memory, Knowledge Graph, retrieval, or migration contract changed."
     },
     {
       "path_prefixes": ["config/schemas/", "registries/"],

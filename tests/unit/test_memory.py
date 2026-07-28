@@ -8,6 +8,23 @@ from orchestrator.memory import MemoryError, append_entry, load_entries, source_
 
 
 class MemoryTests(unittest.TestCase):
+    def test_project_aware_append_rejects_escape_before_source_read(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "project"
+            root.mkdir()
+            outside = root.parent / "outside.md"
+            outside.write_text("private", encoding="utf-8")
+            with self.assertRaisesRegex(MemoryError, "outside"):
+                append_entry(
+                    root / ".orchestrator/memory/entries.jsonl",
+                    kind="observation",
+                    content="Do not read outside.",
+                    source=outside,
+                    confidence=1,
+                    project_root=root,
+                )
+            self.assertFalse((root / ".orchestrator/memory/entries.jsonl").exists())
+
     def test_entry_has_source_timestamp_and_observation_is_not_instruction(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

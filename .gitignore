@@ -5,6 +5,12 @@ __pycache__/
 *.py[cod]
 .env
 .venv/
+.tmp/
+.agents/
+
+# Temporary bootstrap payloads and split specifications.
+.bootstrap/
+docs/specifications/orchestrator/
 
 # Local AI Orchestrator operational state
 .orchestrator/tasks/tasks.json
@@ -12,6 +18,9 @@ __pycache__/
 .orchestrator/tasks/checkpoints/
 .orchestrator/telemetry/
 .orchestrator/releases/
+.orchestrator/memory/proposals/
+.orchestrator/knowledge/indexes/
+.orchestrator/migrations/backups/
 
 # Generated release artifacts are reproducible from canonical sources.
 releases/

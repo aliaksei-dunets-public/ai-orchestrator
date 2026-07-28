@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/knowledge-index.schema.json",
+  "type": "object",
+  "required": ["schema_version", "store_digest", "node_ids_by_kind", "edge_ids_by_relation", "node_ids_by_source", "edge_ids_by_source", "outgoing_edge_ids", "incoming_edge_ids"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "store_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "node_ids_by_kind": {"type": "object"},
+    "edge_ids_by_relation": {"type": "object"},
+    "node_ids_by_source": {"type": "object"},
+    "edge_ids_by_source": {"type": "object"},
+    "outgoing_edge_ids": {"type": "object"},
+    "incoming_edge_ids": {"type": "object"}
+  },
+  "additionalProperties": false
+}
