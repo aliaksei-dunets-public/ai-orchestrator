@@ -2,8 +2,11 @@
 .vscode/
 .venv/
 .tmp/
-.orchestrator/
-.agents/
+build/
+*.egg-info/
+.orchestrator/state/
+.agents/*
+!.agents/skills/
 __pycache__/
 *.py[cod]
 .env

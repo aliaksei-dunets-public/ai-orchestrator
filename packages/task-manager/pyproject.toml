@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orchestrator-task-manager"
+version = "0.1.0"
+description = "Standalone SQLite Task Manager Service for Orchestrator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+orchestrator-tasks = "orchestrator_task_manager.task_cli:main"
+orchestrator-tasks-web = "orchestrator_task_manager.task_web:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+orchestrator_task_manager = [
+    "resources/docs/*.md",
+    "resources/examples/skills/orchestrator-task-manager/SKILL.md",
+]

@@ -13,11 +13,11 @@ from pathlib import Path
 from typing import Any
 
 
-BEGIN = "<!-- graph-orchestrator:begin -->"
-END = "<!-- graph-orchestrator:end -->"
+BEGIN = "<!-- orchestrator:begin -->"
+END = "<!-- orchestrator:end -->"
 OWNED_PATHS = {
-    ".graph-orchestrator/project.json",
-    ".graph-orchestrator/project-context.md",
+    ".orchestrator/project.json",
+    ".orchestrator/project-context.md",
     "AGENTS.md",
     ".gitignore",
 }
@@ -135,34 +135,42 @@ def build_plan(target: Path, core: Path, answers: dict[str, Any]) -> dict[str, A
     core_path = core.relative_to(target).as_posix() or "."
     if core_path == ".":
         mode = "self-hosted"
-    elif core_path == "tools/graph-orchestrator":
+    elif core_path == "tools/orchestrator":
         mode = "attached"
+        if not (core / ".agents/skills/orchestrator-task-manager/SKILL.md").is_file():
+            raise OnboardingError("В подключённом ядре отсутствует skill Task Manager Service")
     else:
-        raise OnboardingError("Внешнее ядро должно находиться в tools/graph-orchestrator")
+        raise OnboardingError("Внешнее ядро должно находиться в tools/orchestrator")
 
     project_config = {
         "schema_version": 1,
         "core_path": core_path,
         "mode": mode,
-        "context_path": ".graph-orchestrator/project-context.md",
+        "context_path": ".orchestrator/project-context.md",
     }
     desired = [
-        (".graph-orchestrator/project.json", json.dumps(project_config, ensure_ascii=False, indent=2) + "\n", True),
-        (".graph-orchestrator/project-context.md", _context(answers), True),
+        (".orchestrator/project.json", json.dumps(project_config, ensure_ascii=False, indent=2) + "\n", True),
+        (".orchestrator/project-context.md", _context(answers), True),
     ]
     if mode == "attached":
         old = _utf8(_existing(target, "AGENTS.md"), "AGENTS.md")
         block = (
             f"{BEGIN}\n"
-            f"Для работы с Graph Orchestrator используй `{core_path}/docs/README.md` и "
-            "`.graph-orchestrator/project-context.md`.\n"
+            f"Для работы с Orchestrator используй `{core_path}/docs/README.md` и "
+            "`.orchestrator/project-context.md`.\n"
+            f"Для работы с задачами прочитай `{core_path}/.agents/skills/orchestrator-task-manager/SKILL.md`.\n"
             f"{END}\n"
         )
         desired.append(("AGENTS.md", _append_block(old, block, "AGENTS.md"), False))
 
     old_ignore = _utf8(_existing(target, ".gitignore"), ".gitignore")
-    if ".orchestrator/" not in old_ignore.splitlines():
-        ignore_block = f"{BEGIN}\n.orchestrator/\n{END}\n"
+    if any(line.strip() in {".orchestrator/", ".orchestrator"} for line in old_ignore.splitlines()):
+        raise OnboardingError(
+            "Правило .orchestrator/ скрывает версионируемую конфигурацию; "
+            "сначала согласуйте изменение .gitignore"
+        )
+    if ".orchestrator/state/" not in old_ignore.splitlines():
+        ignore_block = f"{BEGIN}\n.orchestrator/state/\n{END}\n"
         desired.append((".gitignore", _append_block(old_ignore, ignore_block, ".gitignore"), False))
 
     changes = []
@@ -230,10 +238,10 @@ def apply_plan(plan: dict[str, Any], approved_hash: str) -> list[str]:
             relative = change["path"]
             _atomic_write(destinations[relative], change["content"].encode("utf-8"))
             written.append(relative)
-        project_config = json.loads((target / ".graph-orchestrator/project.json").read_text(encoding="utf-8"))
+        project_config = json.loads((target / ".orchestrator/project.json").read_text(encoding="utf-8"))
         if project_config.get("schema_version") != 1 or project_config.get("core_path") != core.relative_to(target).as_posix():
             raise OnboardingError("Проверка конфигурации после записи не прошла")
-        if not (target / ".graph-orchestrator/project-context.md").is_file():
+        if not (target / ".orchestrator/project-context.md").is_file():
             raise OnboardingError("Контекст проекта не создан")
     except (OSError, ValueError, OnboardingError) as exc:
         for relative in reversed(written):
@@ -265,7 +273,7 @@ def main(argv: list[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="Настройка проекта для Graph Orchestrator")
+    parser = argparse.ArgumentParser(description="Настройка проекта для Orchestrator")
     commands = parser.add_subparsers(dest="command", required=True)
     preview = commands.add_parser("preview", help="Построить план без изменения проекта")
     preview.add_argument("--target", type=Path, required=True)

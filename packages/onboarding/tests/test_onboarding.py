@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from graph_orchestrator.onboarding import OnboardingError, apply_plan, build_plan
+from orchestrator_onboarding import OnboardingError, apply_plan, build_plan
 
 
 ANSWERS = {
@@ -25,35 +25,44 @@ class OnboardingTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.target = Path(self.temporary.name)
-        self.core = self.target / "tools/graph-orchestrator"
+        self.core = self.target / "tools/orchestrator"
         (self.core / "docs").mkdir(parents=True)
         (self.core / "README.md").write_text("# Core\n", encoding="utf-8")
+        skill = self.core / ".agents/skills/orchestrator-task-manager/SKILL.md"
+        skill.parent.mkdir(parents=True)
+        skill.write_text("# Skill\n", encoding="utf-8")
+
+    def test_missing_task_skill_blocks_external_preview(self) -> None:
+        (self.core / ".agents/skills/orchestrator-task-manager/SKILL.md").unlink()
+        with self.assertRaisesRegex(OnboardingError, "отсутствует skill"):
+            build_plan(self.target, self.core, ANSWERS)
 
     def test_external_project_preview_apply_and_repeat(self) -> None:
         (self.target / "AGENTS.md").write_text("# Правила пользователя\n", encoding="utf-8")
         (self.target / ".gitignore").write_text("build/\n", encoding="utf-8")
         plan = build_plan(self.target, self.core, ANSWERS)
         self.assertEqual(len(plan["changes"]), 4)
-        self.assertFalse((self.target / ".graph-orchestrator").exists())
+        self.assertFalse((self.target / ".orchestrator").exists())
         written = apply_plan(plan, plan["plan_hash"])
         self.assertEqual(len(written), 4)
         self.assertIn("# Правила пользователя", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
-        self.assertIn("tools/graph-orchestrator/docs/README.md", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertIn("tools/orchestrator/docs/README.md", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertIn("tools/orchestrator/.agents/skills/orchestrator-task-manager/SKILL.md", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
         self.assertIn("build/", (self.target / ".gitignore").read_text(encoding="utf-8"))
-        self.assertIn(".orchestrator/", (self.target / ".gitignore").read_text(encoding="utf-8"))
+        self.assertIn(".orchestrator/state/", (self.target / ".gitignore").read_text(encoding="utf-8"))
         self.assertEqual(build_plan(self.target, self.core, ANSWERS)["changes"], [])
 
     def test_self_hosted_does_not_copy_core_or_modify_existing_agents(self) -> None:
         (self.target / "README.md").write_text("# Core\n", encoding="utf-8")
         (self.target / "docs").mkdir()
         (self.target / "AGENTS.md").write_text("# Пользовательские инструкции\n", encoding="utf-8")
-        (self.target / ".gitignore").write_text(".orchestrator/\n", encoding="utf-8")
+        (self.target / ".gitignore").write_text(".orchestrator/state/\n", encoding="utf-8")
         plan = build_plan(self.target, self.target, ANSWERS)
         self.assertEqual({change["path"] for change in plan["changes"]}, {
-            ".graph-orchestrator/project.json", ".graph-orchestrator/project-context.md"
+            ".orchestrator/project.json", ".orchestrator/project-context.md"
         })
         apply_plan(plan, plan["plan_hash"])
-        config = json.loads((self.target / ".graph-orchestrator/project.json").read_text(encoding="utf-8"))
+        config = json.loads((self.target / ".orchestrator/project.json").read_text(encoding="utf-8"))
         self.assertEqual(config["mode"], "self-hosted")
         self.assertEqual(config["core_path"], ".")
         self.assertEqual((self.target / "AGENTS.md").read_text(encoding="utf-8"), "# Пользовательские инструкции\n")
@@ -64,14 +73,14 @@ class OnboardingTests(unittest.TestCase):
         (self.target / "AGENTS.md").write_text("Changed\n", encoding="utf-8")
         with self.assertRaisesRegex(OnboardingError, "изменился после preview"):
             apply_plan(plan, plan["plan_hash"])
-        self.assertFalse((self.target / ".graph-orchestrator").exists())
+        self.assertFalse((self.target / ".orchestrator").exists())
         self.assertEqual((self.target / "AGENTS.md").read_text(encoding="utf-8"), "Changed\n")
 
     def test_wrong_approval_hash_blocks_writes(self) -> None:
         plan = build_plan(self.target, self.core, ANSWERS)
         with self.assertRaisesRegex(OnboardingError, "Хеш плана"):
             apply_plan(plan, "incorrect")
-        self.assertFalse((self.target / ".graph-orchestrator").exists())
+        self.assertFalse((self.target / ".orchestrator").exists())
 
     def test_preview_cli_prints_russian_with_legacy_console_encoding(self) -> None:
         answers = self.target / "answers.json"
@@ -79,7 +88,7 @@ class OnboardingTests(unittest.TestCase):
         output = self.target / "plan.json"
         environment = os.environ.copy()
         environment["PYTHONIOENCODING"] = "cp1252"
-        script = Path(__file__).resolve().parents[1] / "graph_orchestrator/onboarding.py"
+        script = Path(__file__).resolve().parents[1] / "src/orchestrator_onboarding/onboarding.py"
         result = subprocess.run(
             [
                 sys.executable, str(script), "preview", "--target", str(self.target),
@@ -96,7 +105,7 @@ class OnboardingTests(unittest.TestCase):
         self.assertTrue(output.is_file())
 
     def test_existing_project_context_is_not_overwritten(self) -> None:
-        context = self.target / ".graph-orchestrator/project-context.md"
+        context = self.target / ".orchestrator/project-context.md"
         context.parent.mkdir()
         context.write_text("Пользовательский контекст", encoding="utf-8")
         with self.assertRaisesRegex(OnboardingError, "Уже существует"):
@@ -105,7 +114,7 @@ class OnboardingTests(unittest.TestCase):
 
     def test_invalid_managed_markers_block_preview(self) -> None:
         (self.target / "AGENTS.md").write_text(
-            "<!-- graph-orchestrator:end -->\n<!-- graph-orchestrator:begin -->\n",
+            "<!-- orchestrator:end -->\n<!-- orchestrator:begin -->\n",
             encoding="utf-8",
         )
         with self.assertRaisesRegex(OnboardingError, "маркеры"):
@@ -120,10 +129,15 @@ class OnboardingTests(unittest.TestCase):
         with self.assertRaisesRegex(OnboardingError, "внутри целевого проекта"):
             build_plan(self.target, other, ANSWERS)
 
+    def test_broad_ignore_rule_blocks_preview(self) -> None:
+        (self.target / ".gitignore").write_text(".orchestrator/\n", encoding="utf-8")
+        with self.assertRaisesRegex(OnboardingError, "скрывает версионируемую конфигурацию"):
+            build_plan(self.target, self.core, ANSWERS)
+
     def test_symlinked_output_is_rejected(self) -> None:
         outside = self.target.parent / "outside-onboarding-test"
         try:
-            (self.target / ".graph-orchestrator").symlink_to(outside, target_is_directory=True)
+            (self.target / ".orchestrator").symlink_to(outside, target_is_directory=True)
         except (OSError, NotImplementedError):
             self.skipTest("Символические ссылки недоступны")
         with self.assertRaises(OnboardingError):
@@ -132,7 +146,7 @@ class OnboardingTests(unittest.TestCase):
     def test_write_failure_restores_previous_files(self) -> None:
         (self.target / "AGENTS.md").write_text("Original\n", encoding="utf-8")
         plan = build_plan(self.target, self.core, ANSWERS)
-        from graph_orchestrator import onboarding
+        from orchestrator_onboarding import onboarding
 
         real_write = onboarding._atomic_write
         calls = 0
@@ -148,8 +162,8 @@ class OnboardingTests(unittest.TestCase):
             with self.assertRaisesRegex(OnboardingError, "восстановлены"):
                 apply_plan(plan, plan["plan_hash"])
         self.assertEqual((self.target / "AGENTS.md").read_text(encoding="utf-8"), "Original\n")
-        self.assertFalse((self.target / ".graph-orchestrator/project.json").exists())
-        self.assertFalse((self.target / ".graph-orchestrator/project-context.md").exists())
+        self.assertFalse((self.target / ".orchestrator/project.json").exists())
+        self.assertFalse((self.target / ".orchestrator/project-context.md").exists())
 
 
 if __name__ == "__main__":

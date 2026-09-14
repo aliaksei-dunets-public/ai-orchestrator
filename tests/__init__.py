@@ -1,1 +1,1 @@
-"""Тесты Graph Orchestrator."""
+"""Тесты Orchestrator."""
