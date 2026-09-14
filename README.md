@@ -1,35 +1,13 @@
----
-language: en
-translation_of: README.ru.md
----
+# Graph Orchestrator
 
-# AI Orchestrator
+This repository is migrating to a graph-based AI development orchestrator. The previous implementation and its documentation are preserved under [`obsolete/`](obsolete/README.md). They are reference material, not the active runtime.
 
-Portable, configurable orchestrator for skills, workflows, tasks, memory, and
-Project Context across agent platforms and technology stacks.
+The new architecture is currently specified in [`docs/`](docs/README.md):
 
-## Documentation
+- [`docs/graph/`](docs/graph/) — request routing, task state, and executor loop.
+- [`docs/development/`](docs/development/) — preparation and execution workflows.
+- [`docs/context-knowledge/`](docs/context-knowledge/) — Project Knowledge Map.
 
-- [Documentation index](docs/INDEX.md)
-- [Core architecture](docs/architecture/orchestrator-core.md)
-- [Task Layer contract](docs/architecture/task-layer.md)
-- [Project roadmap](docs/roadmap.md)
-- [Russian README](README.ru.md)
+Implementation will proceed incrementally. **No new graph runtime is shipped yet.** In particular, do not invoke code under `obsolete/` as if it implements the new contracts.
 
-## Status
-
-Version 1.2.0 contracts are implemented: task creation and execution, checks,
-approval gates, documentation, target-owned Project Memory and Knowledge Graph,
-bounded context retrieval, audit, backlog loop, adaptation profiles, and
-selective system/bundled/optional skill installation. Constraints and upgrade
-order are described in the [migration guide](docs/migrations/1.2.md).
-
-The current branch also supports risk-based execution routing, bounded
-evidence, and local telemetry:
-
-```powershell
-python -m orchestrator telemetry --json
-python -m orchestrator context --root . --mode standard --term task-manager
-python -m orchestrator memory --root . list
-python -m orchestrator knowledge --root . list
-```
+See [`docs/roadmap.md`](docs/roadmap.md) for the migration sequence.

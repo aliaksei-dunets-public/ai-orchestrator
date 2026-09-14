@@ -1,43 +1,13 @@
----
-language: en
----
+# Graph Orchestrator migration roadmap
 
-# Project roadmap
+The graph-based framework is not yet implemented. The documents in this directory are design inputs, with status recorded in each document. Delivery is sequential; a phase is complete only when its contracts, runtime, tests, and user documentation agree.
 
-The roadmap preserves the dependency order of delivered phases. Detailed local
-implementation plans are development artifacts under `.orchestrator/plans/`;
-this document is the versioned statement of project direction and completion.
+1. **Repository boundary (current):** preserve the previous product and its old local state and release artifacts in `obsolete/`; move the graph design documents into root `docs/`; establish new root guidance. Verify file preservation and links.
+2. **Contract consolidation:** reconcile draft and accepted design artifacts into one authoritative set of task, workflow-run, artifact, and transition contracts. Resolve contradictions explicitly before coding.
+3. **Deterministic foundations:** implement persistent Task Manager Service, artifact repository, schema validation, and graph state/transition engine with focused tests.
+4. **Preparation workflow:** implement context, analysis, specification, planning, review, and the durable `ready` boundary.
+5. **Execution workflow:** implement atomic claims and recovery, execution preflight, implementation, reviews, tests, documentation, final validation, and user acceptance.
+6. **Knowledge and integrations:** implement Project Knowledge Map lifecycle and optional tracker/platform adapters after core contracts are stable.
+7. **End-to-end validation:** run scenario, recovery, concurrency, security, and portability tests; publish operational guides and release evidence.
 
-| Phase | Deliverable |
-| --- | --- |
-| 0 | Architecture foundation |
-| 1 | Repository scaffold |
-| 2 | Minimal Health Check |
-| 3 | Session Reporter |
-| 4 | Minimal Task Manager |
-| 5 | Quick Task Creator |
-| 6 | Standard Task Creator and Plan Review |
-| 7 | Implementation Runner |
-| 8 | Test Design and Runner |
-| 9 | Task Review |
-| 10 | Code Review |
-| 11 | Security Review |
-| 12 | User Review and approval gates |
-| 13 | Documentation Manager |
-| 14 | Project Onboarding |
-| 15 | Platform Profiles |
-| 16 | Technology Profiles |
-| 17 | Project Memory |
-| 18 | Knowledge Graph |
-| 19 | Backlog Loop |
-| 20 | Orchestrator Audit |
-| 21 | Controlled Self-Improvement |
-| 22 | Multi-Project Validation |
-| 23 | Stable Release 1.0 |
-| 24 | Selective skill distribution |
-| 25 | Target-owned Memory and Knowledge lifecycle |
-
-Task Layer milestones T0–T9 refine these phases and do not create a parallel
-backlog. New work is registered as a Task Context in the target project's
-`.orchestrator/tasks/` state, then updates the affected canonical documentation
-when implementation is verified.
+Do not reuse legacy code implicitly. A needed legacy skill, idea, or contract must be deliberately adapted into the new root and validated against the consolidated graph contracts.
