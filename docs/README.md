@@ -1,11 +1,11 @@
-# Graph Orchestrator — Design Artifacts
+# Graph Orchestrator — проектные материалы
 
-These documents are the latest available architecture and design artifacts for the new graph-based orchestrator. They are not evidence of a delivered runtime. Each document's own status indicates whether it is a draft or an accepted design decision; contract consolidation is the next migration phase.
+Здесь собраны архитектурные материалы нового графового оркестратора. Большинство импортированных документов пока не подтверждают наличие работающего ядра. Статус каждого документа показывает, является ли он черновиком, принятым проектным решением или действующим контрактом. Первый реализованный срез описан в [контракте настройки проекта](architecture/onboarding.md) и [инструкции](guides/onboarding.md); Graph Runtime ещё не готов.
 
-## Contents
+## Содержание
 
-- `graph/` — request routing, task management, task readiness, executor loop, tracker integration.
-- `development/` — context, analysis, planning, reviews, implementation, TDD, testing, documentation, final checks, specification/plan boundary, execution preflight, workspace strategy.
-- `context-knowledge/` — Project Knowledge Map design and audit documents created earlier in the discussion.
+- `graph/` — маршрутизация запросов, управление задачами, готовность к исполнению, цикл исполнителя и интеграция с трекерами;
+- `development/` — контекст, анализ, планирование, реализация, проверки, тесты и документация;
+- `context-knowledge/` — проект карты знаний и результаты её аудита.
 
-The previous product is preserved separately in [`obsolete/`](../obsolete/README.md). See the [migration roadmap](roadmap.md) before implementing any of these designs.
+Эти импортированные проектные материалы пока написаны на английском. При внедрении их решения переводятся и актуализируются в русскоязычных действующих документах и гайдах. Прежний продукт сохранён в [`obsolete/`](../obsolete/README.md). Перед реализацией смотри [план миграции](roadmap.md); выполненные работы фиксируются в [журнале](worklog.md).

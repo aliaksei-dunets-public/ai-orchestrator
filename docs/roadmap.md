@@ -1,13 +1,14 @@
-# Graph Orchestrator migration roadmap
+# План миграции Graph Orchestrator
 
-The graph-based framework is not yet implemented. The documents in this directory are design inputs, with status recorded in each document. Delivery is sequential; a phase is complete only when its contracts, runtime, tests, and user documentation agree.
+Графовый фреймворк пока не реализован. Документы в этом каталоге — проектные материалы; их статус указан в каждом файле. Разработка идёт последовательно. Этап завершён только тогда, когда его контракты, код, тесты, русскоязычная документация и необходимые гайды согласованы.
 
-1. **Repository boundary (current):** preserve the previous product and its old local state and release artifacts in `obsolete/`; move the graph design documents into root `docs/`; establish new root guidance. Verify file preservation and links.
-2. **Contract consolidation:** reconcile draft and accepted design artifacts into one authoritative set of task, workflow-run, artifact, and transition contracts. Resolve contradictions explicitly before coding.
-3. **Deterministic foundations:** implement persistent Task Manager Service, artifact repository, schema validation, and graph state/transition engine with focused tests.
-4. **Preparation workflow:** implement context, analysis, specification, planning, review, and the durable `ready` boundary.
-5. **Execution workflow:** implement atomic claims and recovery, execution preflight, implementation, reviews, tests, documentation, final validation, and user acceptance.
-6. **Knowledge and integrations:** implement Project Knowledge Map lifecycle and optional tracker/platform adapters after core contracts are stable.
-7. **End-to-end validation:** run scenario, recovery, concurrency, security, and portability tests; publish operational guides and release evidence.
+1. **Граница репозитория (выполнено):** сохранить прежний продукт, старое локальное состояние и релизы в `obsolete/`; перенести проектные документы нового подхода в `docs/`; обновить инструкции в корне и проверить сохранность файлов и ссылок.
+2. **Первичная настройка проекта (первый срез реализован):** создать безопасный протокол preview/apply для внешнего проекта и self-hosting. Сборка пакета, проверка установки и обновления остаются отдельными будущими работами. Действующий контракт: [первичная настройка](architecture/onboarding.md), [инструкция](guides/onboarding.md).
+3. **Согласование контрактов:** привести черновые и принятые решения к единым контрактам задач, запусков графа, артефактов и переходов. Устранить противоречия до реализации, документировать решения на русском.
+4. **Детерминированная основа:** реализовать постоянное хранилище задач, репозиторий артефактов, проверку схем и движок переходов графа с предметными тестами и гайдами.
+5. **Подготовка задачи:** реализовать получение контекста, анализ, спецификацию, планирование, проверку плана и устойчивую границу `ready`.
+6. **Исполнение задачи:** реализовать атомарное закрепление задачи за исполнителем и восстановление, предварительные проверки, реализацию, ревью, тесты, обновление документации, финальную проверку и приёмку пользователем.
+7. **Знания и интеграции:** реализовать жизненный цикл карты знаний проекта и дополнительные адаптеры трекеров и платформ после стабилизации основных контрактов.
+8. **Сквозная проверка:** выполнить сценарные, восстановительные, конкурентные, защитные и межплатформенные тесты; опубликовать гайды и свидетельства готовности релиза.
 
-Do not reuse legacy code implicitly. A needed legacy skill, idea, or contract must be deliberately adapted into the new root and validated against the consolidated graph contracts.
+На каждом этапе фиксируй выполненные работы, результаты проверок и исправления документации. Не переноси старый код неявно: нужный навык, идея или контракт из `obsolete/` должны быть осознанно адаптированы и проверены на соответствие новым контрактам.

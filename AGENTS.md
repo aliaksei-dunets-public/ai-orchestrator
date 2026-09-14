@@ -1,10 +1,13 @@
-# Graph Orchestrator workspace instructions
+# Правила проекта Graph Orchestrator
 
-- Treat `docs/` as design input for the new graph-based orchestrator. Documents have their own draft/accepted statuses; none alone proves runtime delivery.
-- Implement the migration in the order described by `docs/roadmap.md`.
-- Keep task state in a deterministic Task Manager Service and workflow-run state in Graph Runtime.
-- Preserve the preparation/`ready`/execution boundary and structured artifact contracts.
-- Keep the runtime platform-neutral; isolate platform behavior in adapters.
-- Keep `obsolete/` read-only as a reference. Do not import, execute, or edit it to implement the new system.
-- The previous release artifacts and local `.orchestrator/` state are archived in `obsolete/`; do not treat them as active state. Preserve `.venv/`, temporary files, and unrelated user data.
-- Add focused tests as capabilities are implemented; do not claim a phase complete without matching code, documentation, and test evidence.
+- Считай `docs/` проектными материалами нового графового оркестратора. Статус каждого документа указан в нём самом; документ не доказывает, что функция уже реализована.
+- Разрабатывай систему последовательно согласно `docs/roadmap.md`.
+- Храни состояние задачи в детерминированном Task Manager Service, а состояние запуска процесса — в Graph Runtime.
+- Сохраняй границу между подготовкой, статусом `ready` и исполнением, а также контракты структурированных артефактов.
+- Сохраняй независимость ядра от платформы; платформенные особенности размещай в адаптерах.
+- Используй `obsolete/` только как неизменяемый справочный архив. Не импортируй, не запускай и не редактируй старый код для реализации новой системы.
+- Старые релизы и локальное состояние `.orchestrator/` находятся в `obsolete/` и не являются активным состоянием. Сохраняй `.venv/`, временные файлы и посторонние пользовательские данные.
+- Для каждой выполненной работы документируй решения, изменения и результаты проверок. На каждом этапе создавай или обновляй необходимые архитектурные документы, инструкции и пользовательские гайды; не откладывай их на конец проекта.
+- Новую и изменяемую документацию пиши на русском языке. Перенесённые англоязычные проектные материалы остаются исходниками для сверки; при превращении их в действующие контракты переводи и актуализируй соответствующие документы.
+- Если обнаружена неточная, противоречивая или устаревшая документация, исправь её в рамках затронутой темы и проверь связанные ссылки. Не выдавай ошибочную документацию за актуальную.
+- Добавляй предметные тесты по мере реализации возможностей; не объявляй этап завершённым, пока код, документация, гайды и результаты проверок не согласованы.
