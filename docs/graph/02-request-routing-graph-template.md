@@ -1,5 +1,8 @@
 # AI Orchestrator --- Task Creation Graph Template
 
+
+> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Остальной текст — импортированный проектный материал, не подтверждение реализации.
+
 This file is a **conceptual template**, not yet a frozen runtime schema.
 It records the current graph design in a form that can later evolve into
 the actual YAML configuration.

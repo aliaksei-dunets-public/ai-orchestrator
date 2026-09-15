@@ -1,5 +1,7 @@
 # Task Manager Service — API and Data Contract
 
+> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Остальной текст — импортированный проектный материал, не подтверждение реализации.
+
 **Status:** Candidate v1 contract
 
 ## 1. Task Model

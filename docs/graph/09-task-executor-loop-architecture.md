@@ -1,5 +1,7 @@
 # Task Executor Loop — Architecture
 
+> **Актуализация 2026-09-15:** первый срез — [один агент в реальном времени](../architecture/workflow-run.md) с [паузой в той же сессии](../architecture/workflow-pause-resume.md). Фоновый Executor Loop и конкурирующие workers не входят в v1. Текст ниже — исходное предложение будущего расширения, не требование текущей реализации.
+
 **Status:** Accepted design v0.1  
 **Scope:** Asynchronous execution of prepared `ready` tasks
 

@@ -1,5 +1,7 @@
 # Reusable Subgraph Design Rules
 
+> **Актуализация 2026-09-15:** последовательная работа одного агента, общая оболочка результата и владение маршрутом согласованы в [упрощённом Workflow Run](../architecture/workflow-run.md). Runtime хранит процесс в памяти сессии; исходные правила не доказывают наличие реализации.
+
 **Status:** Accepted architecture rules v0.1  
 **Scope:** AI Orchestrator graph library
 

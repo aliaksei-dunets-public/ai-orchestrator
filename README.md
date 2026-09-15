@@ -2,13 +2,13 @@
 
 В этом репозитории разрабатывается графовый оркестратор задач разработки. Прежняя реализация и её документация сохранены в [`obsolete/`](obsolete/README.md) как справочный архив, а не как действующее ядро.
 
-Проектные материалы нового подхода находятся в [`docs/`](docs/README.md):
+Проектные материалы нового подхода находятся в [`docs/`](docs/README.md). Актуальный снимок реализованного состояния — [`docs/project-status.md`](docs/project-status.md):
 
 - [`docs/graph/`](docs/graph/) — маршрутизация запросов, состояние задач и цикл исполнения;
 - [`docs/development/`](docs/development/) — подготовка и исполнение задач разработки;
 - [`docs/context-knowledge/`](docs/context-knowledge/) — карта знаний проекта.
 
-Разработка идёт поэтапно. Сейчас доступны два пакета: [Onboarding](packages/onboarding/README.md) с проверяемым планом `preview/apply` и [Task Manager Service](packages/task-manager/README.md) с SQLite и локальной панелью просмотра. Внутри Task Manager поставляются полный контракт, инструкция и пример skill; [проектный skill](.agents/skills/orchestrator-task-manager/SKILL.md) указывает на них. **Graph Runtime и автоматическое выполнение задач пока не реализованы.** Код из `obsolete/` не выполняет новые контракты.
+Разработка идёт поэтапно. Сейчас доступны два пакета: [Onboarding](packages/onboarding/README.md) с проверяемым планом `preview/apply` и [Task Manager Service](packages/task-manager/README.md) с SQLite и локальной панелью просмотра. В корневом исходном пакете реализован первый входной срез [Request Router → Task Creator](docs/guides/request-flow.md); адаптеры классификации и смысловой подготовки передаются извне. Внутри Task Manager поставляются полный контракт, инструкция и пример skill; [проектный skill](.agents/skills/orchestrator-task-manager/SKILL.md) указывает на них. **Graph Runtime и автоматическое выполнение задач пока не реализованы.** Код из `obsolete/` не выполняет новые контракты.
 
 ## Как подключить к своему проекту сейчас
 

@@ -1,5 +1,7 @@
 # AI Orchestrator --- Task Creation Architecture
 
+> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Остальной текст — импортированный проектный материал, не подтверждение реализации.
+
 **Status:** Draft / baseline decision\
 **Scope:** First level of the execution graph:
 `User Request → Task Creation`\
@@ -120,7 +122,7 @@ Workflow Run:
   workflow / current_node / retries / routing / execution state
 ```
 
-For v1, canonical Task storage is a Git-friendly filesystem repository under `.orchestrator/tasks`.
+Историческое предложение v1: каноническое состояние Task в Git-friendly файловом репозитории под `.orchestrator/tasks`. Оно заменено действующей SQLite-границей хранения, указанной выше.
 
 External trackers such as GitHub Issues are optional projections through a `TaskTrackerAdapter`; they are not sources of truth.
 

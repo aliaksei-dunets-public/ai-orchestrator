@@ -1,5 +1,7 @@
 # Preparation Artifact Lifecycle and Retention Policy
 
+> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Остальной текст — импортированный проектный материал, не подтверждение реализации.
+
 **Status:** Accepted policy v0.1
 
 ## 1. Principle
