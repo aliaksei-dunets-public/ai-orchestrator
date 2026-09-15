@@ -66,13 +66,23 @@ def _shell(title: str, content: str) -> str:
     )
 
 
-def render_index(service: TaskManagerService, *, query: str = "", status: str = "", page: int = 1) -> str:
-    all_tasks = service.list_tasks(limit=None)
+def render_index(service: TaskManagerService, *, query: str = "", status: str = "", page: int = 1,
+                 cursor: str | None = None, include_archived: bool = False) -> str:
+    all_tasks = service.list_tasks(limit=None, include_archived=include_archived)
     selected = {status} if status in STATUS_LABELS else None
-    filtered = service.list_tasks(statuses=selected, query=query, limit=None)
-    page = max(1, min(page, max(1, (len(filtered) + 49) // 50)))
-    start = (page - 1) * 50
-    tasks = filtered[start:start + 50]
+    if cursor is not None:
+        filtered = service.list_tasks(statuses=selected, query=query, limit=51, cursor=cursor,
+                                      include_archived=include_archived)
+        tasks = filtered[:50]
+        has_next = len(filtered) > 50
+        start = 0
+    else:
+        filtered = service.list_tasks(statuses=selected, query=query, limit=None,
+                                      include_archived=include_archived)
+        page = max(1, min(page, max(1, (len(filtered) + 49) // 50)))
+        start = (page - 1) * 50
+        tasks = filtered[start:start + 50]
+        has_next = start + 50 < len(filtered)
     counts = {
         "Всего": len(all_tasks),
         "В работе": sum(task["status"] == "active" for task in all_tasks),
@@ -94,9 +104,15 @@ def render_index(service: TaskManagerService, *, query: str = "", status: str = 
     ) or "<div class='empty'>Здесь пока нет задач с выбранными условиями.</div>"
     pager = "<nav class='pager' aria-label='Страницы задач'>"
     if page > 1:
-        pager += f"<a href='/?{_h(urlencode({'q': query, 'status': status, 'page': page - 1}))}'>← Предыдущая</a>"
-    if start + 50 < len(filtered):
-        pager += f"<a href='/?{_h(urlencode({'q': query, 'status': status, 'page': page + 1}))}'>Следующая →</a>"
+        pager_params = {'q': query, 'status': status, 'page': page - 1}
+        if include_archived:
+            pager_params['archived'] = '1'
+        pager += f"<a href='/?{_h(urlencode(pager_params))}'>← Предыдущая</a>"
+    if has_next and tasks:
+        params = {'q': query, 'status': status, 'cursor': tasks[-1]['id']} if cursor is not None else {'q': query, 'status': status, 'page': page + 1}
+        if include_archived:
+            params['archived'] = '1'
+        pager += f"<a href='/?{_h(urlencode(params))}'>Следующая →</a>"
     pager += "</nav>"
     body = (
         "<section class='hero'><div><span class='eyebrow'>Операционный обзор / задачи</span>"
@@ -106,7 +122,9 @@ def render_index(service: TaskManagerService, *, query: str = "", status: str = 
         f"<div class='section-top'><h2>Реестр задач</h2><span class='count'>Показано {len(tasks)} из {len(filtered)} · всего {len(all_tasks)}</span></div>"
         f"<form class='filters' method='get' action='/'><input aria-label='Поиск задач' name='q' "
         f"placeholder='Поиск по ID, названию или цели' value='{_h(query)}'>"
-        f"<select aria-label='Статус задачи' name='status'>{options}</select><button type='submit'>Показать</button></form>"
+        f"<select aria-label='Статус задачи' name='status'>{options}</select>"
+        f"<label class='small'><input type='checkbox' name='archived' value='1'{' checked' if include_archived else ''}> Архив</label>"
+        f"<button type='submit'>Показать</button></form>"
         f"<div class='task-table'>{rows}</div>{pager}"
     )
     return _shell("Задачи", body)
@@ -132,7 +150,9 @@ def render_task(service: TaskManagerService, task_id: str) -> str:
     ) or "<p>Документы ещё не привязаны.</p>"
     events = "".join(
         f"<div class='event'><strong>{_h(EVENT_LABELS.get(event['type'], event['type']))}</strong>"
-        f"<span class='event-time'>#{event['sequence']} · {_h(event['at'])} · v{event['task_version']}</span></div>"
+        f"<span class='event-time'>#{event['sequence']} · {_h(event['at'])} · v{event['task_version']}"
+        f" · {_h(' / '.join(str(event[key]) for key in ('actor_ref','source','correlation_id','run_ref') if event.get(key)))}"
+        f"</span></div>"
         for event in reversed(history)
     )
     body = (
@@ -193,7 +213,9 @@ def make_handler(service: TaskManagerService):
                     raw_page = params.get("page", ["1"])[0]
                     page = int(raw_page) if raw_page.isdigit() else 1
                     body = render_index(service, query=params.get("q", [""])[0],
-                                        status=params.get("status", [""])[0], page=page)
+                                        status=params.get("status", [""])[0], page=page,
+                                        cursor=params.get("cursor", [None])[0],
+                                        include_archived=params.get("archived", [""])[0] == "1")
                 elif match := re.fullmatch(r"/task/(TASK-[0-9]{4,})", parsed.path):
                     body = render_task(service, match.group(1))
                 elif match := re.fullmatch(r"/task/(TASK-[0-9]{4,})/document/(specification|plan)", parsed.path):

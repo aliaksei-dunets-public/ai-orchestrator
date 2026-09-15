@@ -1,5 +1,7 @@
 # Execution Workspace Strategy
 
+> **Статус материала:** импортированная стратегия. Ссылки на Task Executor Loop и отложенные фоновые циклы описывают будущее расширение; текущий v1 использует одну real-time сессию и in-memory Workflow Runtime.
+
 **Status:** Accepted design v0.1  
 **Scope:** Development Workflow — physical workspace / branch selection before Implementation
 

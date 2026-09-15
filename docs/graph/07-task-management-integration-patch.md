@@ -1,6 +1,6 @@
 # Task Management Integration Patch
 
-> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Остальной текст — импортированный проектный материал, не подтверждение реализации.
+> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Фоновый Executor Loop в этом материале — будущий вариант, не часть v1. Остальной текст — импортированный проектный материал, не подтверждение реализации.
 
 **Status:** Accepted patch v0.2  
 **Scope:** Request routing + preparation/execution handoff + external tracker projection

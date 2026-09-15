@@ -55,8 +55,18 @@ class TaskWebTests(unittest.TestCase):
         self.assertIn("Предыдущая", second)
         self.assertIn("всего 52", first)
         self.assertIn("Задача 0", second)
+        cursor_page = render_index(self.service, cursor="TASK-0001")
+        self.assertIn("Реестр задач", cursor_page)
         filtered = render_index(self.service, query="несуществующая")
         self.assertIn("нет задач", filtered)
+
+    def test_archived_tasks_are_hidden_by_default_and_can_be_viewed(self) -> None:
+        task = self.service.cancel_task(self.task["id"], self.task["version"], reason="Не требуется")
+        self.service.archive_task(task["id"], task["version"], reason="Скрыть")
+        hidden = render_index(self.service)
+        visible = render_index(self.service, include_archived=True)
+        self.assertNotIn("<script>", hidden)
+        self.assertIn("Архив", visible)
 
     def test_http_is_local_read_only_and_rejects_bad_host(self) -> None:
         server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(self.service))

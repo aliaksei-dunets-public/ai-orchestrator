@@ -1,6 +1,21 @@
 # Как настроить Orchestrator для проекта
 
-**Статус:** инструкция для реализованного первого среза (только настройка проекта).
+**Статус:** инструкция для реализованного первого среза и одноразовый порядок полного wizard-запуска.
+
+## Сценарий первого запуска для агента
+
+Эта инструкция используется только во время первичной настройки проекта. После завершения постоянным skill остаётся только [Task Manager](../../.agents/skills/orchestrator-task-manager/SKILL.md); повторный onboarding выполняется по этому же документу при необходимости.
+
+1. Изучи проект, `docs/project-status.md`, корень Git, Python 3.11+, виртуальное окружение, команды тестов, `AGENTS.md`, `.gitignore`, `.orchestrator/` и `.agents/skills/`.
+2. Задавай пользователю вопросы по одному: название и назначение проекта, команды проверок, ограничения, выбранный Python-интерпретатор и режим установки Task Manager (`editable` для разработки или обычная установка).
+3. Подготовь в `.tmp/` UTF-8-файл ответов с `project_name`, `summary`, `test_commands` и `constraints`. Не включай секреты, токены и длинные фрагменты кода.
+4. Построй `preview`: для self-hosting используй `--target . --core .`, для внешнего проекта — `--target . --core tools/orchestrator`. Покажи пользователю diff, список файлов и полный хеш плана.
+5. После отдельного подтверждения именно этого хеша выполни `apply`. При изменении проекта, ядра или версии onboarding создай новый preview.
+6. После успешного `apply` отдельно покажи команду установки Task Manager и запроси отдельное подтверждение. Для разработки используй `python -m pip install -e <core>/packages/task-manager`.
+7. После подтверждения проверь импорт `orchestrator_task_manager`, `orchestrator-tasks --help` и `orchestrator-tasks --project . validate`. Команда `validate` может создать `.orchestrator/state/tasks.sqlite3`; этот каталог не коммить.
+8. Проверь `.orchestrator/project.json`, `.orchestrator/project-context.md`, `git diff`, доступность Task Manager skill и выдай итоговый checklist с командой создания первой задачи.
+
+Постоянными артефактами первого запуска являются только `project.json`, `project-context.md`, managed-блок `AGENTS.md` и правило состояния в `.gitignore`. Новые форматы Specification, Plan и Graph Runtime не добавляй: их контракты ещё согласуются.
 
 ## Перед началом
 
@@ -31,6 +46,6 @@ python tools/orchestrator/packages/onboarding/src/orchestrator_onboarding/onboar
 python tools/orchestrator/packages/onboarding/src/orchestrator_onboarding/onboarding.py apply --plan .tmp/onboarding-plan.json --approved-hash <ПОДТВЕРЖДЁННЫЙ_ХЕШ>
 ```
 
-Для self-hosting снова используйте путь `packages/onboarding/src/orchestrator_onboarding/onboarding.py`. Если пакет установлен, обе команды можно запускать через `orchestrator-onboarding` с теми же аргументами. Если какой-либо файл изменился после preview, команда не пишет ничего: создайте новый план и покажите его пользователю. Если целевой конфигурационный файл уже существует с другим содержимым, автоматическая перезапись запрещена. При обычной ошибке записи команда восстанавливает изменённые файлы; проверьте Git diff и сообщение об ошибке.
+Для self-hosting снова используйте путь `packages/onboarding/src/orchestrator_onboarding/onboarding.py`. Если пакет установлен, обе команды можно запускать через `orchestrator-onboarding` с теми же аргументами. План содержит версию формата, версию onboarding и отпечаток ядра; после обновления пакета или изменения файлов ядра старый план будет отклонён. Если какой-либо файл изменился после preview, команда не пишет ничего: создайте новый план и покажите его пользователю. Если целевой конфигурационный файл уже существует с другим содержимым, автоматическая перезапись запрещена. При обычной ошибке записи команда восстанавливает изменённые файлы; проверьте Git diff и сообщение об ошибке.
 
-После успешного применения проверьте `.orchestrator/project.json`, `.orchestrator/project-context.md` и `git diff`. Затем [установите отдельный пакет Task Manager Service](tasks.md) для ручного создания и просмотра задач. Во внешнем проекте добавленный блок `AGENTS.md` указывает агенту путь к skill внутри `tools/orchestrator`. Graph Runtime и автоматическая обработка задач ещё не реализованы. Если preview сообщает о широком правиле `.orchestrator/` в `.gitignore`, согласуйте его замену на `.orchestrator/state/` и создайте новый план.
+После успешного применения следуйте шагам установки и проверки Task Manager выше. Во внешнем проекте добавленный блок `AGENTS.md` указывает агенту путь к Task Manager skill внутри `tools/orchestrator`. Graph Runtime и автоматическая обработка задач ещё не реализованы. Если preview сообщает о широком правиле `.orchestrator/` в `.gitignore`, согласуйте его замену на `.orchestrator/state/` и создайте новый план.

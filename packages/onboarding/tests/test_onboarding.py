@@ -48,8 +48,11 @@ class OnboardingTests(unittest.TestCase):
         self.assertIn("# Правила пользователя", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
         self.assertIn("tools/orchestrator/docs/README.md", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
         self.assertIn("tools/orchestrator/.agents/skills/orchestrator-task-manager/SKILL.md", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertNotIn("orchestrator-onboarding", (self.target / "AGENTS.md").read_text(encoding="utf-8"))
         self.assertIn("build/", (self.target / ".gitignore").read_text(encoding="utf-8"))
         self.assertIn(".orchestrator/state/", (self.target / ".gitignore").read_text(encoding="utf-8"))
+        self.assertIn("# orchestrator:begin", (self.target / ".gitignore").read_text(encoding="utf-8"))
+        self.assertNotIn("<!-- orchestrator:begin -->", (self.target / ".gitignore").read_text(encoding="utf-8"))
         self.assertEqual(build_plan(self.target, self.core, ANSWERS)["changes"], [])
 
     def test_self_hosted_does_not_copy_core_or_modify_existing_agents(self) -> None:
@@ -81,6 +84,19 @@ class OnboardingTests(unittest.TestCase):
         with self.assertRaisesRegex(OnboardingError, "Хеш плана"):
             apply_plan(plan, "incorrect")
         self.assertFalse((self.target / ".orchestrator").exists())
+
+    def test_core_change_after_preview_blocks_all_writes(self) -> None:
+        plan = build_plan(self.target, self.core, ANSWERS)
+        (self.core / "README.md").write_text("# Updated core\n", encoding="utf-8")
+        with self.assertRaisesRegex(OnboardingError, "Содержимое ядра изменилось"):
+            apply_plan(plan, plan["plan_hash"])
+        self.assertFalse((self.target / ".orchestrator").exists())
+
+    def test_old_plan_schema_is_rejected(self) -> None:
+        plan = build_plan(self.target, self.core, ANSWERS)
+        plan["schema_version"] = 1
+        with self.assertRaisesRegex(OnboardingError, "Неизвестная версия плана"):
+            apply_plan(plan, plan["plan_hash"])
 
     def test_preview_cli_prints_russian_with_legacy_console_encoding(self) -> None:
         answers = self.target / "answers.json"
@@ -133,6 +149,19 @@ class OnboardingTests(unittest.TestCase):
         (self.target / ".gitignore").write_text(".orchestrator/\n", encoding="utf-8")
         with self.assertRaisesRegex(OnboardingError, "скрывает версионируемую конфигурацию"):
             build_plan(self.target, self.core, ANSWERS)
+
+    def test_legacy_gitignore_markers_are_migrated(self) -> None:
+        (self.target / ".gitignore").write_text(
+            "<!-- orchestrator:begin -->\n.orchestrator/state/\n<!-- orchestrator:end -->\n",
+            encoding="utf-8",
+        )
+        plan = build_plan(self.target, self.core, ANSWERS)
+        change = next(item for item in plan["changes"] if item["path"] == ".gitignore")
+        self.assertIn("# orchestrator:begin", change["content"])
+        self.assertNotIn("<!-- orchestrator:begin -->", change["content"])
+        apply_plan(plan, plan["plan_hash"])
+        content = (self.target / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("# orchestrator:begin", content)
 
     def test_symlinked_output_is_rejected(self) -> None:
         outside = self.target.parent / "outside-onboarding-test"

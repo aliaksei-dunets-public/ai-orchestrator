@@ -43,11 +43,33 @@ def main(argv: list[str] | None = None) -> int:
     listing.add_argument("--type")
     listing.add_argument("--query")
     listing.add_argument("--limit", type=int, default=100)
+    listing.add_argument("--cursor")
+    listing.add_argument("--include-archived", action="store_true")
     show = commands.add_parser("show")
     show.add_argument("task_id")
     history = commands.add_parser("history")
     history.add_argument("task_id")
     history.add_argument("--after-sequence", type=int, default=0)
+    export = commands.add_parser("export")
+    export.add_argument("destination", type=Path)
+    backup = commands.add_parser("backup")
+    backup.add_argument("destination", type=Path)
+    restore = commands.add_parser("restore")
+    restore.add_argument("source", type=Path)
+    archive = commands.add_parser("archive")
+    archive.add_argument("task_id")
+    archive.add_argument("--reason", required=True)
+    archive.add_argument("--actor-ref")
+    archive.add_argument("--operation-id")
+    unarchive = commands.add_parser("unarchive")
+    unarchive.add_argument("task_id")
+    unarchive.add_argument("--reason", required=True)
+    unarchive.add_argument("--operation-id")
+    purge = commands.add_parser("purge")
+    purge.add_argument("task_id")
+    purge.add_argument("--reason", required=True)
+    purge.add_argument("--actor-ref")
+    purge.add_argument("--operation-id")
     commands.add_parser("validate")
     commands.add_parser("resources")
     args = parser.parse_args(argv)
@@ -66,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
             result = service.list_tasks(
                 statuses=set(args.status) if args.status else None,
                 task_type=args.type, query=args.query, limit=args.limit,
+                cursor=args.cursor,
+                include_archived=args.include_archived,
             )
         elif args.command == "show":
             result = service.get_task(args.task_id)
@@ -73,6 +97,29 @@ def main(argv: list[str] | None = None) -> int:
             result = service.get_history(args.task_id, args.after_sequence)
         elif args.command == "validate":
             result = service.health_check()
+        elif args.command == "export":
+            result = service.export_state(args.destination)
+        elif args.command == "backup":
+            result = service.backup(args.destination)
+        elif args.command == "restore":
+            result = service.restore(args.source)
+        elif args.command == "archive":
+            task = service.get_task(args.task_id)
+            result = service.archive_task(
+                args.task_id, task["version"], reason=args.reason,
+                actor_ref=args.actor_ref, operation_id=args.operation_id,
+            )
+        elif args.command == "unarchive":
+            task = service.get_task(args.task_id)
+            result = service.unarchive_task(
+                args.task_id, task["version"], reason=args.reason, operation_id=args.operation_id,
+            )
+        elif args.command == "purge":
+            task = service.get_task(args.task_id)
+            result = service.purge_task(
+                args.task_id, task["version"], reason=args.reason,
+                actor_ref=args.actor_ref, operation_id=args.operation_id,
+            )
         healthy = args.command != "validate" or not result
         print(json.dumps({"ok": healthy, "result": result}, ensure_ascii=False, indent=2))
         return 0 if healthy else 1

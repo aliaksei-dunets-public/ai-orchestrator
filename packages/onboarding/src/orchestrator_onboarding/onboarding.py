@@ -13,8 +13,12 @@ from pathlib import Path
 from typing import Any
 
 
+ONBOARDING_VERSION = "0.1.1"
+PLAN_SCHEMA_VERSION = 2
 BEGIN = "<!-- orchestrator:begin -->"
 END = "<!-- orchestrator:end -->"
+IGNORE_BEGIN = "# orchestrator:begin"
+IGNORE_END = "# orchestrator:end"
 OWNED_PATHS = {
     ".orchestrator/project.json",
     ".orchestrator/project-context.md",
@@ -33,6 +37,23 @@ def _digest(data: bytes) -> str:
 
 def _canonical(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _core_fingerprint(root: Path) -> str:
+    """Return a deterministic fingerprint of the usable core contents."""
+    excluded = {".git", ".orchestrator", ".tmp", ".venv", "__pycache__", "build", "dist"}
+    records: list[bytes] = []
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root)
+        if any(part in excluded for part in relative.parts):
+            continue
+        if path.is_symlink():
+            raise OnboardingError(f"Символическая ссылка в ядре: {relative.as_posix()}")
+        if not path.is_file():
+            continue
+        data = path.read_bytes()
+        records.append(relative.as_posix().encode("utf-8") + b"\0" + _digest(data).encode("ascii") + b"\n")
+    return _digest(b"".join(records))
 
 
 def _safe_target(root: Path, relative: str) -> Path:
@@ -92,19 +113,34 @@ def _context(answers: dict[str, Any]) -> str:
     )
 
 
-def _append_block(existing: str, block: str, relative: str) -> str:
+def _append_block(existing: str, block: str, relative: str, *, begin: str = BEGIN, end: str = END) -> str:
     if (
-        existing.count(BEGIN) != existing.count(END)
-        or existing.count(BEGIN) > 1
-        or (BEGIN in existing and existing.index(END) < existing.index(BEGIN))
+        existing.count(begin) != existing.count(end)
+        or existing.count(begin) > 1
+        or (begin in existing and existing.index(end) < existing.index(begin))
     ):
         raise OnboardingError(f"Некорректные маркеры в {relative}")
-    if BEGIN in existing:
-        start = existing.index(BEGIN)
-        end = existing.index(END, start) + len(END)
-        return existing[:start] + block.rstrip("\n") + existing[end:]
+    if begin in existing:
+        start = existing.index(begin)
+        finish = existing.index(end, start) + len(end)
+        return existing[:start] + block.rstrip("\n") + existing[finish:]
     separator = "" if not existing else ("\n" if existing.endswith("\n") else "\n\n")
     return existing + separator + block
+
+
+def _is_exact_block(existing: str, body: str, *, begin: str, end: str, relative: str) -> bool:
+    """Check whether a managed marker pair contains exactly the expected body."""
+    if begin not in existing and end not in existing:
+        return False
+    if (
+        existing.count(begin) != 1
+        or existing.count(end) != 1
+        or existing.index(end) < existing.index(begin)
+    ):
+        raise OnboardingError(f"Некорректные маркеры в {relative}")
+    start = existing.index(begin) + len(begin)
+    finish = existing.index(end, start)
+    return existing[start:finish].strip() == body.strip()
 
 
 def _change(root: Path, relative: str, content: str, *, create_only: bool = False) -> dict[str, Any] | None:
@@ -169,9 +205,28 @@ def build_plan(target: Path, core: Path, answers: dict[str, Any]) -> dict[str, A
             "Правило .orchestrator/ скрывает версионируемую конфигурацию; "
             "сначала согласуйте изменение .gitignore"
         )
-    if ".orchestrator/state/" not in old_ignore.splitlines():
-        ignore_block = f"{BEGIN}\n.orchestrator/state/\n{END}\n"
-        desired.append((".gitignore", _append_block(old_ignore, ignore_block, ".gitignore"), False))
+    legacy_ignore_block = _is_exact_block(
+        old_ignore,
+        ".orchestrator/state/",
+        begin=BEGIN,
+        end=END,
+        relative=".gitignore",
+    )
+    if ".orchestrator/state/" not in old_ignore.splitlines() or legacy_ignore_block:
+        ignore_block = f"{IGNORE_BEGIN}\n.orchestrator/state/\n{IGNORE_END}\n"
+        if legacy_ignore_block:
+            old_ignore = _append_block(
+                old_ignore,
+                ignore_block,
+                ".gitignore",
+                begin=BEGIN,
+                end=END,
+            )
+        desired.append((
+            ".gitignore",
+            _append_block(old_ignore, ignore_block, ".gitignore", begin=IGNORE_BEGIN, end=IGNORE_END),
+            False,
+        ))
 
     changes = []
     for relative, content, create_only in desired:
@@ -179,9 +234,11 @@ def build_plan(target: Path, core: Path, answers: dict[str, Any]) -> dict[str, A
         if change is not None:
             changes.append(change)
     plan = {
-        "schema_version": 1,
+        "schema_version": PLAN_SCHEMA_VERSION,
+        "onboarding_version": ONBOARDING_VERSION,
         "target_root": str(target),
         "core_root": str(core),
+        "core_fingerprint": _core_fingerprint(core),
         "changes": changes,
     }
     plan["plan_hash"] = _digest(_canonical(plan))
@@ -203,8 +260,10 @@ def _atomic_write(path: Path, data: bytes) -> None:
 
 
 def apply_plan(plan: dict[str, Any], approved_hash: str) -> list[str]:
-    if not isinstance(plan, dict) or plan.get("schema_version") != 1:
+    if not isinstance(plan, dict) or plan.get("schema_version") != PLAN_SCHEMA_VERSION:
         raise OnboardingError("Неизвестная версия плана")
+    if plan.get("onboarding_version") != ONBOARDING_VERSION:
+        raise OnboardingError("План создан другой версией onboarding")
     payload = {key: value for key, value in plan.items() if key != "plan_hash"}
     calculated = _digest(_canonical(payload))
     if calculated != plan.get("plan_hash") or calculated != approved_hash:
@@ -213,6 +272,8 @@ def apply_plan(plan: dict[str, Any], approved_hash: str) -> list[str]:
     core = Path(plan["core_root"]).resolve(strict=True)
     if not core.is_relative_to(target) or not (core / "README.md").is_file():
         raise OnboardingError("Путь ядра изменился")
+    if plan.get("core_fingerprint") != _core_fingerprint(core):
+        raise OnboardingError("Содержимое ядра изменилось после preview")
     changes = plan.get("changes")
     if not isinstance(changes, list):
         raise OnboardingError("Некорректный список изменений")

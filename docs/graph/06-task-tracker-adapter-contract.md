@@ -1,5 +1,7 @@
 # Task Tracker Adapter — Contract
 
+> **Статус материала:** импортированный кандидат контракта. Внешний трекер является только проекцией Task Manager; он не заменяет SQLite и не входит в обязательный v1.
+
 **Status:** Candidate v1 contract
 
 ## 1. Normalized Projection
