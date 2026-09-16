@@ -1,0 +1,49 @@
+# Backlog развития Orchestrator v1
+
+**Статус:** рабочий backlog, сформированный по действующим материалам `docs/` и карточкам Task Manager, 2026-09-16.
+
+## Принцип формирования
+
+Реализованные пакеты Onboarding и Task Manager не переоткрываются. Уже созданные TASK-0002–TASK-0004 продолжают первый незавершённый срез этапа 3. Новые задачи покрывают только подтверждённые текущими документами пробелы. Документ не заменяет карточки Task Manager: источником истины по каждой задаче остаётся её карточка.
+
+Координация нескольких сессий, контрольные точки, фоновые workers и автоматическое восстановление не включены в v1: это отдельная будущая функция в `architecture/runtime-coordination.md`.
+
+## Последовательность и зависимости
+
+```text
+TASK-0002 Контракты Graph Runtime
+    ├─> TASK-0003 In-memory Workflow Runtime
+    │       └─> TASK-0004 Тесты и документация runtime
+    └─> TASK-0014 Artifact Repository v1
+
+TASK-0004 + TASK-0014
+    └─> TASK-0015 Подготовка задачи до ready
+            └─> TASK-0016 Execution preflight и work units
+                    └─> TASK-0017 Execution gates и финальная приёмка
+                            ├─> TASK-0019 Контракты Project Knowledge Map
+                            │       └─> TASK-0020 Жизненный цикл Project Knowledge Map
+                            └─> TASK-0021 Устанавливаемый пакет ядра
+
+TASK-0017 + TASK-0020 + TASK-0021
+    └─> TASK-0022 Сквозная проверка и release readiness
+```
+
+TASK-0018 Task Tracker Adapter — будущая, отложенная интеграция; она не блокирует локальный v1 и TASK-0022.
+
+TASK-0014 зависит от согласования Artifact-контракта в TASK-0002. TASK-0015 зависит также от минимального runtime и его проверок, чтобы не создавать второй процессный механизм. TASK-0019 может быть подготовлена после стабилизации execution gates; TASK-0021 собирает подтверждённые компоненты. TASK-0022 — финальный интеграционный gate локального v1.
+
+## Карта задач по источникам
+
+| Задачи | Покрываемые материалы |
+| --- | --- |
+| TASK-0002–0004 | `architecture/workflow-run.md`, `workflow-pause-resume.md`, `state-and-storage.md`, `plans/2026-09-15-realtime-runtime-design.md` |
+| TASK-0014 | `state-and-storage.md`, `development/09`, `12`, `15`, `23`, `26`, `30` |
+| TASK-0015 | `development/03–13`, `33–36`, `graph/08`, Task Manager contract |
+| TASK-0016 | `development/14–17`, `34`, `38–39`, `graph/09` |
+| TASK-0017 | `development/18–32`, `34–36` |
+| TASK-0018 | `graph/05–07` — будущая интеграция, не входящая в локальный v1 |
+| TASK-0019–0020 | `context-knowledge/00`, `10–18` |
+| TASK-0021 | `plans/2026-09-14-package-boundaries-design.md`, `architecture/onboarding.md`, `guides/onboarding.md` |
+| TASK-0022 | `roadmap.md`, действующие архитектурные контракты и все гайды |
+
+Исторические, candidate и заменённые материалы сохраняются для сверки. При реализации соответствующая задача должна переводить необходимую часть в русскоязычный действующий контракт и помечать исходник, а не дублировать его как второй источник требований.

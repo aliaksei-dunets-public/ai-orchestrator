@@ -1,5 +1,16 @@
 # Журнал работ
 
+## 2026-09-16 — TASK-0002: кандидат контрактов Graph Runtime
+
+- На основании действующих материалов `docs/architecture/`, `docs/graph/` и `docs/development/` подготовлен кандидат `docs/architecture/graph-runtime-contract.md`.
+- Зафиксированы Graph, Node, Artifact, WorkflowRun, NodeResult, WaitState, минимальный API движка, владельцы данных, маршрутизация и ограничения real-time v1 без многосессионной координации.
+- TASK-0002 прошла `created → preparing → ready → active → awaiting_acceptance`; plan, review, execution package, проверка ссылок и `git diff --check` зарегистрированы через Task Manager. Пользовательская приёмка ещё не записана.
+
+## 2026-09-16 — Task Tracker Adapter отложен на будущее
+
+- TASK-0018 сохранена в Task Manager со статусом `created`, но явно помечена как будущая необязательная интеграция.
+- Зависимость TASK-0022 от TASK-0018 снята; локальный v1 проверяется без внешнего трекера. Исходные материалы `docs/graph/05–07` сохранены для последующего этапа.
+
 ## 2026-09-15 — принято решение исключить отдельную спецификацию задачи
 
 - Пользователь подтвердил упрощение workflow: отдельный `.orchestrator/tasks/TASK-xxxx/specification.md` исключается из обязательного процесса и остаётся только legacy-артефактом для совместимости.

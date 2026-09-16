@@ -2,7 +2,11 @@
 
 Generated snapshot of latest discussion artifacts.
 
+Backlog развития v1 добавлен 2026-09-16 в `plans/2026-09-16-orchestrator-roadmap-backlog-design.md`.
+
 ## Files
+
+- `plans/2026-09-16-orchestrator-roadmap-backlog-design.md`
 
 - `context-knowledge/00-project-knowledge-map-master-spec.md`
 - `context-knowledge/10-semantic-layer-architecture.md`
