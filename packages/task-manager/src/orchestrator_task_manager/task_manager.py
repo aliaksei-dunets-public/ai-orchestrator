@@ -1174,8 +1174,8 @@ class TaskManagerService:
         reason = _required(reason, "reason")
         actor_ref = _required(actor_ref, "actor_ref") if actor_ref is not None else None
         task = self.get_task(task_id)
-        if task["status"] != "cancelled":
-            raise TaskError("invalid_transition", "Физически удалять можно только отменённые задачи")
+        if task["status"] not in TERMINAL:
+            raise TaskError("invalid_transition", "Физически удалять можно только завершённые или отменённые задачи")
         archive = task.get("archive")
         if not archive:
             raise TaskError("guard_failed", "Сначала архивируйте задачу")

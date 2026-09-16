@@ -249,7 +249,7 @@ class TaskManagerTests(unittest.TestCase):
             self.service.purge_task(task["id"], task["version"], reason="Повтор")
         self.assertEqual(caught.exception.code, "task_not_found")
 
-    def test_completed_task_cannot_be_physically_purged(self) -> None:
+    def test_completed_task_can_be_physically_purged(self) -> None:
         task = self.prepare()
         task = self.service.mark_ready(task["id"], task["version"])
         task = self.service.claim_task(task["id"], task["version"], worker_ref="worker-a")
@@ -266,9 +266,11 @@ class TaskManagerTests(unittest.TestCase):
         task = self.service.complete_task(task["id"], task["version"], completion_decision_ref="done-v1")
         task = self.service.archive_task(task["id"], task["version"], reason="Архив")
         self.current_time += timedelta(days=91)
+        result = self.service.purge_task(task["id"], task["version"], reason="Удаление")
+        self.assertTrue(result["purged"])
         with self.assertRaises(TaskError) as caught:
-            self.service.purge_task(task["id"], task["version"], reason="Удаление")
-        self.assertEqual(caught.exception.code, "invalid_transition")
+            self.service.get_task(task["id"])
+        self.assertEqual(caught.exception.code, "task_not_found")
 
     def test_failed_transition_leaves_snapshot_and_history_unchanged(self) -> None:
         task = self.create()
