@@ -26,6 +26,20 @@ orchestrator-onboarding apply --plan .tmp/onboarding-plan.json --approved-hash <
 
 Для self-hosting ядро и проект совпадают: укажите `--target . --core .`. Пакет не создаёт вторую копию ядра и не меняет существующий `AGENTS.md` в этом режиме. Полный wizard-порядок описан в [инструкции первого запуска](../../docs/guides/onboarding.md); пакет не устанавливает Task Manager автоматически.
 
+После отдельной установки Task Manager проверьте его из выбранного окружения:
+
+```powershell
+orchestrator-onboarding check-task-manager --target . --python .\.venv\Scripts\python.exe
+```
+
+Проверка выполняет реальный MCP handshake и read-only диагностику. Для подключения MCP-хоста можно явно создать локальный фрагмент конфигурации:
+
+```powershell
+orchestrator-onboarding mcp-config --target . --python .\.venv\Scripts\python.exe --output .tmp\task-manager-mcp.json
+```
+
+Конфигурация ограничена целевым проектом, использует выбранный Python и не записывается в глобальные настройки Codex автоматически.
+
 Публичный Python API: `from orchestrator_onboarding import build_plan, apply_plan, OnboardingError`. Действующие ограничения и владельцы файлов описаны в [контракте](../../docs/architecture/onboarding.md), а пример ответов — в [гайде](../../docs/guides/onboarding.md).
 
 ## Проверка при разработке

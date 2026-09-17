@@ -1,6 +1,6 @@
 # Request Router → Task Creator
 
-**Статус:** реализованный первый срез входного потока; Graph Runtime и автоматическое выполнение ещё не реализованы.
+**Статус:** реализованный первый срез входного потока; core Graph Runtime доступен отдельно, автоматическое связывание RequestFlow с исполнением ещё не реализовано.
 
 Входной поток находится в исходном пакете `orchestrator/` и не привязан к конкретному LLM-провайдеру:
 
@@ -44,4 +44,4 @@ result = RequestFlow(router, creator).handle("Исправь расчёт X")
 
 Результат имеет форму `result.route` и, для управляемой работы, `result.creation`. Возможные результаты Creator: `success` (возвращена созданная задача), `needs_input` (вопросы пользователю, запись не выполняется) и `failure` (ошибка контракта или Task Manager).
 
-Task Creator не создаёт Specification, Plan или Execution Package и не запускает Graph Runtime. Для состояния задачи используется только публичный API `orchestrator-task-manager`; прямой доступ к SQLite запрещён.
+Task Creator не создаёт Specification, Plan или Execution Package и не запускает Graph Runtime автоматически. Core runtime можно использовать отдельно через `orchestrator.workflow_runtime`; для состояния задачи используется только публичный API `orchestrator-task-manager`, прямой доступ к SQLite запрещён.

@@ -1,5 +1,70 @@
 # Журнал работ
 
+## 2026-09-17 — TASK-0003: минимальный in-memory Workflow Runtime
+
+- Реализован независимый `orchestrator.workflow_runtime` для одного графа и одной real-time сессии: immutable Graph/Node contract, in-memory WorkflowRun, один узел на `step`, terminal outcomes, pause/resume и cancel.
+- Добавлены структурированные ошибки и проверки `run_not_found`, `invalid_state`, `node_mismatch`, `unknown_outcome`, `contract_violation`, `stale_wait`, `blocked` и `execution_failure`; Task Manager и SQLite не затрагиваются.
+- Добавлены 6 предметных сценариев runtime; корневой набор — 11/11. Архитектурные статусы и гайды обновлены; [отчёт TASK-0003](reports/2026-09-17-workflow-runtime-v1.md).
+- Задача подготовлена через публичный Task Manager API и переведена в `awaiting_acceptance` (version 16) без автоматического закрытия; ожидается пользовательское утверждение.
+
+## 2026-09-17 — TASK-0003: исправления после независимого аудита
+
+- Отдельный read-only агент на `gpt-5.6-terra High` подтвердил отсутствие P0, но выявил P1/P2/P3 в атомарности `resume`, возобновлении `blocked`, глубокой изоляции данных, загрузке графа, валидации артефактов и согласованности API-документации.
+- Все замечания исправлены в `orchestrator/workflow_runtime.py`; добавлены регрессионные тесты на 10 runtime-сценариев, включая `resume_blocked`, повтор после невалидного resume, malformed/duplicate nodes и Artifact contract.
+- Обновлены контракт Graph Runtime, дизайн, гайды и отчёт проверки. Полный набор: Orchestrator 15/15, Task Manager 73/73, Onboarding 19 (1 ожидаемый Windows skip), `compileall`, `git diff --check` и live `validate` прошли.
+- Новая ревизия принята через публичный Task Manager API: TASK-0003 завершена, version 22.
+
+## 2026-09-17 — TASK-0026: полный сценарный аудит и исправления
+
+- Отдельный агент провёл read-only аудит Task Manager от создания до архивации, включая MCP lifecycle, прямой API, изоляцию проектов, backup/restore и onboarding.
+- Исправлены строгая MCP schema validation, lifecycle JSON-RPC, object-shaped `structuredContent`, типовые ошибки direct API, fingerprint `event_context` и диагностика blocker payload.
+- Обновлены контракт, usage, переносимый skill, архитектурный план и onboarding-разбор; добавлен [полный отчёт аудита](reports/2026-09-17-task-manager-full-audit-fixes.md).
+- Task Manager: 73 теста; Onboarding: 19 тестов, 1 ожидаемый Windows skip; корневой Orchestrator — 5 тестов; `validate` чистый; свежие wheel пересобраны и проверены изолированно. TASK-0026 закрыта атомарной пользовательской приёмкой через публичный API.
+
+## 2026-09-17 — TASK-0026: усиление skill, onboarding и Windows stdio
+
+- По результатам аудита обновлён пакетный Task Manager skill: MCP stdio выбран основным интерфейсом внешнего агента, прямой Python API — для in-process оркестратора, CLI — fallback.
+- Onboarding теперь проверяет MCP entry point подключённого ядра, предоставляет `check-task-manager` с реальным handshake/health check и `mcp-config` для явной генерации локального host-neutral конфига с выбранным Python.
+- Глобальные настройки Codex/MCP-хоста не изменяются автоматически; конфигурация ограничена целевым проектом.
+- MCP stdio перенастраивает UTF-8 для входа и выхода до чтения сообщений; добавлены регрессии для Unicode ввода и `--help` на legacy Windows code page.
+- Проверки: Onboarding — 19 тестов, 18 прошли и 1 пропущен из-за symlink на Windows; Task Manager — 66/66. Результаты сведены в [отчёт](reports/2026-09-17-task-manager-onboarding-mcp-hardening.md).
+
+## 2026-09-17 — TASK-0026: реализация MCP stdio-адаптера
+
+- Создана задача на MCP-адаптер Task Manager. Пользователь согласовал архитектуру: один общий переиспользуемый пакет, локальный stdio-транспорт и отдельный процесс на каждый проект с фиксированным `project_root`.
+- Решение зарегистрировано в карточке TASK-0026 через `record_user_decision`; plan привязан к задаче. Раздельные project root и SQLite-базы, отсутствие прямого SQL/дублирования guards и CLI fallback закреплены как ограничения.
+- Реализованы `task_mcp.py`, entry point `orchestrator-task-manager-mcp`, 35 инструментов, lifecycle JSON-RPC, структурированные ошибки, fixed root и ограничение файловых путей. HTTP daemon, общий мульти-проектный процесс, кэш и пакетные мутации в первый срез не входят.
+- Полный MCP subprocess-lifecycle, изоляция проектов, перезапуск и ошибки проверены. Task Manager: 65 тестов; ядро: 5; wheel с Python -S: WHEEL_MCP_ISOLATION_OK; benchmark 100 вызовов: p50 0.350 ms, p95 0.551 ms, startup 124.702 ms. [Архитектурный план и результаты](plans/2026-09-17-task-manager-mcp-adapter-design.md).
+- TASK-0026 подготовлена к пользовательской приёмке; реализация не завершает задачу автоматически.
+- Итоговый [отчёт](reports/2026-09-17-task-manager-mcp-adapter.md) добавлен отдельно от плана; конкретный GUI-хост Codex ещё не подключался.
+
+## 2026-09-17 — TASK-0025: исправление export после аудита Luna
+
+- По разрешению пользователя исправлен вызов отсутствующего service.export; parser/dispatch используют единый реестр export → export_state, backup → backup, restore → restore.
+- Добавлены три регрессии: успешный неизменяющий экспорт, структурированные ошибки назначения и CLI backup/restore на временном проекте. 60 тестов Task Manager и 5 тестов ядра прошли; новый wheel проверен с Python -S без исходного пакета, живой validate чистый.
+- Обновлены ресурсы пакета, README и снимок проекта; [отчёт](reports/2026-09-17-task-manager-cli-export-fix.md) отделяет исправление от рекомендаций. На момент этого исторического среза MCP ещё был рекомендацией; последующая TASK-0026 реализовала согласованный stdio-адаптер.
+- Результат подлежит пользовательской приёмке; разрешение исправить ошибку не считается приёмкой результата. TASK-0024 не завершалась автоматически.
+- TASK-0025 переведена через публичный API в awaiting_acceptance, version 17; запуск и claim закрыты, свидетельства зарегистрированы, user_decisions пустой. Финальный health_check живого проекта — без нарушений.
+
+## 2026-09-17 — TASK-0024: модульная структура Task Manager
+
+- Пользователь согласовал разделение после аудита; [дизайн](plans/2026-09-16-task-manager-modularization-design.md) и plan зарегистрированы через публичный API. Существующие изменения TASK-0023 сохранены, отдельный коммит не создавался.
+- Выделены contracts, migrations, repository, service, storage_transfer и diagnostics. Фасад task_manager сохраняет старые классы и константы; сервис не выполняет SQL и не вызывает приватные методы репозитория. Единый жизненный цикл и guards сохранены.
+- Экспорт и диагностика используют read_transaction с BEGIN DEFERRED и query_only; restore запускает миграции временной копии через самостоятельный вход. Схема SQLite остаётся версии 5, зависимостей не добавлено.
+- Проверены 57 тестов Task Manager и 5 тестов потребителя, прежние импорты и снимок API, AST 50 непереписанных методов, изолированный wheel с Python -S и рабочий validate. Парные замеры не выявили выраженного общего замедления, ускорение не заявляется.
+- Архитектура поставляется внутри пакета; обновлены контракт, гайды, снимок проекта и roadmap. [Отчёт](reports/2026-09-17-task-manager-modularization.md) содержит условия, результаты и ограничения проверок. Результат подлежит отдельной пользовательской приёмке.
+- TASK-0024 переведена в awaiting_acceptance с закрытым запуском и без пользовательской приёмки. При финальной сверке TASK-0023 уже completed, version 18, с отдельным событием приёмки; этот этап не выполнял её завершение. Снимок проекта исправлен по публичному API.
+
+## 2026-09-16 — TASK-0023: надёжность и агентский интерфейс Task Manager
+
+- Пользователь после аудита явно разрешил дополнительный срез для стабильной и быстрой работы агента; создана TASK-0023 через публичный API, подготовлены [дизайн](plans/2026-09-16-task-manager-hardening-design.md) и plan, выполнены ready/claim с сохранением guards.
+- Реализованы потоковое SHA-256, единый UTC, структурный архив до LIMIT, SQL summary, согласованный экспорт и ускоренная read-only диагностика. Файловые ошибки дают TaskError, временные файлы уникальны; restore мигрирует staged-копию, создаёт консистентный backup и сохраняет исходный .pre-restore при восстановлении из него. Повтор purge работает после удаления карточки.
+- Добавлены атомарный accept_task и CLI защищённых операций с expected-version, JSON-ошибками, подсказками, api и табличным чтением. Обновлены контракт, гайд, переносимый skill и README; устранён дублированный абзац README. Python TypeError сигнатур не заменён.
+- Проверки: Task Manager — 52/52, корневой Orchestrator — 5/5; рабочий validate — ok; wheel собран и проверен без ядра с Python -S. Стандартный валидатор skill недоступен из-за отсутствия PyYAML; frontmatter и ссылки проверены напрямую. Документация и результаты сведены в [отчёте](reports/2026-09-16-task-manager-hardening.md).
+- Замеры на 100/500/1000 задач: validate на 1000 ускорился с 61.4 до 14.1 мс (медиана), страница — около 1 мс, summary — 3.3 мс. Другие операции не объявляются ускоренными; сохранены durable commit и ограничения нагрузки.
+- Уточнён исходный аудит: текст archive внутри JSON-строки экранируется; регрессия фильтра связана с сериализацией и LIMIT. По публичной карточке подтверждено, что TASK-0002 уже completed с явной приёмкой; устаревший project-status исправлен. Это не утверждение о реализации runtime.
+- TASK-0023 переведена в awaiting_acceptance (version 17) с implementation/review/testing/documentation/readiness/acceptance_package и закрытой ссылкой на текущую Codex-сессию; 17 событий, validate — ok. Разрешение реализации не записывается как финальная приёмка.
+
 ## 2026-09-16 — TASK-0002: кандидат контрактов Graph Runtime
 
 - На основании действующих материалов `docs/architecture/`, `docs/graph/` и `docs/development/` подготовлен кандидат `docs/architecture/graph-runtime-contract.md`.

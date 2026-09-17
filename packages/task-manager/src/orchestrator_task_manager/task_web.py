@@ -10,7 +10,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-from .task_manager import TASK_ID, TaskError, TaskManagerService
+from .contracts import TASK_ID, TaskError
+from .service import TaskManagerService
 
 
 STATUS_LABELS = {

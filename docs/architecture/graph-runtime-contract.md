@@ -1,6 +1,6 @@
 # Контракт Graph Runtime v1
 
-**Статус:** кандидат контракта v1, подготовлен в TASK-0002 и ожидает пользовательской приёмки, 2026-09-16.
+**Статус:** действующий контракт v1, согласован в TASK-0002; минимальный in-memory runtime реализован в TASK-0003, 2026-09-17.
 
 Контракт описывает один запуск графа для одного агента в одной real-time сессии. Он дополняет [архитектуру Workflow Run](workflow-run.md) и [протокол паузы](workflow-pause-resume.md). Внешняя координация, фоновый Executor Loop и восстановление между сессиями находятся за пределами v1.
 
@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | Задача, её lifecycle, claim, блокеры, решения и ссылки | Task Manager | Изменяется только через публичный API `orchestrator-task-manager` |
 | Текущий запуск, узел, входы, принятые результаты и ожидание | Graph Runtime | В памяти текущей сессии; не записывается в SQLite Task Manager |
-| Тело артефакта и его хеш | Artifact Repository или вызывающая сторона до его реализации | Runtime передаёт ссылки и проверяет контракт, но не делает артефакт состоянием задачи |
+| Тело артефакта и его хеш | Artifact Repository или вызывающая сторона до его реализации | Runtime проверяет минимальную форму ссылки/значения, но не вычисляет хеш и не делает артефакт состоянием задачи |
 | Выполнение операции | Платформенный/LLM-адаптер | Возвращает структурированный результат; не выбирает следующий узел |
 
 ## Определения
@@ -58,7 +58,7 @@ artifact:
   value: structured-or-external-reference
 ```
 
-Обязательны устойчивые `ref`, `contract`, `role`, SHA-256 тела или подтверждённой внешней версии и `value` либо ссылка на него. Runtime принимает только артефакты, требуемые контрактом текущего узла; произвольные тела не становятся автоматически Task Manager state.
+Обязательны устойчивые `ref`, `contract`, `role`, 64-значный hex `sha256` тела или подтверждённой внешней версии и `value` либо непустой `uri`. Runtime проверяет только эту минимальную структурную форму и наличие ключей обязательных выходов; семантическую схему `input_contract`/`output_contract`, соответствие роли и фактическую проверку хеша выполняет вызывающая сторона или будущий Artifact Repository. Произвольные тела не становятся автоматически Task Manager state.
 
 ### WorkflowRun
 
@@ -84,7 +84,13 @@ workflow_run:
 node_result:
   node_id: current-node
   outcome: success | needs_input | blocked | retryable_failure | failure | domain-outcome
-  artifacts: []
+  artifacts:
+    result:
+      ref: ARTIFACT-0001-v1
+      contract: result/v1
+      role: result
+      sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      value: structured-value
   data: structured-object
   error: error-or-null
 ```
@@ -109,12 +115,13 @@ wait:
 ```text
 create_run(graph, inputs, task_ref=None) -> WorkflowRun
 inspect_run(run_id) -> WorkflowRun
-step(run_id, node_executor) -> NodeResult | WaitState | terminal-result
-resume(run_id, answer) -> WorkflowRun
+step(run_id, node_executor) -> NodeResult | WaitState
+resume(run_id, answer, node_executor, wait_id=None, node_id=None) -> NodeResult | WaitState
+resume_blocked(run_id, node_executor, wait_id=None, node_id=None, answer=None) -> NodeResult | WaitState
 cancel(run_id, reason) -> WorkflowRun
 ```
 
-`step` проверяет состояние `running`, входы текущего узла, результат и маршрут, затем атомарно в памяти обновляет `current_node`, `results` и `state`. `resume` допустим только для актуального `wait_id`; повторный ответ по завершённому ожиданию отклоняется. Ошибки возвращаются структурированно: `run_not_found`, `invalid_state`, `node_mismatch`, `unknown_outcome`, `contract_violation`, `stale_wait`, `blocked` или `execution_failure`.
+`step` проверяет состояние запуска, входы текущего узла, результат и маршрут, затем атомарно в памяти обновляет `current_node`, `results` и `state`; при ошибке проверки исходное состояние не меняется. `resume` допустим только для актуального `wait_id`, а `resume_blocked` повторно запускает тот же узел после устранения внешней причины и также проверяет `wait_id`/`node_id`. Повторный ответ по завершённому ожиданию отклоняется. Ошибки возвращаются структурированно: `run_not_found`, `invalid_state`, `node_mismatch`, `unknown_outcome`, `contract_violation`, `stale_wait`, `blocked` или `execution_failure`.
 
 Интеграционный адаптер Task Manager отдельно выполняет `start_preparation`, `link_workflow_run`, `transition_status`, `claim_task` и другие публичные операции с актуальной `expected_version`. Graph Runtime не меняет SQLite и не считает запись ссылки доказательством завершения запуска.
 

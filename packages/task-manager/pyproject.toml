@@ -13,6 +13,7 @@ dependencies = []
 [project.scripts]
 orchestrator-tasks = "orchestrator_task_manager.task_cli:main"
 orchestrator-tasks-web = "orchestrator_task_manager.task_web:main"
+orchestrator-task-manager-mcp = "orchestrator_task_manager.task_mcp:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

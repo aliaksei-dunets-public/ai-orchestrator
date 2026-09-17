@@ -8,11 +8,11 @@
 - [`docs/development/`](docs/development/) — подготовка и исполнение задач разработки;
 - [`docs/context-knowledge/`](docs/context-knowledge/) — карта знаний проекта.
 
-Разработка идёт поэтапно. Сейчас доступны два пакета: [Onboarding](packages/onboarding/README.md) с проверяемым планом `preview/apply` и [Task Manager Service](packages/task-manager/README.md) с SQLite и локальной панелью просмотра. [Инструкция первого запуска](docs/guides/onboarding.md) проводит агента через вопросы, настройку, отдельное подтверждение установки Task Manager и проверку готовности. В корневом исходном пакете реализован первый входной срез [Request Router → Task Creator](docs/guides/request-flow.md); адаптеры классификации и смысловой подготовки передаются извне. Внутри Task Manager поставляются полный контракт, инструкция и пример skill; [проектный skill задач](.agents/skills/orchestrator-task-manager/SKILL.md) указывает на них. **Graph Runtime и автоматическое выполнение задач пока не реализованы.** Код из `obsolete/` не выполняет новые контракты.
+Разработка идёт поэтапно. Сейчас доступны два пакета: [Onboarding](packages/onboarding/README.md) с проверяемым планом `preview/apply` и [Task Manager Service](packages/task-manager/README.md) с SQLite и локальной панелью просмотра. [Инструкция первого запуска](docs/guides/onboarding.md) проводит агента через вопросы, настройку, отдельное подтверждение установки Task Manager и проверку готовности. В корневом исходном пакете реализованы первый входной срез [Request Router → Task Creator](docs/guides/request-flow.md) и минимальный in-memory [Graph Runtime](docs/architecture/workflow-run.md); адаптеры классификации и смысловой подготовки передаются извне. Внутри Task Manager поставляются полный контракт, инструкция и пример skill; [проектный skill задач](.agents/skills/orchestrator-task-manager/SKILL.md) указывает на них. Автоматическое связывание входного потока с исполнением, многосессионность и восстановление пока не реализованы. Код из `obsolete/` не выполняет новые контракты.
 
 ## Как подключить к своему проекту сейчас
 
-Нужны Git, Python 3.11+ и доступ агента к целевому проекту. Настройка создаёт конфигурацию и контекст проекта. После неё можно вручную создавать и просматривать задачи через [Task Manager](docs/guides/tasks.md), но граф и автоматическое выполнение пока не запускаются.
+Нужны Git, Python 3.11+ и доступ агента к целевому проекту. Настройка создаёт конфигурацию и контекст проекта. После неё можно вручную создавать и просматривать задачи через [Task Manager](docs/guides/tasks.md); core runtime используется программно, а автоматическое связывание входного потока с исполнением пока не запускается.
 
 1. В корне своего проекта добавьте этот репозиторий как submodule в фиксированное место:
 
@@ -47,6 +47,7 @@
    python -m pip install -e .\tools\orchestrator\packages\task-manager
    orchestrator-tasks --project . list
    orchestrator-tasks-web --project . --port 8765
+   orchestrator-onboarding check-task-manager --target . --python .\.venv\Scripts\python.exe
    ```
 
    Панель доступна на `http://127.0.0.1:8765/` только локально и только для чтения. Команды и ограничения описаны в [инструкции](docs/guides/tasks.md).
@@ -54,5 +55,7 @@
 Если целевой проект — **сам этот репозиторий**, шаг 1 пропускается. В командах используйте `packages/onboarding/src/orchestrator_onboarding/onboarding.py` вместо пути через `tools/`, а для `--core` укажите `.`. Не создавайте вложенную копию оркестратора. Установленный пакет также предоставляет команду `orchestrator-onboarding` с теми же `preview/apply`.
 
 Для self-hosting установите пакет командой `python -m pip install -e .\packages\task-manager`. Skill находится в `.agents/skills/` и доступен агенту при работе из этого репозитория. Во внешнем проекте блок в `AGENTS.md`, добавленный онбордингом, укажет агенту путь к skill внутри submodule.
+
+Для внешнего агента подключайте MCP stdio через отдельный процесс на проект. Если MCP-хосту нужен явный фрагмент конфигурации, создайте его командой `orchestrator-onboarding mcp-config --target . --python .\.venv\Scripts\python.exe --output .tmp\task-manager-mcp.json`; глобальные настройки хоста онбординг не изменяет.
 
 Последовательность работ описана в [`docs/roadmap.md`](docs/roadmap.md). Новая документация и гайды ведутся на русском языке.

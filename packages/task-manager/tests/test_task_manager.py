@@ -5,11 +5,17 @@ import json
 import sqlite3
 import tempfile
 import unittest
+import io
+import os
+from contextlib import contextmanager, closing
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from orchestrator_task_manager import TaskError, TaskManagerService
+from orchestrator_task_manager.service import _sha256
+from orchestrator_task_manager.migrations import _create_schema_v1
 
 
 class TaskManagerTests(unittest.TestCase):
@@ -181,6 +187,41 @@ class TaskManagerTests(unittest.TestCase):
                 acceptance_criteria=["x"], event_context={"unexpected": "field"},
             )
 
+    def test_operation_fingerprint_includes_event_context(self) -> None:
+        task = self.create()
+        first = self.service.start_preparation(
+            task["id"], task["version"], "RUN-CONTEXT-1", operation_id="op-context-mutation",
+            event_context={"actor_ref": "agent-a"},
+        )
+        with self.assertRaises(TaskError) as caught:
+            self.service.start_preparation(
+                task["id"], task["version"], "RUN-CONTEXT-1", operation_id="op-context-mutation",
+                event_context={"actor_ref": "agent-b"},
+            )
+        self.assertEqual(caught.exception.code, "operation_conflict")
+        self.assertEqual(self.service.get_task(task["id"]), first)
+
+    def test_direct_api_rejects_invalid_relation_and_blocker_types(self) -> None:
+        task = self.create()
+        with self.assertRaises(TaskError) as caught:
+            self.service.link_workflow_run(task["id"], task["version"], run_ref="RUN-1", relation=[])
+        self.assertEqual(caught.exception.code, "validation_failed")
+        with self.assertRaises(TaskError) as caught:
+            self.service.add_blocker(task["id"], task["version"], blocker_type="input", summary="bad",
+                                     evidence_refs="not-a-list", blocking="false")
+        self.assertEqual(caught.exception.code, "validation_failed")
+        self.assertEqual(self.service.get_task(task["id"]), task)
+
+    def test_refine_accepts_evidence_refs_only_and_validates_shape(self) -> None:
+        task = self.create()
+        refined = self.service.refine_task_definition(
+            task["id"], task["version"], evidence_refs=["evidence-1"],
+        )
+        self.assertEqual(refined["version"], task["version"] + 1)
+        with self.assertRaises(TaskError) as caught:
+            self.service.refine_task_definition(refined["id"], refined["version"], evidence_refs="bad")
+        self.assertEqual(caught.exception.code, "validation_failed")
+
     def test_validate_detects_snapshot_mismatch_and_orphan_event(self) -> None:
         task = self.create()
         database = self.root / ".orchestrator/state/tasks.sqlite3"
@@ -199,6 +240,14 @@ class TaskManagerTests(unittest.TestCase):
         self.assertIn("snapshot_column_mismatch", codes)
         self.assertIn("status_invalid", codes)
         self.assertIn("orphan_event", codes)
+
+    def test_health_check_detects_malformed_blocker_payload(self) -> None:
+        task = self.create()
+        with closing(sqlite3.connect(self.service.repository.path)) as db, db:
+            snapshot = json.loads(db.execute("SELECT body FROM tasks WHERE id=?", (task["id"],)).fetchone()[0])
+            snapshot["blockers"].append({"id": "BLOCK-01", "blocking": "false", "evidence_refs": "bad"})
+            db.execute("UPDATE tasks SET body=? WHERE id=?", (json.dumps(snapshot), task["id"]))
+        self.assertIn("blocker_shape_invalid", {issue["code"] for issue in self.service.health_check()})
 
     def test_concurrent_same_operation_id_creates_one_task(self) -> None:
         def create_once() -> tuple[str, str | None]:
@@ -439,6 +488,274 @@ class TaskManagerTests(unittest.TestCase):
         task = self.service.transition_status(task["id"], task["version"], to="awaiting_input", reason="new question")
         with self.assertRaisesRegex(TaskError, "Нет решения"):
             self.service.transition_status(task["id"], task["version"], to="preparing", reason="resume")
+
+    def test_sha256_reads_bounded_chunks(self) -> None:
+        content = b"artifact" * (300 * 1024)
+
+        class BoundedStream(io.BytesIO):
+            def read(self, size=-1):
+                self_size = 64 * 1024
+                if not 0 < size <= self_size:
+                    raise AssertionError("Неограниченное чтение")
+                return super().read(size)
+
+        with patch.object(Path, "open", return_value=BoundedStream(content)):
+            self.assertEqual(_sha256(Path("unused")), hashlib.sha256(content).hexdigest())
+
+    def test_archive_filter_is_structural_before_limit(self) -> None:
+        visible = self.service.create_task(title='Текст "archive": {', task_type="analysis",
+                                           objective='Текст "archive": {', original_request="R",
+                                           acceptance_criteria=["A"])
+        archived = self.create()
+        archived = self.service.cancel_task(archived["id"], archived["version"], reason="done")
+        archived = self.service.archive_task(archived["id"], archived["version"], reason="hide")
+        # Legacy/imported JSON can have a different whitespace layout.
+        with closing(sqlite3.connect(self.service.repository.path)) as db, db:
+            db.execute("UPDATE tasks SET body=? WHERE id=?", (json.dumps(archived, separators=(",", ":")), archived["id"]))
+        self.assertEqual([t["id"] for t in self.service.list_tasks(limit=1)], [visible["id"]])
+        self.assertEqual(self.service.summary()["total"], 1)
+        summary = self.service.summary(include_archived=True)
+        self.assertEqual(summary["total"], 2)
+        self.assertEqual(summary["archived_total"], 1)
+        self.assertEqual(self.service.summary(statuses=set())["total"], 0)
+        self.service.repository._json_available = False
+        self.assertEqual([t["id"] for t in self.service.list_tasks(limit=1)], [visible["id"]])
+        self.assertEqual(self.service.summary()["total"], 1)
+
+    def test_export_has_one_snapshot_across_interleaved_write(self) -> None:
+        task = self.create()
+        with closing(sqlite3.connect(self.service.repository.path)) as db, db:
+            db.execute("PRAGMA journal_mode=WAL")
+        other = TaskManagerService(self.root)
+        original = self.service.repository._connect
+
+        class InterleavedConnection:
+            def __init__(self, db):
+                self.db = db
+
+            def execute(self, sql, *args):
+                if sql.startswith("SELECT task_id,sequence,task_version"):
+                    other.update_metadata(task["id"], task["version"], title="Новая версия")
+                return self.db.execute(sql, *args)
+
+        @contextmanager
+        def connect():
+            with original() as db:
+                yield InterleavedConnection(db)
+
+        destination = self.root / "snapshot.json"
+        with patch.object(self.service.repository, "_connect", connect):
+            self.service.export_state(destination)
+        exported = json.loads(destination.read_text(encoding="utf-8"))
+        self.assertEqual(exported["tasks"][0]["version"], 1)
+        self.assertEqual(len(exported["events"]), 1)
+        self.assertEqual(other.get_task(task["id"])["version"], 2)
+
+    def test_naive_clock_is_utc_for_claim_renew_recover_and_retention(self) -> None:
+        self.current_time = self.current_time.replace(tzinfo=None)
+        task = self.prepare()
+        self.assertTrue(task["created_at"].endswith("+00:00"))
+        task = self.service.mark_ready(task["id"], task["version"])
+        task = self.service.claim_task(task["id"], task["version"], worker_ref="worker", lease_seconds=60)
+        claim_ref = task["active_claim"]["ref"]
+        self.current_time += timedelta(seconds=30)
+        task = self.service.renew_claim(task["id"], task["version"], claim_ref=claim_ref, lease_seconds=60)
+        self.current_time += timedelta(seconds=61)
+        task = self.service.recover_expired_claim(task["id"], task["version"])
+        task = self.service.cancel_task(task["id"], task["version"], reason="done")
+        task = self.service.archive_task(task["id"], task["version"], reason="hide")
+        self.current_time = datetime(2027, 1, 1)
+        self.assertTrue(self.service.purge_task(task["id"], task["version"], reason="retention")["purged"])
+        self.assertEqual(self.service.summary()["purged_total"], 1)
+
+    def test_document_hash_matches_returned_bytes_despite_subsequent_change(self) -> None:
+        task = self.prepare()
+        path = self.root / task["artifacts"]["plan"]["path"]
+        original_read = Path.read_bytes
+
+        def read_then_change(candidate):
+            content = original_read(candidate)
+            candidate.write_text("# Подменённый документ", encoding="utf-8")
+            return content
+
+        with patch.object(Path, "read_bytes", read_then_change):
+            self.assertEqual(self.service.get_document(task["id"], "plan"), "# plan\n")
+        with self.assertRaises(TaskError) as caught:
+            self.service.get_document(task["id"], "plan")
+        self.assertEqual(caught.exception.code, "guard_failed")
+
+    def test_artifact_io_races_are_domain_errors_and_do_not_mutate(self) -> None:
+        task = self.prepare()
+        history = self.service.get_history(task["id"])
+        with patch.object(Path, "read_bytes", side_effect=FileNotFoundError("gone")):
+            with self.assertRaises(TaskError) as caught:
+                self.service.get_document(task["id"], "plan")
+            self.assertEqual(caught.exception.code, "guard_failed")
+        with patch("orchestrator_task_manager.service._sha256", side_effect=PermissionError("denied")):
+            with self.assertRaises(TaskError) as caught:
+                self.service.mark_ready(task["id"], task["version"])
+            self.assertEqual(caught.exception.code, "guard_failed")
+            artifact = task["artifacts"]["plan"]
+            with self.assertRaises(TaskError) as caught:
+                self.service.attach_artifact(task["id"], task["version"], role="plan", ref="new",
+                                             path=artifact["path"], sha256=artifact["sha256"])
+            self.assertEqual(caught.exception.code, "validation_failed")
+        self.assertEqual(self.service.get_task(task["id"]), task)
+        self.assertEqual(self.service.get_history(task["id"]), history)
+        task = self.service.mark_ready(task["id"], task["version"])
+        with patch("orchestrator_task_manager.service._sha256", side_effect=FileNotFoundError("gone")):
+            self.assertEqual(self.service.health_check()[0]["code"], "ready_guard")
+
+    def test_restore_permission_failure_preserves_current_and_reports_real_safety_copy(self) -> None:
+        first = self.create()
+        backup = self.root / "backup.sqlite3"
+        self.service.backup(backup)
+        second = self.create()
+        original_replace = os.replace
+
+        def deny_current(source, destination):
+            if Path(destination) == self.service.repository.path:
+                raise PermissionError("locked")
+            return original_replace(source, destination)
+
+        with patch("orchestrator_task_manager.storage_transfer.os.replace", deny_current):
+            with self.assertRaises(TaskError) as caught:
+                self.service.restore(backup)
+        self.assertEqual(caught.exception.code, "repository_failure")
+        self.assertTrue(Path(caught.exception.details["safety_copy"]).is_file())
+        self.assertEqual([t["id"] for t in self.service.list_tasks()], [second["id"], first["id"]])
+        self.assertEqual(list(self.service.repository.path.parent.glob("*.tmp")), [])
+        with patch("orchestrator_task_manager.storage_transfer.shutil.copy2", side_effect=PermissionError("denied")):
+            with self.assertRaises(TaskError) as caught:
+                self.service.restore(backup)
+        self.assertIsNone(caught.exception.details["safety_copy"])
+
+    def test_failed_export_and_backup_leave_destination_and_unrelated_temp_intact(self) -> None:
+        self.create()
+        for operation, name in ((self.service.export_state, "export.json"), (self.service.backup, "backup.sqlite3")):
+            destination = self.root / name
+            destination.write_bytes(b"existing")
+            unrelated = destination.with_name(destination.name + ".tmp")
+            unrelated.write_bytes(b"user temp")
+            with patch("orchestrator_task_manager.storage_transfer.os.replace", side_effect=PermissionError("denied")):
+                with self.assertRaises(TaskError) as caught:
+                    operation(destination)
+            self.assertEqual(caught.exception.code, "repository_failure")
+            self.assertEqual(destination.read_bytes(), b"existing")
+            self.assertEqual(unrelated.read_bytes(), b"user temp")
+            self.assertEqual(list(self.root.glob(name + ".*.tmp")), [])
+
+    def awaiting(self) -> dict:
+        task = self.prepare()
+        task = self.service.mark_ready(task["id"], task["version"])
+        task = self.service.claim_task(task["id"], task["version"], worker_ref="worker")
+        task = self.service.attach_artifact(task["id"], task["version"], role="readiness", ref="ready",
+                                           metadata={"status": "ready", "candidate_revision": "rev-1"})
+        task = self.service.attach_artifact(task["id"], task["version"], role="acceptance_package", ref="package")
+        return self.service.mark_awaiting_acceptance(task["id"], task["version"])
+
+    def test_accept_is_atomic_revision_bound_and_idempotent(self) -> None:
+        task = self.awaiting()
+        before = self.service.get_history(task["id"])
+        with self.assertRaises(TaskError) as caught:
+            self.service.accept_task(task["id"], task["version"], candidate_revision="old", completion_decision_ref="done")
+        self.assertEqual(caught.exception.code, "guard_failed")
+        self.assertEqual(self.service.get_task(task["id"]), task)
+        self.assertEqual(self.service.get_history(task["id"]), before)
+        result = self.service.accept_task(task["id"], task["version"], candidate_revision="rev-1",
+                                          completion_decision_ref="done", operation_id="accept-1")
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["version"], task["version"] + 1)
+        self.assertEqual(result["user_decisions"][-1]["candidate_revision"], "rev-1")
+        self.assertEqual(self.service.get_history(task["id"])[-1]["payload"]["user_decision"]["value"], "approved")
+        replay = self.service.accept_task(task["id"], task["version"], candidate_revision="rev-1",
+                                          completion_decision_ref="done", operation_id="accept-1")
+        self.assertEqual(replay, result)
+        self.assertEqual(self.service.health_check(), [])
+
+    def test_accept_guard_failure_rolls_back_appended_decision(self) -> None:
+        task = self.awaiting()
+        task = self.service.attach_artifact(task["id"], task["version"], role="readiness", ref="not-ready",
+                                           metadata={"status": "failed", "candidate_revision": "rev-1"})
+        with self.assertRaises(TaskError):
+            self.service.accept_task(task["id"], task["version"], candidate_revision="rev-1", completion_decision_ref="done")
+        self.assertEqual(self.service.get_task(task["id"]), task)
+        self.assertEqual(len(self.service.get_history(task["id"])), task["version"])
+
+    def test_invalid_filter_values_are_task_errors(self) -> None:
+        for kwargs in ({"limit": True}, {"limit": "100"}, {"statuses": {"wrong"}},
+                       {"statuses": "ready"}, {"task_type": []}, {"query": 3}, {"cursor": 5}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(TaskError) as caught:
+                self.service.list_tasks(**kwargs)
+            self.assertEqual(caught.exception.code, "validation_failed")
+        for value in (None, 1, [], "BAD"):
+            with self.subTest(value=value), self.assertRaises(TaskError):
+                self.service.get_task(value)
+
+    def test_validate_reports_non_object_snapshots(self) -> None:
+        task = self.create()
+        with closing(sqlite3.connect(self.service.repository.path)) as db, db:
+            db.execute("UPDATE tasks SET body='[]' WHERE id=?", (task["id"],))
+        self.assertEqual(self.service.health_check()[0]["code"], "snapshot_shape_invalid")
+        with self.assertRaises(TaskError) as caught:
+            self.service.get_task(task["id"])
+        self.assertEqual(caught.exception.code, "repository_failure")
+
+    def test_restore_migrates_legacy_backup_before_replacement(self) -> None:
+        task = self.create()
+        event = self.service.get_history(task["id"])[0]
+        source = self.root / "legacy.sqlite3"
+        with closing(sqlite3.connect(source)) as db, db:
+            _create_schema_v1(db)
+            db.execute("PRAGMA user_version=1")
+            db.execute("UPDATE meta SET value=2 WHERE key='next_id'")
+            db.execute("INSERT INTO tasks VALUES(?,?,?,?,?,?)", (task["id"], 1, task["status"], task["title"], task["type"], json.dumps(task)))
+            db.execute("INSERT INTO events VALUES(?,?,?,?,?,?)", (task["id"], 1, 1, event["type"], event["at"], json.dumps(event["payload"])))
+        self.create()
+        restored = self.service.restore(source)
+        self.assertEqual(restored["schema_version"], 5)
+        self.assertEqual(self.service.summary()["total"], 1)
+        self.assertEqual(self.service.get_history(task["id"])[0]["actor_ref"], None)
+        self.assertEqual(self.create()["id"], "TASK-0002")
+        self.assertEqual(self.service.health_check(), [])
+        with closing(sqlite3.connect(source)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 1)
+
+    def test_purge_operation_can_be_replayed_after_snapshot_deletion(self) -> None:
+        task = self.create()
+        task = self.service.cancel_task(task["id"], task["version"], reason="done")
+        task = self.service.archive_task(task["id"], task["version"], reason="hide")
+        self.current_time = datetime(2027, 1, 1, tzinfo=timezone.utc)
+        first = self.service.purge_task(task["id"], task["version"], reason="retention", operation_id="purge-once")
+        self.assertEqual(self.service.purge_task(task["id"], task["version"], reason="retention", operation_id="purge-once"), first)
+        with self.assertRaises(TaskError) as caught:
+            self.service.purge_task(task["id"], task["version"], reason="different", operation_id="purge-once")
+        self.assertEqual(caught.exception.code, "operation_conflict")
+
+    def test_restore_from_safety_copy_does_not_overwrite_its_source(self) -> None:
+        first = self.create()
+        source = self.service.repository.path.with_name("tasks.sqlite3.pre-restore")
+        self.service.backup(source)
+        original_bytes = source.read_bytes()
+        self.create()
+        restored = self.service.restore(source)
+        self.assertNotEqual(Path(restored["safety_copy"]), source)
+        self.assertEqual(source.read_bytes(), original_bytes)
+        self.assertEqual([t["id"] for t in self.service.list_tasks()], [first["id"]])
+
+    def test_validate_reports_bad_status_and_non_object_event_and_operation(self) -> None:
+        task = self.service.create_task(title="T", task_type="analysis", objective="O", original_request="R",
+                                        acceptance_criteria=["A"], operation_id="diagnostic-op")
+        invalid = {**task, "status": [], "archive": {}}
+        with closing(sqlite3.connect(self.service.repository.path)) as db, db:
+            db.execute("UPDATE tasks SET body=? WHERE id=?", (json.dumps(invalid), task["id"]))
+            db.execute("UPDATE events SET payload='[]' WHERE task_id=?", (task["id"],))
+            db.execute("UPDATE operations SET result='null' WHERE operation_id='diagnostic-op'")
+        codes = {issue["code"] for issue in self.service.health_check()}
+        self.assertTrue({"status_invalid", "event_payload_invalid", "operation_result_invalid"}.issubset(codes))
+        with self.assertRaises(TaskError) as caught:
+            self.service.get_history(task["id"])
+        self.assertEqual(caught.exception.code, "repository_failure")
 
 
 if __name__ == "__main__":

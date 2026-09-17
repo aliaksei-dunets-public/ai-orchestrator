@@ -7,8 +7,10 @@ import difflib
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,9 @@ OWNED_PATHS = {
     "AGENTS.md",
     ".gitignore",
 }
+TASK_MANAGER_PYPROJECT = Path("packages/task-manager/pyproject.toml")
+TASK_MANAGER_MCP_MODULE = Path("packages/task-manager/src/orchestrator_task_manager/task_mcp.py")
+TASK_MANAGER_MCP_ENTRYPOINT = "orchestrator_task_manager.task_mcp:main"
 
 
 class OnboardingError(Exception):
@@ -99,6 +104,27 @@ def _validate_answers(raw: Any) -> dict[str, Any]:
         if not isinstance(value, list) or any(not isinstance(item, str) or not item.strip() for item in value):
             raise OnboardingError(f"{key} должен быть списком непустых строк")
     return {key: raw[key] for key in ("project_name", "summary", "test_commands", "constraints")}
+
+
+def _validate_task_manager_mcp(core: Path) -> None:
+    """Require the MCP entry point in a connected Orchestrator core."""
+    pyproject = core / TASK_MANAGER_PYPROJECT
+    module = core / TASK_MANAGER_MCP_MODULE
+    if not pyproject.is_file() or not module.is_file():
+        raise OnboardingError(
+            "В подключённом ядре отсутствует MCP Task Manager: "
+            f"ожидались {TASK_MANAGER_PYPROJECT.as_posix()} и "
+            f"{TASK_MANAGER_MCP_MODULE.as_posix()}"
+        )
+    try:
+        manifest = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        raise OnboardingError(f"Не удалось прочитать конфигурацию Task Manager: {pyproject}") from exc
+    scripts = manifest.get("project", {}).get("scripts", {})
+    if scripts.get("orchestrator-task-manager-mcp") != TASK_MANAGER_MCP_ENTRYPOINT:
+        raise OnboardingError(
+            "В подключённом ядре отсутствует entry point orchestrator-task-manager-mcp"
+        )
 
 
 def _context(answers: dict[str, Any]) -> str:
@@ -177,6 +203,7 @@ def build_plan(target: Path, core: Path, answers: dict[str, Any]) -> dict[str, A
             raise OnboardingError("В подключённом ядре отсутствует skill Task Manager Service")
     else:
         raise OnboardingError("Внешнее ядро должно находиться в tools/orchestrator")
+    _validate_task_manager_mcp(core)
 
     project_config = {
         "schema_version": 1,
@@ -315,6 +342,112 @@ def apply_plan(plan: dict[str, Any], approved_hash: str) -> list[str]:
     return written
 
 
+def _safe_output_path(target: Path, output: Path) -> Path:
+    """Resolve a generated onboarding artifact without following symlinks."""
+    target = target.resolve(strict=True)
+    path = output if output.is_absolute() else target / output
+    resolved = path.resolve(strict=False)
+    if not resolved.is_relative_to(target):
+        raise OnboardingError("Файл вывода должен находиться внутри целевого проекта")
+    current = target
+    for part in resolved.relative_to(target).parts:
+        current = current / part
+        if current.is_symlink():
+            raise OnboardingError(f"Символическая ссылка в пути вывода: {resolved.relative_to(target)}")
+    if resolved.exists():
+        raise OnboardingError(f"Файл вывода уже существует: {resolved.relative_to(target)}")
+    return resolved
+
+
+def _python_path(value: Path | None) -> Path:
+    executable = (value or Path(sys.executable)).expanduser().resolve(strict=True)
+    if not executable.is_file():
+        raise OnboardingError(f"Python-интерпретатор не найден: {executable}")
+    return executable
+
+
+def build_mcp_config(target: Path, python_executable: Path | None = None, *, name: str = "task-manager") -> dict[str, Any]:
+    """Build a host-neutral stdio MCP client snippet for one project."""
+    target = target.resolve(strict=True)
+    if not target.is_dir():
+        raise OnboardingError("Целевой проект должен быть каталогом")
+    if not isinstance(name, str) or not name.strip():
+        raise OnboardingError("Имя MCP-сервера должно быть непустой строкой")
+    executable = _python_path(python_executable)
+    return {
+        name: {
+            "command": str(executable),
+            "args": ["-m", "orchestrator_task_manager.task_mcp", "--project", str(target)],
+        }
+    }
+
+
+def _mcp_exchange(python_executable: Path, target: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Run a short real MCP handshake and health check through stdio."""
+    messages = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-11-25"}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "task_health_check", "arguments": {}}},
+    ]
+    payload = "".join(json.dumps(message, ensure_ascii=False) + "\n" for message in messages)
+    try:
+        completed = subprocess.run(
+            [str(python_executable), "-m", "orchestrator_task_manager.task_mcp", "--project", str(target)],
+            input=payload,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise OnboardingError(f"Не удалось выполнить MCP-проверку: {exc}") from exc
+    if completed.returncode != 0:
+        details = completed.stderr.strip() or completed.stdout.strip()
+        raise OnboardingError(f"MCP завершился с кодом {completed.returncode}: {details}")
+    responses = []
+    for line in completed.stdout.splitlines():
+        if line.strip():
+            try:
+                responses.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise OnboardingError("MCP вернул некорректный JSON-RPC ответ") from exc
+    by_id = {item.get("id"): item for item in responses if isinstance(item, dict) and "id" in item}
+    for request_id in (1, 2, 3):
+        if request_id not in by_id:
+            raise OnboardingError(f"MCP не вернул ответ на запрос {request_id}")
+        if "error" in by_id[request_id]:
+            raise OnboardingError(f"MCP вернул protocol error для запроса {request_id}: {by_id[request_id]['error']}")
+    return by_id[1], by_id[2], by_id[3]
+
+
+def check_task_manager(target: Path, python_executable: Path | None = None) -> dict[str, Any]:
+    """Check the installed Task Manager package and its real MCP handshake."""
+    target = target.resolve(strict=True)
+    executable = _python_path(python_executable)
+    initialize, catalog, health = _mcp_exchange(executable, target)
+    init_result = initialize.get("result", {})
+    tools = catalog.get("result", {}).get("tools", [])
+    health_result = health.get("result", {}).get("structuredContent")
+    if isinstance(health_result, dict) and set(health_result) == {"value"}:
+        health_result = health_result["value"]
+    if not isinstance(tools, list) or not tools:
+        raise OnboardingError("MCP tools/list не вернул инструменты Task Manager")
+    if health_result != []:
+        raise OnboardingError(f"Task Manager health_check обнаружил проблемы: {health_result}")
+    return {
+        "ok": True,
+        "python": str(executable),
+        "project_root": str(target),
+        "server": init_result.get("serverInfo", {}),
+        "protocol_version": init_result.get("protocolVersion"),
+        "tool_count": len(tools),
+        "health_check": health_result,
+    }
+
+
 def _print_preview(plan: dict[str, Any], target: Path) -> None:
     print(f"План: {plan['plan_hash']}")
     print(f"Изменяемых файлов: {len(plan['changes'])}")
@@ -344,6 +477,14 @@ def main(argv: list[str] | None = None) -> int:
     apply = commands.add_parser("apply", help="Применить подтверждённый план")
     apply.add_argument("--plan", type=Path, required=True)
     apply.add_argument("--approved-hash", required=True)
+    check = commands.add_parser("check-task-manager", help="Проверить установленный Task Manager и MCP handshake")
+    check.add_argument("--target", type=Path, required=True)
+    check.add_argument("--python", type=Path, default=None, help="Python-интерпретатор окружения Task Manager")
+    config = commands.add_parser("mcp-config", help="Сгенерировать локальный MCP-конфиг без изменения хоста")
+    config.add_argument("--target", type=Path, required=True)
+    config.add_argument("--python", type=Path, default=None, help="Python-интерпретатор окружения Task Manager")
+    config.add_argument("--name", default="task-manager", help="Имя MCP-сервера в конфиге")
+    config.add_argument("--output", type=Path, required=True, help="Файл внутри проекта, например .tmp/task-manager-mcp.json")
     args = parser.parse_args(argv)
     try:
         if args.command == "preview":
@@ -354,10 +495,18 @@ def main(argv: list[str] | None = None) -> int:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             _atomic_write(args.output, (json.dumps(plan, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
             _print_preview(plan, Path(plan["target_root"]))
-        else:
+        elif args.command == "apply":
             plan = json.loads(args.plan.read_text(encoding="utf-8"))
             written = apply_plan(plan, args.approved_hash)
             print(f"Настройка завершена; изменено файлов: {len(written)}")
+        elif args.command == "check-task-manager":
+            print(json.dumps(check_task_manager(args.target, args.python), ensure_ascii=False, indent=2))
+        else:
+            target = args.target.resolve(strict=True)
+            payload = build_mcp_config(target, args.python, name=args.name)
+            output = _safe_output_path(target, args.output)
+            _atomic_write(output, (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
+            print(json.dumps({"ok": True, "output": str(output), "config": payload}, ensure_ascii=False, indent=2))
         return 0
     except (OSError, ValueError, OnboardingError) as exc:
         parser.exit(2, f"Ошибка онбординга: {exc}\n")

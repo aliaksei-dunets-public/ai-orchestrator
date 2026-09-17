@@ -1,0 +1,186 @@
+{
+  "SQLiteTaskRepository": {
+    "__init__": {
+      "arguments": "self, project_root: Path",
+      "returns": "None"
+    },
+    "create": {
+      "arguments": "self, snapshot: dict[str, Any], at: str, *, operation_id: str | None=None, fingerprint: str | None=None, event_context: dict[str, str | None] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "get": {
+      "arguments": "self, task_id: str",
+      "returns": "dict[str, Any]"
+    },
+    "replay_operation": {
+      "arguments": "self, operation_id: str, fingerprint: str",
+      "returns": "dict[str, Any] | None"
+    },
+    "list": {
+      "arguments": "self, *, statuses: set[str] | None=None, task_type: str | None=None, query: str | None=None, limit: int | None=100, cursor: str | None=None, include_archived: bool=False",
+      "returns": "list[dict[str, Any]]"
+    },
+    "summary": {
+      "arguments": "self, *, statuses: set[str] | None=None, task_type: str | None=None, query: str | None=None, include_archived: bool=False",
+      "returns": "dict[str, Any]"
+    },
+    "history": {
+      "arguments": "self, task_id: str, after_sequence: int=0",
+      "returns": "list[dict[str, Any]]"
+    },
+    "mutate": {
+      "arguments": "self, task_id: str, expected_version: int, event_type: str, change: Callable[[dict[str, Any]], dict[str, Any]], at: str, *, operation_id: str | None=None, fingerprint: str | None=None, event_context: dict[str, str | None] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "purge": {
+      "arguments": "self, task_id: str, expected_version: int, *, terminal_at: str, archived_at: str, purged_at: str, reason: str, actor_ref: str | None=None, operation_id: str | None=None, fingerprint: str | None=None",
+      "returns": "dict[str, Any]"
+    }
+  },
+  "TaskManagerService": {
+    "__init__": {
+      "arguments": "self, project_root: Path, *, clock: Callable[[], datetime]=_now, acceptance_required: bool=True",
+      "returns": "None"
+    },
+    "create_task": {
+      "arguments": "self, *, title: str, task_type: str, objective: str, original_request: str, acceptance_criteria: list[str], constraints: list[str] | None=None, target_workflow: str='development', handoff_mode: str='deferred', operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "get_task": {
+      "arguments": "self, task_id: str",
+      "returns": "dict[str, Any]"
+    },
+    "list_tasks": {
+      "arguments": "self, *, statuses: set[str] | None=None, task_type: str | None=None, query: str | None=None, limit: int | None=100, cursor: str | None=None, include_archived: bool=False",
+      "returns": "list[dict[str, Any]]"
+    },
+    "get_history": {
+      "arguments": "self, task_id: str, after_sequence: int=0",
+      "returns": "list[dict[str, Any]]"
+    },
+    "summary": {
+      "arguments": "self, *, statuses: set[str] | None=None, task_type: str | None=None, query: str | None=None, include_archived: bool=False",
+      "returns": "dict[str, Any]"
+    },
+    "get_document": {
+      "arguments": "self, task_id: str, role: str",
+      "returns": "str"
+    },
+    "get_claim": {
+      "arguments": "self, task_id: str",
+      "returns": "dict[str, Any] | None"
+    },
+    "export_state": {
+      "arguments": "self, destination: Path",
+      "returns": "dict[str, Any]"
+    },
+    "backup": {
+      "arguments": "self, destination: Path",
+      "returns": "dict[str, Any]"
+    },
+    "restore": {
+      "arguments": "self, source: Path",
+      "returns": "dict[str, Any]"
+    },
+    "health_check": {
+      "arguments": "self",
+      "returns": "list[dict[str, str]]"
+    },
+    "list_executable_tasks": {
+      "arguments": "self, limit: int=100",
+      "returns": "list[dict[str, Any]]"
+    },
+    "start_preparation": {
+      "arguments": "self, task_id: str, expected_version: int, run_ref: str, *, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "refine_task_definition": {
+      "arguments": "self, task_id: str, expected_version: int, *, objective: str | None=None, problem_statement: str | None=None, acceptance_criteria: list[str] | None=None, constraints: list[str] | None=None, evidence_refs: list[str] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "update_metadata": {
+      "arguments": "self, task_id: str, expected_version: int, *, title: str",
+      "returns": "dict[str, Any]"
+    },
+    "attach_artifact": {
+      "arguments": "self, task_id: str, expected_version: int, *, role: str, ref: str, path: str | None=None, sha256: str | None=None, metadata: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "attach_execution_package": {
+      "arguments": "self, task_id: str, expected_version: int, *, ref: str, plan_sha256: str, prepared_source_revision: str, specification_sha256: str | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "mark_ready": {
+      "arguments": "self, task_id: str, expected_version: int, *, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "claim_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, worker_ref: str, lease_seconds: int=900, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "renew_claim": {
+      "arguments": "self, task_id: str, expected_version: int, *, claim_ref: str, lease_seconds: int=900",
+      "returns": "dict[str, Any]"
+    },
+    "release_claim": {
+      "arguments": "self, task_id: str, expected_version: int, *, claim_ref: str, target_status: str, reason: str",
+      "returns": "dict[str, Any]"
+    },
+    "recover_expired_claim": {
+      "arguments": "self, task_id: str, expected_version: int",
+      "returns": "dict[str, Any]"
+    },
+    "link_workflow_run": {
+      "arguments": "self, task_id: str, expected_version: int, *, run_ref: str, relation: str, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "add_blocker": {
+      "arguments": "self, task_id: str, expected_version: int, *, blocker_type: str, summary: str, evidence_refs: list[str] | None=None, blocking: bool=True",
+      "returns": "dict[str, Any]"
+    },
+    "resolve_blocker": {
+      "arguments": "self, task_id: str, expected_version: int, *, blocker_ref: str, resolution: str",
+      "returns": "dict[str, Any]"
+    },
+    "record_user_decision": {
+      "arguments": "self, task_id: str, expected_version: int, *, decision_type: str, value: str, artifact_ref: str | None=None, candidate_revision: str | None=None, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "transition_status": {
+      "arguments": "self, task_id: str, expected_version: int, *, to: str, reason: str, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "mark_awaiting_acceptance": {
+      "arguments": "self, task_id: str, expected_version: int",
+      "returns": "dict[str, Any]"
+    },
+    "complete_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, completion_decision_ref: str, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "accept_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, candidate_revision: str, completion_decision_ref: str, artifact_ref: str | None=None, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "cancel_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, reason: str",
+      "returns": "dict[str, Any]"
+    },
+    "archive_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, reason: str, actor_ref: str | None=None, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "unarchive_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, reason: str, operation_id: str | None=None, event_context: dict[str, Any] | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "purge_task": {
+      "arguments": "self, task_id: str, expected_version: int, *, reason: str, actor_ref: str | None=None, operation_id: str | None=None",
+      "returns": "dict[str, Any]"
+    },
+    "register_external_link": {
+      "arguments": "self, task_id: str, expected_version: int, *, tracker: str, external_ref: str",
+      "returns": "dict[str, Any]"
+    }
+  }
+}

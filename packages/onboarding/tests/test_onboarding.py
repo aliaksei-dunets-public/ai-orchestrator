@@ -9,7 +9,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from orchestrator_onboarding import OnboardingError, apply_plan, build_plan
+from orchestrator_onboarding import (
+    OnboardingError,
+    apply_plan,
+    build_mcp_config,
+    build_plan,
+    check_task_manager,
+)
 
 
 ANSWERS = {
@@ -31,10 +37,23 @@ class OnboardingTests(unittest.TestCase):
         skill = self.core / ".agents/skills/orchestrator-task-manager/SKILL.md"
         skill.parent.mkdir(parents=True)
         skill.write_text("# Skill\n", encoding="utf-8")
+        task_manager = self.core / "packages/task-manager"
+        (task_manager / "src/orchestrator_task_manager").mkdir(parents=True)
+        (task_manager / "src/orchestrator_task_manager/task_mcp.py").write_text("# MCP\n", encoding="utf-8")
+        (task_manager / "pyproject.toml").write_text(
+            "[project.scripts]\n"
+            "orchestrator-task-manager-mcp = \"orchestrator_task_manager.task_mcp:main\"\n",
+            encoding="utf-8",
+        )
 
     def test_missing_task_skill_blocks_external_preview(self) -> None:
         (self.core / ".agents/skills/orchestrator-task-manager/SKILL.md").unlink()
         with self.assertRaisesRegex(OnboardingError, "отсутствует skill"):
+            build_plan(self.target, self.core, ANSWERS)
+
+    def test_missing_task_manager_mcp_blocks_external_preview(self) -> None:
+        (self.core / "packages/task-manager/pyproject.toml").unlink()
+        with self.assertRaisesRegex(OnboardingError, "отсутствует MCP Task Manager"):
             build_plan(self.target, self.core, ANSWERS)
 
     def test_external_project_preview_apply_and_repeat(self) -> None:
@@ -58,6 +77,14 @@ class OnboardingTests(unittest.TestCase):
     def test_self_hosted_does_not_copy_core_or_modify_existing_agents(self) -> None:
         (self.target / "README.md").write_text("# Core\n", encoding="utf-8")
         (self.target / "docs").mkdir()
+        task_manager = self.target / "packages/task-manager"
+        (task_manager / "src/orchestrator_task_manager").mkdir(parents=True)
+        (task_manager / "src/orchestrator_task_manager/task_mcp.py").write_text("# MCP\n", encoding="utf-8")
+        (task_manager / "pyproject.toml").write_text(
+            "[project.scripts]\n"
+            "orchestrator-task-manager-mcp = \"orchestrator_task_manager.task_mcp:main\"\n",
+            encoding="utf-8",
+        )
         (self.target / "AGENTS.md").write_text("# Пользовательские инструкции\n", encoding="utf-8")
         (self.target / ".gitignore").write_text(".orchestrator/state/\n", encoding="utf-8")
         plan = build_plan(self.target, self.target, ANSWERS)
@@ -193,6 +220,23 @@ class OnboardingTests(unittest.TestCase):
         self.assertEqual((self.target / "AGENTS.md").read_text(encoding="utf-8"), "Original\n")
         self.assertFalse((self.target / ".orchestrator/project.json").exists())
         self.assertFalse((self.target / ".orchestrator/project-context.md").exists())
+
+    def test_mcp_config_uses_selected_python_and_absolute_project(self) -> None:
+        config = build_mcp_config(self.target, Path(sys.executable), name="project-tasks")
+        self.assertEqual(config["project-tasks"]["command"], str(Path(sys.executable).resolve()))
+        self.assertEqual(config["project-tasks"]["args"][-1], str(self.target.resolve()))
+
+    def test_mcp_config_rejects_output_outside_project(self) -> None:
+        with self.assertRaisesRegex(OnboardingError, "внутри целевого проекта"):
+            from orchestrator_onboarding import onboarding
+
+            onboarding._safe_output_path(self.target, self.target.parent / "outside.json")
+
+    def test_task_manager_mcp_check_runs_real_handshake(self) -> None:
+        report = check_task_manager(self.target, Path(sys.executable))
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["health_check"], [])
+        self.assertGreaterEqual(report["tool_count"], 35)
 
 
 if __name__ == "__main__":
