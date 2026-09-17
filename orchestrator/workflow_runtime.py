@@ -215,16 +215,18 @@ class GraphRuntime:
         self._wait_sequence = 0
 
     def create_run(self, graph: Graph | Mapping[str, Any], inputs: Mapping[str, Any], *, task_ref: str | None = None,
-                   run_id: str | None = None) -> WorkflowRun:
+                   run_id: str | None = None, phase: str = "request") -> WorkflowRun:
         graph = graph if isinstance(graph, Graph) else Graph.from_dict(graph)
         input_data = copy.deepcopy(_mapping(inputs, "inputs"))
         if task_ref is not None:
             _required_text(task_ref, "task_ref")
         run_id = run_id or f"RUN-{uuid.uuid4().hex[:12]}"
         _required_text(run_id, "run_id")
+        if not isinstance(phase, str) or phase not in {"request", "preparation", "execution"}:
+            raise RuntimeError("contract_violation", "Неизвестная phase запуска")
         if run_id in self._runs:
             raise RuntimeError("contract_violation", "run_id уже существует", run_id=run_id)
-        run = WorkflowRun(run_id, task_ref, graph.graph_id, graph.version, "request", "created", graph.entry_node, input_data)
+        run = WorkflowRun(run_id, task_ref, graph.graph_id, graph.version, phase, "created", graph.entry_node, input_data)
         self._runs[run_id] = (graph, run)
         return self.inspect_run(run_id)
 

@@ -4,6 +4,8 @@
 
 Эти документы — проектные исходники, а не реализованные модули. Их контракты становятся действующими только после переноса в русскоязычные документы `docs/architecture/` или `docs/guides/`, реализации и тестирования.
 
+Для подготовки TASK-0015 действуют минимальный [контракт Preparation Workflow](../architecture/preparation-workflow.md) и [guide](../guides/preparation-workflow.md): Context → Analysis → Planning → Review → Package → Ready. Карточка Task Manager заменяет обязательную specification.md; approval связан с plan SHA-256/definition version, не запускает Implementation напрямую. Полные импортированные схемы и PKM/LLM стратегии не реализованы автоматически: смысловые адаптеры предоставляет caller.
+
 Текущие ограничения v1:
 
 - состояние задач принадлежит SQLite Task Manager;

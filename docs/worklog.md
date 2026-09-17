@@ -1,5 +1,33 @@
 # Журнал работ
 
+## 2026-09-17 — TASK-0015: пользовательская приёмка
+
+- Пользователь подтвердил показанный отчёт TASK-0015 сообщением «Подтверждаю». SHA-256 workflow, Graph Runtime и integration tests повторно сверены с показанной ревизией; изменений кандидата нет.
+- Публичный атомарный accept зарегистрировал acceptance=approved и завершил TASK-0015: `awaiting_acceptance` v17 → `completed` v18. Активных run/claim нет; [основание приёмки](reports/2026-09-17-preparation-workflow.md#user-acceptance).
+- Актуализированы отчёт, контракт, guide, дизайн, README, project status и roadmap. Новое исполнение TASK-0016 в рамках этой приёмки не запускалось.
+
+## 2026-09-17 — TASK-0014: Artifact Repository v1
+
+- Реализован независимый `orchestrator.artifact_repository` с публичными `ArtifactRepository`, `ArtifactRecord`, `StoredArtifact` и `ArtifactError`; уникальность определяется тройкой `ref + role + version`.
+- Payload и JSON-манифест хранятся под `.orchestrator/artifacts/`; после аудита публикация готовит оба файла со `fsync` во staging и выполняет единый rename всей версии; существующие версии не перезаписываются, чтение повторно проверяет размер и SHA-256.
+- Task Manager и SQLite не импортируются и не используются; Task Manager остаётся владельцем lifecycle и хранит только ссылки/метаданные. Локальное runtime-хранилище добавлено в `.gitignore`.
+- Добавлены 9 предметных тестов и русский [интеграционный guide](guides/artifact-repository.md); обновлены контракт хранения, Graph Runtime boundary, Task Manager boundary, README, roadmap и project status.
+- Реализация подготовлена к пользовательской приёмке; итоговые команды и хеш ревизии указаны в [отчёте TASK-0014](reports/2026-09-17-artifact-repository-v1.md).
+
+## 2026-09-17 — TASK-0014: независимый Luna High аудит и регрессии
+
+- Pascal (`gpt-5.6-luna`, High) выполнил read-only аудит кода, тестов и документации, fault injection, Windows junction и plan-проекцию через публичный Task Manager API. Выявлены два P1, пять P2 и неточность evidence P3.
+- Исправлены root/entry reparse boundary, атомарность полной версии и очистка staging, manifest validation, структурированные IO-ошибки, Windows-safe identifiers/case aliases и несовместимая инструкция регистрации plan path.
+- Добавлены 10 регрессий: repository — 19 тестов (18 passed, 1 expected Windows file-symlink skip), корень — 34 (33 passed, 1 тот же skip), Task Manager — 73/73, Onboarding — 18 passed + 1 expected skip, compileall успешен. Pascal провёл delta-проверку: новых замечаний нет. По условному разрешению пользователя TASK-0014 принята и завершена через публичный API, version 21.
+
+## 2026-09-17 — TASK-0015: граф подготовки до ready
+
+- После завершения зависимостей подготовлены и зарегистрированы plan, реальное review плана основным агентом и Execution Package; задача исполнена через claim/отдельный run-ref, без прямого SQLite.
+- Добавлен Preparation Workflow поверх Graph Runtime: четыре внешних адаптера, структурные контракты, immutable артефакты, plan projection, binding review/package, реальные guards до ready. Встроенный LLM/PKM и автоматическое исполнение не добавлены.
+- Реализованы waits/blockers, ограниченные context/review циклы и явная pending-синхронизация без повторного planner/reviewer. Конфликт версии требует caller reconcile, definition/artifact changes отвергаются. Посторонний plan не перезаписывается.
+- Добавлены 18 integration tests; полный прогон: корень 52 (51 passed, 1 Windows skip), Task Manager 73/73, Onboarding 19 (18 passed, 1 Windows skip), compileall/diff check успешны.
+- Обновлены русские [контракт](architecture/preparation-workflow.md), [guide](guides/preparation-workflow.md), архитектурные границы, roadmap/status и пометки импортированных исходников; [отчёт](reports/2026-09-17-preparation-workflow.md). TASK-0015 переведена публичным API в `awaiting_acceptance`, version 17; run закрыт, claim освобождён. Live validate чистый, проверены 178 локальных ссылок в 37 документах. Независимый Luna аудит repository не распространяется на TASK-0015.
+
 ## 2026-09-17 — TASK-0003: минимальный in-memory Workflow Runtime
 
 - Реализован независимый `orchestrator.workflow_runtime` для одного графа и одной real-time сессии: immutable Graph/Node contract, in-memory WorkflowRun, один узел на `step`, terminal outcomes, pause/resume и cancel.
@@ -13,6 +41,13 @@
 - Все замечания исправлены в `orchestrator/workflow_runtime.py`; добавлены регрессионные тесты на 10 runtime-сценариев, включая `resume_blocked`, повтор после невалидного resume, malformed/duplicate nodes и Artifact contract.
 - Обновлены контракт Graph Runtime, дизайн, гайды и отчёт проверки. Полный набор: Orchestrator 15/15, Task Manager 73/73, Onboarding 19 (1 ожидаемый Windows skip), `compileall`, `git diff --check` и live `validate` прошли.
 - Новая ревизия принята через публичный Task Manager API: TASK-0003 завершена, version 22.
+
+## 2026-09-17 — TASK-0004: проверка и документация Workflow Runtime
+
+- TASK-0004 запущена через публичный Task Manager API с отдельным run-ref; зарегистрированы plan, plan review и Execution Package.
+- Добавлен русскоязычный [пользовательский guide Workflow Runtime](guides/workflow-runtime.md) с запуском, pause/resume, `resume_blocked`, отменой и границами Task Manager.
+- Актуализированы навигация `docs/README.md`, project status, roadmap, onboarding guide, архитектура хранения и Task Manager boundary; устаревшие утверждения о нереализованном Graph Runtime удалены.
+- Подтверждены предметные тесты runtime и полный набор проверок: Orchestrator 15/15, Task Manager 73/73, Onboarding 19 (1 ожидаемый Windows skip), compileall, diff check и live validate.
 
 ## 2026-09-17 — TASK-0026: полный сценарный аудит и исправления
 

@@ -1,6 +1,6 @@
 # Development Specification — Architecture and Contract
 
-> **Актуализация 2026-09-15:** положения о каноническом файловом состоянии задач, `task.yaml`, `events.jsonl` и файловом репозитории заменены [контрактом состояния и хранения](../architecture/state-and-storage.md). Источник истины — SQLite Task Manager; каталог задачи содержит Specification и Plan. Остальной текст — импортированный проектный материал, не подтверждение реализации.
+> **Актуализация 2026-09-17:** прежнее требование Specification заменено карточкой Task Manager; specification.md не обязательна. Task lifecycle — SQLite, immutable рабочие артефакты — Artifact Repository, шаг/WaitState — память Graph Runtime. Действующий минимальный [контракт подготовки](../architecture/preparation-workflow.md) останавливается на Package → Ready, не запускает исполнение. Остальной текст — импортированный проектный исходник.
 
 **Status:** Accepted design v0.1  
 **Scope:** Durable synthesis produced by Development Preparation before Planning

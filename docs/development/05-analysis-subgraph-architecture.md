@@ -1,5 +1,7 @@
 # Development Analysis Subgraph
 
+> **Актуализация 2026-09-17:** это импортированный проектный исходник. Реализованный минимальный срез TASK-0015 определяет [русский контракт Preparation Workflow](../architecture/preparation-workflow.md): canonical definition в карточке Task Manager, specification.md не обязательна, Review → Package → Ready без автоматического исполнения. Полные схемы, модельная эскалация и PKM из этого документа не означают наличие реализации; смысловые адаптеры предоставляет caller.
+
 **Status:** Accepted design draft v0.1  
 **Scope:** Development Workflow — stage after Context and before Planning
 

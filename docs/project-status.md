@@ -11,7 +11,7 @@
 - Активный проект называется `Orchestrator`.
 - Старый продукт, релизы и старое состояние находятся в `obsolete/` как неизменяемый справочный архив.
 - Новый графовый подход и действующие контракты находятся в `docs/`.
-- Полного графового runtime пока нет.
+- Минимальный in-memory runtime и подготовка до ready реализованы; полного runtime исполнения пока нет.
 
 ## Пакет Onboarding
 
@@ -67,13 +67,13 @@ TASK-0025 исправляет обнаруженную аудитом ошиб�
 - Состояние запуска принадлежит Graph Runtime; Task Manager хранит только ссылки.
 - После мутации проверь карточку, историю и при необходимости `validate`.
 
-## Пока отсутствует
+## Реализованное ядро и ограничения
 
-Подтверждена упрощённая архитектура [Workflow Run](architecture/workflow-run.md): `GraphRuntime` выполняет один узел за шаг, хранит текущий процесс в памяти, атомарно публикует валидные результаты, через `WaitState` приостанавливает граф на вопросе пользователю и позволяет явно повторить заблокированный узел через `resume_blocked`. TASK-0003 принята и завершена по публичной карточке Task Manager (version 22). Возможность поддержки нескольких сессий, контрольных точек и автоматического восстановления описана отдельно как [будущая функция](architecture/runtime-coordination.md) и сейчас не реализуется. Существующий task-claim остаётся требованием `ready → active`, а интеграционный адаптер Task Manager ещё требует отдельного этапа.
+Подтверждена упрощённая архитектура [Workflow Run](architecture/workflow-run.md): `GraphRuntime` выполняет один узел за шаг, хранит процесс в памяти, принимает валидные результаты, приостанавливает граф через WaitState и поддерживает явный resume/resume_blocked. TASK-0003 принята и завершена (version 22). [Preparation Workflow](architecture/preparation-workflow.md) реализует минимальное связывание подготовки с Task Manager и Artifact Repository. Существующий task-claim остаётся требованием `ready → active`, но workflow подготовки не делает claim. Многосессионность/checkpoints/автоматическое восстановление — [будущая функция](architecture/runtime-coordination.md).
 
-Первый срез согласования границы хранения завершён: [состояние и хранение](architecture/state-and-storage.md). Устаревшие файловые модели отмечены в исходных материалах. Действующие контракты Graph, Node, Artifact, WorkflowRun и API runtime закреплены в [контракте Graph Runtime v1](architecture/graph-runtime-contract.md), core реализация находится в `orchestrator.workflow_runtime`; после независимого аудита TASK-0003 исправлена и завершена, а TASK-0004 продолжает интеграционную проверку и подготовку полного пользовательского гайда.
+Граница хранения закреплена в [контракте](architecture/state-and-storage.md), Graph/Node/Artifact/WorkflowRun/API — в [Graph Runtime v1](architecture/graph-runtime-contract.md). TASK-0003–TASK-0004 завершены. TASK-0014 прошла независимый Luna High аудит, исправления и delta-проверку без новых замечаний; принята и завершена (version 21). TASK-0015 реализует Context → Analysis → Planning → Review → Package → Ready, structured contracts, waits/blockers, ограниченные revisions и реальные ready guards; принята пользователем и завершена (version 18). Общей транзакции runtime/files/Task Manager нет: pending sync запрещает следующий шаг. Требуются внешние смысловые адаптеры и подтверждённая source revision; встроенного LLM/PKM нет.
 
-Executor Loop, Artifact Repository, полноценная интеграция графа с Task Manager и синхронизация с внешними трекерами пока отсутствуют. Реализованы core in-memory Graph Runtime и первый входной срез Request Router → Task Creator; полного устанавливаемого пакета всего ядра также пока нет. Последовательный backlog TASK-0002–TASK-0022 и его зависимости описаны в [backlog развития v1](plans/2026-09-16-orchestrator-roadmap-backlog-design.md); TASK-0002 завершена, TASK-0003 подготовлена и находится в `awaiting_acceptance`, TASK-0004 и TASK-0014–TASK-0022 имеют статус `created`, при этом TASK-0018 помечена как будущая необязательная интеграция и не блокирует локальный v1. TASK-0023 завершена по публичной карточке (version 18, отдельное событие приёмки); TASK-0024 — согласованное внутреннее разделение пакета, awaiting_acceptance без пользовательской приёмки.
+Executor Loop, claim/preflight исполнения, автоматическая сквозная маршрутизация и синхронизация с внешними трекерами пока отсутствуют. Полный устанавливаемый пакет ядра не собран. Последовательный [backlog v1](plans/2026-09-16-orchestrator-roadmap-backlog-design.md): TASK-0002–TASK-0004 и TASK-0014 завершены, TASK-0015 принята пользователем и завершена (version 18), TASK-0016–TASK-0022 остаются `created`; необязательная TASK-0018 не блокирует локальный v1. TASK-0023 завершена (version 18); TASK-0024 остаётся внутренним разделением пакета в `awaiting_acceptance` без пользовательской приёмки. Независимый аудит TASK-0014 не является аудитом новой TASK-0015.
 
 ## Проверки
 
@@ -82,4 +82,4 @@ python -m unittest discover -s packages/onboarding/tests -v
 python -m unittest discover -s packages/task-manager/tests -v
 ```
 
-Последний результат: корневой Orchestrator — 15 тестов, включая 10 сценариев Graph Runtime; Onboarding — 19 тестов, 18 прошли и 1 пропущен из-за ограничения Windows на symlink; Task Manager — 73 теста прошли. `orchestrator-tasks --project . validate` должен возвращать `ok: true`; последний live validate после исправлений TASK-0003 успешен. MCP benchmark: p50 0.350 ms, p95 0.551 ms; startup initialize — 124.702 ms. Подробности runtime — в отчёте TASK-0003.
+Последний полный прогон TASK-0015: корневой Orchestrator — 52 теста, 51 прошёл и 1 пропущен из-за Windows-привилегии file symlink; Preparation Workflow — 18/18 внутри этого набора; Artifact Repository — 19 (18 прошли, 1 тот же skip), root/entry junction checks проходят. Onboarding — 19 (18 прошли, 1 Windows symlink skip); Task Manager — 73/73. Compileall и diff check успешны. Live `orchestrator-tasks --project . validate` должен возвращать `ok: true`. Подробности: [repository](reports/2026-09-17-artifact-repository-v1.md), [preparation](reports/2026-09-17-preparation-workflow.md). MCP benchmark ранее: p50 0.350 ms, p95 0.551 ms, startup 124.702 ms.

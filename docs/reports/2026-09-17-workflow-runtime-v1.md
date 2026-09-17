@@ -44,4 +44,4 @@ Runtime не создаёт SQLite, не пишет Task Manager напряму�
 
 По итогам исправлений аудиторский вывод: P0/P1/P2/P3 замечаний не осталось. Новая ревизия принята через публичный Task Manager API; TASK-0003 завершена.
 
-Интеграция runtime с Task Manager, полный пользовательский guide и сквозной release-readiness остаются в следующих задачах (`TASK-0004`, затем `TASK-0014+`).
+Интеграция runtime с Task Manager, Artifact Repository и сквозной release-readiness остаются в следующих задачах (`TASK-0014+`). Пользовательский guide добавлен в рамках TASK-0004.

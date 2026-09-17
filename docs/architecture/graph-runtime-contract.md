@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | Задача, её lifecycle, claim, блокеры, решения и ссылки | Task Manager | Изменяется только через публичный API `orchestrator-task-manager` |
 | Текущий запуск, узел, входы, принятые результаты и ожидание | Graph Runtime | В памяти текущей сессии; не записывается в SQLite Task Manager |
-| Тело артефакта и его хеш | Artifact Repository или вызывающая сторона до его реализации | Runtime проверяет минимальную форму ссылки/значения, но не вычисляет хеш и не делает артефакт состоянием задачи |
+| Тело артефакта и его хеш | Artifact Repository v1 | Runtime получает проверенную ссылку/метаданные; он не владеет payload и не делает артефакт состоянием задачи |
 | Выполнение операции | Платформенный/LLM-адаптер | Возвращает структурированный результат; не выбирает следующий узел |
 
 ## Определения
@@ -58,7 +58,7 @@ artifact:
   value: structured-or-external-reference
 ```
 
-Обязательны устойчивые `ref`, `contract`, `role`, 64-значный hex `sha256` тела или подтверждённой внешней версии и `value` либо непустой `uri`. Runtime проверяет только эту минимальную структурную форму и наличие ключей обязательных выходов; семантическую схему `input_contract`/`output_contract`, соответствие роли и фактическую проверку хеша выполняет вызывающая сторона или будущий Artifact Repository. Произвольные тела не становятся автоматически Task Manager state.
+Обязательны устойчивые `ref`, `contract`, `role`, 64-значный hex `sha256` тела или подтверждённой внешней версии и `value` либо непустой `uri`. Версия хранения Artifact Repository является частью его ключа `ref + role + version`, но не обязательным полем минимальной runtime-ссылки. Artifact Repository v1 проверяет фактический payload по SHA-256 и возвращает immutable metadata; Runtime проверяет только минимальную структурную форму результата и наличие ключей обязательных выходов. Семантическую схему `input_contract`/`output_contract` и соответствие роли выполняет владелец контракта. Произвольные тела не становятся автоматически Task Manager state.
 
 ### WorkflowRun
 
@@ -113,7 +113,7 @@ wait:
 ## Минимальный API движка
 
 ```text
-create_run(graph, inputs, task_ref=None) -> WorkflowRun
+create_run(graph, inputs, task_ref=None, *, run_id=None, phase="request") -> WorkflowRun
 inspect_run(run_id) -> WorkflowRun
 step(run_id, node_executor) -> NodeResult | WaitState
 resume(run_id, answer, node_executor, wait_id=None, node_id=None) -> NodeResult | WaitState
@@ -124,6 +124,8 @@ cancel(run_id, reason) -> WorkflowRun
 `step` проверяет состояние запуска, входы текущего узла, результат и маршрут, затем атомарно в памяти обновляет `current_node`, `results` и `state`; при ошибке проверки исходное состояние не меняется. `resume` допустим только для актуального `wait_id`, а `resume_blocked` повторно запускает тот же узел после устранения внешней причины и также проверяет `wait_id`/`node_id`. Повторный ответ по завершённому ожиданию отклоняется. Ошибки возвращаются структурированно: `run_not_found`, `invalid_state`, `node_mismatch`, `unknown_outcome`, `contract_violation`, `stale_wait`, `blocked` или `execution_failure`.
 
 Интеграционный адаптер Task Manager отдельно выполняет `start_preparation`, `link_workflow_run`, `transition_status`, `claim_task` и другие публичные операции с актуальной `expected_version`. Graph Runtime не меняет SQLite и не считает запись ссылки доказательством завершения запуска.
+
+`phase` допускает `request`, `preparation`, `execution`; default `request` сохранён. Минимальный [Preparation Workflow](preparation-workflow.md) реализует интеграцию подготовки до `ready`, вопросы и blockers через публичный API. Интеграция исполнения/claim остаётся следующим этапом.
 
 ## Инварианты и исключённый объём
 
