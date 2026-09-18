@@ -1,8 +1,10 @@
 # Agent-Centric AI Orchestrator Architecture
 
-**Status:** Architecture decision  
+**Status:** Historical source material — current normative contract is the Russian architecture
 **Decision:** Shift orchestration responsibility from a Python-controlled workflow engine to a global Orchestrator Agent  
 **Scope:** AI Orchestrator core architecture
+
+> **Актуализация Graphify (2026-09-18).** Диаграммы ниже используют раннюю подпись `Code Graph / Graphify` и сохранены как исходник агент-центричного решения. В действующей архитектуре это **единый Project Knowledge Graph**: код и отобранная долговечная документация находятся в одном графе. Semantic extraction документов выполняет Graphify skill текущего host-agent; отдельный documentation graph, headless backend и собственный Markdown extractor для v1 не вводятся. Нормативные детали находятся в [русском контракте Project Knowledge Service](../architecture/project-knowledge-service.md).
 
 ---
 

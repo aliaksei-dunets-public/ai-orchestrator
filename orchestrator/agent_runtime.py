@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
-from .workflow_runtime import (
+from .runtime_contracts import (
     Graph, Node, NodeResult, RuntimeError, WaitState, WorkflowRun,
     TERMINAL_STATES, TERMINAL_TRANSITIONS, validate_node_result,
 )
@@ -137,7 +137,7 @@ class AgentGraphRuntime:
             payload = _json_copy(result.to_dict())
             accepted = NodeResult(result.node_id, result.outcome, payload["artifacts"], payload["data"],
                                   payload["error"], copy.deepcopy(result.wait))
-            working = copy.deepcopy(run)
+            working = self._working_copy(run)
             working.last_result = accepted
             working.results[node.node_id] = payload
             working.result_counts[node.node_id] = run.result_counts.get(node.node_id, 0) + 1
@@ -173,7 +173,7 @@ class AgentGraphRuntime:
                 if answer is not _UNSET:
                     raise RuntimeError("contract_violation", "blocker требует resolution, без answer")
                 response = {"resolution": _text(resolution, "resolution")}
-            working = copy.deepcopy(run)
+            working = self._working_copy(run)
             working.resumed_wait = {**run.wait.to_dict(), **response}
             working.wait = None
             working.state = "running"
@@ -186,7 +186,7 @@ class AgentGraphRuntime:
             _text(reason, "reason")
             if run.state in TERMINAL_STATES:
                 raise RuntimeError("invalid_state", "Терминальный запуск нельзя отменить")
-            working = copy.deepcopy(run)
+            working = self._working_copy(run)
             working.state = "cancelled"
             working.wait = None
             working.resumed_wait = None
@@ -235,6 +235,17 @@ class AgentGraphRuntime:
         if any(event.get("result", {}).get("wait", {}).get("wait_id") == wait.wait_id
                for event in run.history if event.get("result", {}).get("wait") is not None):
             raise RuntimeError("stale_wait", "wait_id уже использован в этом запуске")
+
+    @staticmethod
+    def _working_copy(run: AgentWorkflowRun) -> AgentWorkflowRun:
+        # Уже принятые payload принадлежат runtime и больше не изменяются.
+        # Копируем только контейнеры, которые меняет новое действие; наружу
+        # по-прежнему возвращаем полный deepcopy в _publish/inspect_run.
+        working = copy.copy(run)
+        working.results = dict(run.results)
+        working.result_counts = dict(run.result_counts)
+        working.history = list(run.history)
+        return working
 
     def _publish(self, graph: Graph, run: AgentWorkflowRun, action: str, **details: Any) -> AgentWorkflowRun:
         run.revision += 1

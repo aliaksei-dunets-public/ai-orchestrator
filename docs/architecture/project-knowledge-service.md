@@ -8,7 +8,20 @@ Orchestrator Agent выбирает, когда получить контекс�
 
 Backend — Graphify-Labs/graphify, дистрибутив `graphifyy==0.9.63`, профиль `code-only/no-cluster`, schema identity `graphify-raw-json/0.9.63`. Совместимость проверена на установленной версии и Windows fixtures; [dependency snapshot](../../requirements/graphify-probe-windows-py312.txt) закрепляет пакеты, но не является wheel-hash attestation или cross-platform lockfile. Service не устанавливает provider, глобальные hooks или конфигурацию.
 
-Graphify не является GraphQL. [Исходный документ](../development/01-graphify-integration-ai-orchestrator.md) задаёт Graphify через MCP; GraphQL API не включён. Project Memory — отдельный будущий сервис. `.md`, semantic documents и memory overlay не добавляются в code graph.
+Graphify не является GraphQL. [Исходный материал](../development/01-graphify-integration-ai-orchestrator.md) описывает MCP boundary; GraphQL API не включён. Project Memory — отдельный будущий сервис оперативной памяти и не часть Project Knowledge Graph. Production service пока выполняет code-only refresh; документные semantic results проверены только в изолированном host-agent PoC и ещё не опубликованы в current index.
+
+Контракт TASK-0031: один Project Knowledge Graph для кода и долговечных architecture/ADR, актуальных product/technical docs и постоянных guides/specifications о текущем состоянии. Отдельный documentation graph запрещён. Tasks/plans/reports, временные specifications, scratch/working artifacts, `.orchestrator/runs`, архивы и устаревшая документация исключаются; критерий включения — источник правды через несколько месяцев. Host-agent PoC это направление подтвердил, но production document admission и публикация ещё не реализованы.
+
+Ограниченный [PoC TASK-0031](../reports/2026-09-18-single-project-knowledge-graph-v1.md) подтвердил вариант A: semantic extraction по установленному Graphify skill выполняет текущий host-agent без отдельного API-ключа или нового backend. Два действующих архитектурных Markdown объединены с прежним кодовым графом в изолированном кандидате и найдены через существующий MCP. Передача проверенных canonical AST IDs в host extraction дала три явные связи `references` document→code; без такой передачи первый результат не имел прямых связей. Это ссылки на упомянутые классы, не доказательство соответствия реализации контракту.
+
+Отдельный backend требуется headless semantic CLI, а не host-agent сценарию. Вариант B — автономный semantic service — отложен в created TASK-0032 и не является условием v1. Default production pipeline пока code-only: PoC не опубликован в current pointer. Минимальный manifest compatibility fix проверяет semantic_hash для документов вместо ast_hash, не меняя CorpusPolicy или provider invocation.
+
+### Целевые операции единого графа — ещё не реализованы
+
+- `refresh_code_graph()` — детерминированный AST refresh кодовой части.
+- `refresh_document_graph()` — семантический refresh долговечной документации через Graphify skill текущим host-agent. Service принимает и проверяет явный результат агента; не выполняет reasoning вместо него.
+
+Это две операции над одним Project Knowledge Graph, не отдельные code/documentation graphs. Нужны раздельные code/docs snapshots и freshness, source hashes, версия skill/prompt, canonical AST bindings и expected base graph version. Публикация должна сохранять другую часть графа либо явно обозначать её stale; провал не меняет успешный current pointer. Изменения документов не должны скрываться за fresh code corpus. Нынешний `refresh()` остаётся рабочим code-only API; новые методы, composite index и admission host-result пока отсутствуют. Детали будущего среза — в [подтверждённом дизайне](../plans/2026-09-18-graphify-host-agent-design.md).
 
 ## Экспортируемые контракты
 
@@ -17,7 +30,7 @@ Graphify не является GraphQL. [Исходный документ](../d
 | Контракт | Реализованная форма |
 | --- | --- |
 | ProviderIdentity | upstream, package, version, extraction, schema |
-| ProviderCapabilities | query=true, full_rebuild=true, incremental_refresh=false, textual_provenance=true, semantic_documents=false |
+| ProviderCapabilities | query=true, full_rebuild=true, incremental_refresh=true, textual_provenance=true, semantic_documents=false |
 | CorpusPolicy | include_roots, version, extensions, max_files, max_file_bytes, max_total_bytes |
 | SourceFile / SourceSnapshot | relative path, SHA-256, размер; digest, policy_digest, files, total_bytes |
 | GraphStatus | state, current_snapshot, indexed_snapshot, graph record, provider, error |
@@ -45,6 +58,14 @@ Digest — SHA-256 canonical JSON из policy digest и отсортирован
 5. Проверить JSON nodes/edges, identities/paths, MD5 ast_hash manifest и присутствие каждого непустого source в graph. MD5 — формат upstream, не security hash; свой snapshot использует SHA-256.
 6. Повторно проверить snapshot. Опубликовать immutable graph/index с новым version; ещё раз проверить snapshot перед atomic replace current pointer.
 
+### Incremental Refresh и pre-commit gate
+
+`refresh_incremental()` — code-only операция для pre-commit изменений. Она сравнивает текущий `SourceSnapshot` с indexed snapshot, классифицирует added/changed/deleted и одинаковые по хешу rename, переносит предыдущий Graphify `graph.json` и `manifest.json` в isolated staging и вызывает нативный `graphify update --no-cluster`. Graphify переизвлекает только затронутые code sources, пересчитывает затронутые зависимости и удаляет источники, которых больше нет. `precommit_refresh()` является сервисной операцией и сам Git не изменяет. Для agent-centric workflow `AgentExecution.precommit_gate()` задаёт момент gate после всех work units, делегирует refresh этому сервису и возвращает `success/degraded/stale/failed` с явным `commit_allowed`; физический commit остаётся действием вызывающего агента.
+
+Результат содержит `mode=incremental`, change-set и immutable graph/index. При отсутствии изменений возвращается `not_required` без новой версии. Совместимый вызов `refresh_incremental()` по умолчанию допускает диагностируемый `full-rebuild-fallback` для старого index без manifest. `refresh_incremental(allow_full_fallback=False)` используется Workflow Graph node и возвращает `fallback_required` без запуска full; это защищает правило, что full refresh требует отдельного решения. Повреждённый provider output/source drift/provider failure сохраняют прежний current pointer и возвращают `failed`. Full `refresh()` остаётся явной операцией.
+
+Полный Graphify rebuild не запускается для изменений только вне разрешённого code corpus (например, `docs/plans`, `docs/reports`, `.orchestrator`, `obsolete`). Документный host-agent semantic refresh TASK-0031 остаётся отдельной будущей admission-операцией и не смешивается с этим code-only gate.
+
 Raw bytes сохраняются без собственного parser/graph engine. Upstream AST placeholders с пустыми source_file/source_location и внешние imports/imports_from на отсутствующий target допускаются только в проверенной AST-форме. Они отдельно учитываются как unresolved_nodes/external_import_edges и не дают source evidence. Другие dangling endpoints и чужие непустые paths отклоняются. Blank/whitespace-only files остаются в snapshot, но допускаются без AST nodes и перечисляются в coverage. Частичная экстракция не объявляется успешной по exit code.
 
 Артефакты `project-knowledge:graph:<version>` и `project-knowledge:index:<version>` находятся в `.orchestrator/artifacts/`. Index связывает provider, policy, snapshot, coverage, raw counts, indexed_at, graph metadata/hash. `.orchestrator/knowledge/current.json` выбирает успешный index record. Pointer ограничен 8 KiB, index — 2 MiB, graph/manifest provider — 32 MiB каждый. Repository чтение bounded, metadata и SHA-256 проверяются.
@@ -63,4 +84,4 @@ Textual upstream errors, isError, malformed protocol, wrong ID, overflow и time
 
 ## Оставшаяся миграция
 
-Caller может передать knowledge result как evidence в AgentPreparation, но автоматической context integration, required-knowledge final validation, installed Agent skill, MCP facade самого сервиса, onboarding profile и durable process checkpoints нет. Полное agent execution — следующий этап roadmap. Memory, incremental refresh, свой backend и глобальные hooks не входят в v1. [Отчёт](../reports/2026-09-18-project-knowledge-service-v1.md) отделяет реальные tests/initial load от будущего внешнего E2E.
+Caller может передать knowledge result как evidence в AgentPreparation. `AgentExecution` поддерживает явный pre-commit gate при инъекции того же `ProjectKnowledgeService`; `KnowledgeRefreshNode` реализует reusable policy-controlled node с режимами `auto`/`incremental`/`full`, `authorization=required|automatic` и structured `knowledge-refresh-node/v1`. Automatic Git hooks, required-knowledge final validation, installed Agent skill, MCP facade самого сервиса, onboarding profile и durable process checkpoints нет. Memory, semantic document backend и глобальные hooks не входят в v1. [Отчёт](../reports/2026-09-18-project-knowledge-service-v1.md) отделяет реальные tests/initial load от будущего внешнего E2E.

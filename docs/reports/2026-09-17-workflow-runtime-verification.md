@@ -15,7 +15,7 @@ TASK-0004 подтверждает уже реализованный core Graph 
 - глубокая изоляция входов, snapshots и результатов;
 - Graph/Node/Artifact contract validation.
 
-Предметное покрытие находится в [tests/test_workflow_runtime.py](../../tests/test_workflow_runtime.py), пользовательское описание — в [гайде](../guides/workflow-runtime.md).
+Предметное покрытие находится в [tests/test_workflow_runtime.py (исторический файл; миграция)](../guides/workflow-runtime.md), пользовательское описание — в [гайде](../guides/workflow-runtime.md).
 
 ## Документация
 

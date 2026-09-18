@@ -1,6 +1,6 @@
 # TASK-0030 — Project Knowledge Service v1
 
-**Статус:** TASK-0030 принята пользователем и completed v18, без active run/claim; [основание](#user-acceptance). Историческая регистрация кандидата ниже сохраняет состояние awaiting_acceptance v17 до приёмки. Общая TASK-0027 открыта; следующий этап — [TASK-0016](2026-09-18-agent-execution-v1.md).
+**Статус:** TASK-0030 принята пользователем и completed v18, без active run/claim; [основание](#user-acceptance). Это исторический отчёт о реализованном code-only срезе и его не следует читать как полный документный Graphify pipeline. Историческая регистрация кандидата ниже сохраняет состояние awaiting_acceptance v17 до приёмки. Общая TASK-0027 открыта; следующий этап — [TASK-0016](2026-09-18-agent-execution-v1.md). Для актуального host-agent документационного решения см. [TASK-0031 PoC](2026-09-18-single-project-knowledge-graph-v1.md).
 
 ## Результат этапа
 

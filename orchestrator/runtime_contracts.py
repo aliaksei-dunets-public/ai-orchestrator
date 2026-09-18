@@ -1,16 +1,14 @@
-"""Минимальный in-memory Graph Runtime для одной real-time сессии."""
+"""Общие модели процесса и структурная валидация без исполнения узлов."""
 from __future__ import annotations
 
 import copy
 import re
-import uuid
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 TERMINAL_STATES = frozenset({"succeeded", "failed", "cancelled"})
 TERMINAL_TRANSITIONS = frozenset({"succeeded", "failed", "cancelled"})
-_UNSET = object()
 
 
 class RuntimeError(Exception):
@@ -242,171 +240,4 @@ class WorkflowRun:
                 "last_result": self.last_result.to_dict() if self.last_result else None}
 
 
-Executor = Callable[[Node, Mapping[str, Any], WorkflowRun], NodeResult | WaitState]
-
-
-class GraphRuntime:
-    """Детерминированный движок одного in-memory запуска."""
-
-    def __init__(self) -> None:
-        self._runs: dict[str, tuple[Graph, WorkflowRun]] = {}
-        self._wait_sequence = 0
-
-    def create_run(self, graph: Graph | Mapping[str, Any], inputs: Mapping[str, Any], *, task_ref: str | None = None,
-                   run_id: str | None = None, phase: str = "request") -> WorkflowRun:
-        graph = graph if isinstance(graph, Graph) else Graph.from_dict(graph)
-        input_data = copy.deepcopy(_mapping(inputs, "inputs"))
-        if task_ref is not None:
-            _required_text(task_ref, "task_ref")
-        run_id = run_id or f"RUN-{uuid.uuid4().hex[:12]}"
-        _required_text(run_id, "run_id")
-        if not isinstance(phase, str) or phase not in {"request", "preparation", "execution"}:
-            raise RuntimeError("contract_violation", "Неизвестная phase запуска")
-        if run_id in self._runs:
-            raise RuntimeError("contract_violation", "run_id уже существует", run_id=run_id)
-        run = WorkflowRun(run_id, task_ref, graph.graph_id, graph.version, phase, "created", graph.entry_node, input_data)
-        self._runs[run_id] = (graph, run)
-        return self.inspect_run(run_id)
-
-    def inspect_run(self, run_id: str) -> WorkflowRun:
-        _, run = self._get(run_id)
-        return copy.deepcopy(run)
-
-    def step(self, run_id: str, executor: Executor) -> NodeResult | WaitState:
-        graph, run = self._get(run_id)
-        self._ensure_callable(executor)
-        if run.state in TERMINAL_STATES or run.state in {"waiting_input", "blocked"}:
-            raise RuntimeError("invalid_state", "Запуск нельзя обработать в текущем состоянии", state=run.state)
-        node = graph.nodes.get(run.current_node)
-        if node is None:
-            raise RuntimeError("contract_violation", "Текущий узел не найден", node_id=run.current_node)
-        return self._execute(graph, run, node, executor)
-
-    def resume(self, run_id: str, answer: Any, executor: Executor, *, wait_id: str | None = None,
-               node_id: str | None = None) -> NodeResult | WaitState:
-        graph, run = self._get(run_id)
-        self._ensure_callable(executor)
-        if run.state != "waiting_input" or run.wait is None:
-            raise RuntimeError("invalid_state", "Возобновить можно только waiting_input", state=run.state)
-        if wait_id is not None and wait_id != run.wait.wait_id:
-            raise RuntimeError("stale_wait", "Ожидание уже изменилось", expected=run.wait.wait_id, actual=wait_id)
-        if node_id is not None and node_id != run.wait.node_id:
-            raise RuntimeError("node_mismatch", "Ответ относится к другому узлу", expected=run.wait.node_id, actual=node_id)
-        node = graph.nodes.get(run.wait.node_id)
-        if node is None:
-            raise RuntimeError("contract_violation", "Узел ожидания не найден", node_id=run.wait.node_id)
-        return self._execute(graph, run, node, executor, wait_answer=answer)
-
-    def resume_blocked(self, run_id: str, executor: Executor, *, wait_id: str | None = None,
-                       node_id: str | None = None, answer: Any = None) -> NodeResult | WaitState:
-        """Повторно запускает узел после устранения внешней причины блокировки."""
-        graph, run = self._get(run_id)
-        self._ensure_callable(executor)
-        if run.state != "blocked" or run.wait is None or run.wait.kind != "blocker":
-            raise RuntimeError("invalid_state", "Возобновить можно только blocked-запуск с blocker wait", state=run.state)
-        if wait_id is not None and wait_id != run.wait.wait_id:
-            raise RuntimeError("stale_wait", "Ожидание уже изменилось", expected=run.wait.wait_id, actual=wait_id)
-        if node_id is not None and node_id != run.wait.node_id:
-            raise RuntimeError("node_mismatch", "Ответ относится к другому узлу", expected=run.wait.node_id, actual=node_id)
-        node = graph.nodes.get(run.wait.node_id)
-        if node is None:
-            raise RuntimeError("contract_violation", "Узел блокировки не найден", node_id=run.wait.node_id)
-        return self._execute(graph, run, node, executor, wait_answer=answer)
-
-    def cancel(self, run_id: str, reason: str) -> WorkflowRun:
-        _, run = self._get(run_id)
-        _required_text(reason, "reason")
-        if run.state in TERMINAL_STATES:
-            raise RuntimeError("invalid_state", "Терминальный запуск нельзя отменить", state=run.state)
-        run.state = "cancelled"
-        run.wait = None
-        return self.inspect_run(run_id)
-
-    def _execute(self, graph: Graph, run: WorkflowRun, node: Node, executor: Executor, *,
-                 wait_answer: Any = _UNSET) -> NodeResult | WaitState:
-        working_run = copy.deepcopy(run)
-        working_run.state = "running"
-        if wait_answer is not _UNSET and working_run.wait is not None:
-            wait = working_run.wait
-            working_run.wait = WaitState(wait.wait_id, wait.node_id, wait.kind, wait.question, wait.reason, wait_answer)
-        try:
-            result = executor(node, copy.deepcopy(working_run.inputs), copy.deepcopy(working_run))
-        except RuntimeError:
-            raise
-        except Exception as exc:
-            run.state = "failed"
-            run.wait = None
-            raise RuntimeError("execution_failure", "Исполнитель узла завершился ошибкой", node_id=node.node_id, error=type(exc).__name__) from exc
-        if isinstance(result, WaitState):
-            result = NodeResult(node.node_id, "needs_input", data={}, wait=result)
-        if not isinstance(result, NodeResult):
-            run.state = "failed"
-            run.wait = None
-            raise RuntimeError("contract_violation", "Исполнитель должен вернуть NodeResult или WaitState", node_id=node.node_id)
-        self._validate_result(node, result)
-        working_run.last_result = copy.deepcopy(result)
-        working_run.results[node.node_id] = result.to_dict()
-        if result.outcome == "needs_input":
-            if result.wait is None:
-                raise RuntimeError("contract_violation", "needs_input требует wait", node_id=node.node_id)
-            working_run.wait = self._normalize_wait(node, result.wait, "user_input")
-            working_run.state = "waiting_input"
-            self._commit(run, working_run)
-            return copy.deepcopy(working_run.wait)
-        working_run.wait = None
-        if result.outcome == "blocked":
-            wait = result.wait or WaitState(self._next_wait_id(), node.node_id, "blocker", reason="Узел заблокирован")
-            working_run.wait = self._normalize_wait(node, wait, "blocker")
-            working_run.state = "blocked"
-            self._commit(run, working_run)
-            return copy.deepcopy(result)
-        target = node.transitions[result.outcome]
-        if target in TERMINAL_TRANSITIONS:
-            working_run.current_node = None
-            working_run.state = target
-        else:
-            working_run.current_node = target
-            working_run.state = "running"
-        self._commit(run, working_run)
-        return copy.deepcopy(result)
-
-    def _validate_result(self, node: Node, result: NodeResult) -> None:
-        validate_node_result(node, result)
-
-    @staticmethod
-    def _validate_artifacts(artifacts: Mapping[str, Any], node_id: str) -> None:
-        _validate_result_artifacts(artifacts, node_id)
-
-    def _normalize_wait(self, node: Node, wait: WaitState, kind: str) -> WaitState:
-        if wait.node_id != node.node_id:
-            raise RuntimeError("node_mismatch", "Ожидание относится к другому узлу", expected=node.node_id, actual=wait.node_id)
-        if wait.kind != kind:
-            raise RuntimeError("contract_violation", "Неверный вид ожидания для исхода узла", expected=kind, actual=wait.kind)
-        return WaitState(wait.wait_id or self._next_wait_id(), node.node_id, kind, wait.question, wait.reason,
-                         copy.deepcopy(wait.answer))
-
-    @staticmethod
-    def _commit(target: WorkflowRun, source: WorkflowRun) -> None:
-        target.state = source.state
-        target.current_node = source.current_node
-        target.inputs = copy.deepcopy(source.inputs)
-        target.results = copy.deepcopy(source.results)
-        target.wait = copy.deepcopy(source.wait)
-        target.last_result = copy.deepcopy(source.last_result)
-
-    def _next_wait_id(self) -> str:
-        self._wait_sequence += 1
-        return f"WAIT-{self._wait_sequence:04d}"
-
-    def _get(self, run_id: str) -> tuple[Graph, WorkflowRun]:
-        if not isinstance(run_id, str) or run_id not in self._runs:
-            raise RuntimeError("run_not_found", "Запуск не найден", run_id=run_id)
-        return self._runs[run_id]
-
-    @staticmethod
-    def _ensure_callable(executor: Any) -> None:
-        if not callable(executor):
-            raise RuntimeError("contract_violation", "executor должен быть вызываемым объектом")
-
-
-__all__ = ["Graph", "GraphRuntime", "Node", "NodeResult", "RuntimeError", "WaitState", "WorkflowRun", "validate_node_result"]
+__all__ = ["Graph", "Node", "NodeResult", "RuntimeError", "WaitState", "WorkflowRun", "validate_node_result"]

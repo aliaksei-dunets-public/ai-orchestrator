@@ -30,7 +30,7 @@ class ProviderIdentity:
 class ProviderCapabilities:
     query: bool = True
     full_rebuild: bool = True
-    incremental_refresh: bool = False
+    incremental_refresh: bool = True
     textual_provenance: bool = True
     semantic_documents: bool = False
 
@@ -120,6 +120,8 @@ class KnowledgeRefreshResult:
     node_count: int = 0
     edge_count: int = 0
     error: dict | None = None
+    mode: str = "full-rebuild"
+    details: dict | None = None
 
     def to_dict(self):
         return asdict(self)

@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from orchestrator import AgentPreparation, AgentExecution, ExecutionPreflight, PreparationError, ArtifactError
+from orchestrator import (AgentPreparation, AgentExecution, ExecutionPreflight, PreparationError,
+                          ArtifactError, GraphStatus, KnowledgeRefreshResult)
 from orchestrator_task_manager import TaskManagerService
 
 
@@ -105,6 +106,48 @@ class AgentExecutionTests(unittest.TestCase):
         self.assertEqual(self.service.health_check(), [])
         record = state["artifacts"]["implementation"]
         self.flow.repository.verify(record["ref"], record["role"], record["version"])
+
+    def test_precommit_gate_delegates_refresh_and_allows_fresh_candidate(self):
+        class Knowledge:
+            def precommit_refresh(self):
+                return KnowledgeRefreshResult("indexed", {"digest": "a"}, {"version": "v1"},
+                                              1, 0, mode="incremental", details={"changed": []})
+
+            def status(self):
+                return GraphStatus("fresh", {"digest": "a"}, {"digest": "a"},
+                                   {"version": "v1"}, {"package": "graphifyy"})
+
+        self.flow.knowledge_service = Knowledge()
+        self.start()
+        self.submit(self.success())
+        self.submit(self.success("WU-2"))
+        state = self.snapshot()
+        result = self.flow.precommit_gate(self.rid, expected_revision=state["run"]["revision"],
+                                          expected_task_version=state["task"]["version"])
+        self.assertEqual(result["contract"], "knowledge-precommit-gate/v1")
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["commit_allowed"])
+        self.assertEqual(self.snapshot()["knowledge_gate"]["status"], "success")
+
+    def test_precommit_gate_denies_stale_candidate(self):
+        class Knowledge:
+            def precommit_refresh(self):
+                return KnowledgeRefreshResult("failed", None, None,
+                                              error={"code": "provider_timeout"}, mode="incremental")
+
+            def status(self):
+                return GraphStatus("stale", {"digest": "b"}, {"digest": "a"},
+                                   {"version": "v1"}, {"package": "graphifyy"})
+
+        self.flow.knowledge_service = Knowledge()
+        self.start()
+        self.submit(self.success())
+        self.submit(self.success("WU-2"))
+        state = self.snapshot()
+        result = self.flow.precommit_gate(self.rid, expected_revision=state["run"]["revision"],
+                                          expected_task_version=state["task"]["version"])
+        self.assertEqual(result["status"], "stale")
+        self.assertFalse(result["commit_allowed"])
 
     def test_stale_code_before_claim(self):
         self.code.write_text("VALUE = 8\n", encoding="utf-8")

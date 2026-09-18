@@ -14,7 +14,7 @@ from orchestrator_task_manager import TaskError, TaskManagerService
 from .agent_runtime import AgentGraphRuntime, _UNSET, _json_copy
 from .artifact_repository import ArtifactError, ArtifactRepository
 from .preparation_primitives import PreparationError, PreparationPrimitives, _Session, _graph, _text, _json_bytes
-from .workflow_runtime import Graph
+from .runtime_contracts import Graph
 from .task_effects import TaskEffectSync
 
 

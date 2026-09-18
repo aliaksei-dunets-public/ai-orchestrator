@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import inspect
+import copy
 import json
 import tempfile
 import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from unittest.mock import patch
 
 from orchestrator import (
-    AgentGraphRuntime, AgentWorkflowRun, Graph, GraphRuntime, Node, NodeResult,
+    AgentGraphRuntime, AgentWorkflowRun, Graph, Node, NodeResult,
     RuntimeError, WaitState, validate_node_result,
 )
 from orchestrator_task_manager import TaskError, TaskManagerService
@@ -146,6 +147,42 @@ class AgentRuntimeTests(unittest.TestCase):
         self.assertEqual(self.run.result_counts, {"work": 1})
         self.reject("result_limit_exceeded", lambda: self.submit(NodeResult("work", "success")))
 
+    def test_published_history_and_old_snapshots_remain_isolated_across_actions(self) -> None:
+        runtime = AgentGraphRuntime()
+        run = runtime.create_run(graph(loop=True), {"nested": {"items": [0]}})
+        payload = {"nested": {"items": [1]}}
+        first = runtime.submit_result(run.run_id, NodeResult("work", "success", data=payload), expected_revision=1)
+        expected_first = first.to_dict()
+        payload["nested"]["items"].append(99)
+        second = runtime.submit_result(run.run_id, NodeResult("work", "success", data={"nested": {"items": [2]}}), expected_revision=2)
+        self.assertEqual(first.to_dict(), expected_first)
+        self.assertEqual(second.history[0]["result"]["data"]["nested"]["items"], [1])
+        first.history[0]["result"]["data"]["nested"]["items"].append(99)
+        second.inputs["nested"]["items"].append(99)
+        second.results["work"]["data"]["nested"]["items"].append(99)
+        second.history[0]["result"]["data"]["nested"]["items"].append(99)
+        before = runtime.inspect_run(run.run_id).to_dict()
+        with self.assertRaises(RuntimeError):
+            runtime.submit_result(run.run_id, NodeResult("work", "unknown"), expected_revision=3)
+        self.assertEqual(before, runtime.inspect_run(run.run_id).to_dict())
+        original_copy = copy.deepcopy
+        def fail_snapshot(value, *args, **kwargs):
+            if isinstance(value, AgentWorkflowRun):
+                raise MemoryError("injected public snapshot failure")
+            return original_copy(value, *args, **kwargs)
+        for action in (
+            lambda: runtime.submit_result(run.run_id, NodeResult("work", "success", data={"new": [3]}), expected_revision=3),
+            lambda: runtime.cancel(run.run_id, "Stop", expected_revision=3),
+        ):
+            with patch("orchestrator.agent_runtime.copy.deepcopy", side_effect=fail_snapshot), self.assertRaises(MemoryError):
+                action()
+            self.assertEqual(before, runtime.inspect_run(run.run_id).to_dict())
+        cancelled = runtime.cancel(run.run_id, "Stop", expected_revision=3)
+        self.assertEqual(cancelled.inputs["nested"]["items"], [0])
+        self.assertEqual(cancelled.results["work"]["data"]["nested"]["items"], [2])
+        self.assertEqual(cancelled.history[0]["result"]["data"]["nested"]["items"], [1])
+        self.assertEqual(cancelled.history[-1]["reason"], "Stop")
+
     def test_json_and_snapshot_isolation(self) -> None:
         inputs = {"nested": {"items": [1]}}
         limits = {"work": 2}
@@ -280,13 +317,6 @@ class AgentRuntimeTests(unittest.TestCase):
                 service.claim_task(task["id"], refined["version"], worker_ref="agent")
             self.assertEqual(service.health_check(), [])
 
-    def test_legacy_signatures_and_serialization_are_unchanged(self) -> None:
-        self.assertEqual(list(inspect.signature(GraphRuntime.step).parameters), ["self", "run_id", "executor"])
-        self.assertEqual(list(inspect.signature(GraphRuntime.resume).parameters), ["self", "run_id", "answer", "executor", "wait_id", "node_id"])
-        self.assertEqual(list(inspect.signature(GraphRuntime.resume_blocked).parameters), ["self", "run_id", "executor", "wait_id", "node_id", "answer"])
-        legacy = GraphRuntime().create_run(graph(), {})
-        self.assertNotIn("revision", legacy.to_dict())
-        self.assertNotIn("history", legacy.to_dict())
 
 
 if __name__ == "__main__":

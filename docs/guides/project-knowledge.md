@@ -4,6 +4,12 @@
 
 ## Подготовка и запуск
 
+PoC TASK-0031 подтвердил host-agent путь: инструкции установленного Graphify skill позволяют текущему агенту выполнить semantic extraction двух Markdown без отдельного backend/API-ключа. В одном кандидате с прежним кодом документы находятся через MCP; при передаче canonical AST IDs получены три явные связи references на классы. Кандидат не опубликован в current pointer; следующий код остаётся рабочим code-only guide. Headless semantic CLI требует отдельного backend, но его настройка исключена из TASK-0031; TASK-0032 — только будущий автономный сценарий. См. [короткий отчёт](../reports/2026-09-18-single-project-knowledge-graph-v1.md).
+
+Временный единый PoC-граф: `.tmp/graphify-host-poc-0031/graphify-out/graph.json`. Результаты реальных MCP-запросов и проверок находятся рядом в `query-results.json` и `poc-result.json`. Это JSON-кандидат, не отдельный documentation graph и не обновлённая production версия. HTML viewer не создан. Документы корпуса скопированы перед актуализацией контрактов; кандидату нельзя приписывать freshness текущего проекта.
+
+Целевые `refresh_code_graph()` (AST) и `refresh_document_graph()` (host semantic) пока не экспортируются сервисом. Не вызывайте их как существующий API и не подменяйте current.json вручную. Следующий срез — admission host-result и раздельная freshness единого графа; автоматическая регистрация `/graphify` в host также не выполнена. Рабочие планы, отчёты, tasks, runs, scratch и архивы не включаются в долговечный corpus.
+
 Выберите отдельный interpreter с graphifyy[mcp]==0.9.63 и разрешённый code corpus. Установку во внешнем проекте подтверждайте отдельно; service ничего не устанавливает. Self-hosted проект использует уже созданную `.tmp/graphify-0.9.63-venv/`, не глобальный Graphify и не .venv Task Manager. [Dependency snapshot](../../requirements/graphify-probe-windows-py312.txt) предназначен для Windows/Python 3.12.
 
 Из корня этого репозитория:
@@ -29,6 +35,30 @@ assert any(c["path"] == "orchestrator/agent_preparation.py" for c in answer.cita
 print(answer.content)
 print(answer.limitations)
 ```
+
+Для pre-commit проверки изменений исходников используйте incremental gate:
+
+```python
+result = service.precommit_refresh()
+assert result.status in {"indexed", "not_required"}, result.error
+assert result.mode in {"incremental", "full-rebuild-fallback"}
+print(result.details)  # added/changed/deleted/renamed или fallback diagnostics
+```
+
+`indexed + mode=incremental` означает, что Graphify обновил только затронутые code sources. `not_required` означает, что разрешённый corpus не изменился. Совместимый service-вызов может вернуть `full-rebuild-fallback` для legacy index, но `KnowledgeRefreshNode` использует `allow_full_fallback=False` и возвращает `fallback_required`; full refresh выполняется только отдельным node request с `authorization=required` и подтверждением либо trusted `automatic`. Ошибка запрещает commit gate; старый current graph при этом сохраняется.
+
+Для Workflow Graph используйте reusable node:
+
+```python
+from orchestrator import KnowledgeRefreshNode, KnowledgeRefreshPolicy, KnowledgeRefreshRequest
+
+node = KnowledgeRefreshNode(knowledge_service, next_node="commit_authorization")
+result = node.execute(KnowledgeRefreshRequest(
+    policy=KnowledgeRefreshPolicy(mode="auto", authorization="required", purpose="pre_commit")))
+assert result.data["result"]["commit_allowed"] in {True, False}
+```
+
+`full + authorization=required` возвращает `awaiting_confirmation` и `WaitState`; после Graph Runtime `resume_wait` вызывающий агент передаёт подтверждение и `explicit_decision_ref`. `full + authorization=automatic` допустим только для trusted node, объявленной в graph configuration. Runtime-agent не меняет authorization во время выполнения.
 
 Используйте Python, умеющий импортировать корневой orchestrator; provider interpreter выбирается отдельно. Во внешнем проекте замените оба пути и include_roots. Граф/index хранятся в `.orchestrator/artifacts/`, pointer/lock/staging — в `.orchestrator/knowledge/`; это локальные данные, не Git-материалы.
 

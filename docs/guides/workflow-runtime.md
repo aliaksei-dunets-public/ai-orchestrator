@@ -1,89 +1,22 @@
-# Пользовательский гайд Workflow Runtime v1
+# Миграция с callback GraphRuntime
 
-> **Совместимость от 2026-09-17:** это гайд сохранённого callback runtime. Для нового явного Python пути используйте [guide AgentGraphRuntime](agent-runtime.md): submit_result и отдельный resume_wait без executor. Приведённый ниже код остаётся legacy API, не рекомендуемым новым Python controller; агентская сквозная подготовка и persistence ещё не реализованы.
+**Статус:** действующая инструкция миграции TASK-0034, 2026-09-18. Старые GraphRuntime и `orchestrator.workflow_runtime` удалены; прежние callback-примеры больше не поддерживаются. Alias на агентский класс отсутствует.
 
-**Статус:** действующий guide минимального in-memory runtime, 2026-09-17.
+Используйте [AgentGraphRuntime](agent-runtime.md) для процесса, [AgentPreparation](agent-preparation.md) для подготовки задачи и [AgentExecution](agent-execution.md) для исполнения после ready/preflight/claim.
 
-## Назначение
+| Прежний вызов | Агентский путь |
+| --- | --- |
+| GraphRuntime.create_run | AgentGraphRuntime.create_run; task-bound run также требует task_definition_version |
+| step(run_id, executor) | Агент читает available_actions, выполняет работу и вызывает submit_result с expected_revision/definition |
+| resume(run_id, answer, executor) | resume_wait с точными версиями/wait_id/node_id и answer; затем отдельная работа и submit_result |
+| resume_blocked(..., answer=...) | resume_wait с resolution без answer, после фактического устранения причины |
+| cancel(run_id, reason) | cancel с expected_revision/definition; reason сохраняется в history |
+| PreparationWorkflow с adapters | AgentPreparation с явными semantic envelopes; adapters/step отсутствуют |
 
-`GraphRuntime` выполняет один неизменяемый граф для одного агента в одной real-time сессии. Он принимает результат текущего узла, проверяет его и выбирает переход из объявления графа. Runtime не запускает модель самостоятельно и не является планировщиком фоновых workers.
+Graph, Node, NodeResult, WaitState, WorkflowRun, RuntimeError и validate_node_result остаются публичными из `orchestrator`; внутренние импорты переводятся на `orchestrator.runtime_contracts`. Общая модель WorkflowRun не исполняет callbacks и не хранит второй снимок процесса.
 
-## Минимальный запуск
+Новое blocked требует явного blocker WaitState и конкретной reason; runtime не синтезирует причину. Данные agent API должны быть JSON без NaN/Infinity, cycles, tuples и преобразования ключей. Учитывайте вопросы и итоговые outputs в max_results/node_limits: resume не сбрасывает исчерпанный бюджет. Принятый response хранится в resumed_wait и history; rejected result его не стирает.
 
-```python
-from orchestrator import Graph, GraphRuntime, Node, NodeResult
+После конфликта перечитайте процесс и карточку задачи, сопоставьте history и эффекты, затем решите, безопасен ли новый action. Success процесса не означает completed задачи. Cancel не останавливает сторонний tool, не откатывает файлы и не отменяет карточку Task Manager. Межсессионного восстановления нет.
 
-graph = Graph(
-    graph_id="demo-v1",
-    version=1,
-    entry_node="collect",
-    nodes={
-        "collect": Node(
-            "collect", "request/v1", "result/v1",
-            ("success",), {"success": "succeeded"},
-        ),
-    },
-)
-
-runtime = GraphRuntime()
-run = runtime.create_run(graph, {"request": "Собери данные"})
-result = runtime.step(
-    run.run_id,
-    lambda node, inputs, current: NodeResult(
-        node.node_id, "success", data={"answer": "готово"}
-    ),
-)
-
-assert result.outcome == "success"
-assert runtime.inspect_run(run.run_id).state == "succeeded"
-```
-
-Один вызов `step` выполняет не более одного узла. Следующий узел обрабатывается следующим вызовом. `inspect_run` возвращает независимый снимок и не даёт внешнему коду изменить внутреннее состояние запуска.
-
-## Пауза и продолжение
-
-Узел может вернуть `WaitState` или `NodeResult(outcome="needs_input", wait=...)`. Runtime сохранит вопрос и переведёт запуск в `waiting_input`:
-
-```python
-from orchestrator import NodeResult, WaitState
-
-wait = runtime.step(
-    run.run_id,
-    lambda node, inputs, current: NodeResult(
-        node.node_id,
-        "needs_input",
-        wait=WaitState("WAIT-1", node.node_id, "user_input", question="Продолжить?"),
-    ),
-)
-
-result = runtime.resume(
-    run.run_id,
-    {"confirmed": True},
-    lambda node, inputs, current: NodeResult(
-        node.node_id, "success", data={"answer": current.wait.answer}
-    ),
-    wait_id=wait.wait_id,
-    node_id=wait.node_id,
-)
-```
-
-Невалидный результат не уничтожает актуальное ожидание: после исправления executor можно безопасно вызвать повторно. Ответ с устаревшим `wait_id` или чужим `node_id` отклоняется структурированной ошибкой.
-
-## Блокировка и отмена
-
-`outcome="blocked"` останавливает запуск и сохраняет `WaitState(kind="blocker")`. После устранения внешней причины тот же узел продолжается через `resume_blocked(run_id, executor, wait_id=..., node_id=...)`. Простые `step` и `resume` заблокированный запуск не обходят.
-
-`cancel(run_id, reason)` переводит незавершённый запуск в `cancelled`. Уже выполненные внешние побочные эффекты он не откатывает.
-
-## Состояние и границы
-
-- состояние запуска хранится только в памяти текущего `GraphRuntime`;
-- Graph Runtime не создаёт SQLite, не пишет Task Manager и не содержит Executor Loop;
-- `task_ref` — ссылка на задачу, а не копия её состояния;
-- Task Manager изменяется только через публичный `TaskManagerService`/MCP/CLI с актуальной `expected_version`;
-- [Preparation Workflow](preparation-workflow.md) отдельно связывает `run_ref` и статусы подготовки; claim и исполнение не входят в этот адаптер;
-- многосессионность, checkpoints и автоматическое восстановление относятся к будущим этапам; Artifact Repository v1 уже доступен как независимый слой хранения и пока не связан с runtime автоматически.
-
-## Проверка
-
-Предметные тесты находятся в `tests/test_workflow_runtime.py`. Полный запуск проекта дополнительно включает тесты Task Manager и Onboarding. Отчёт результатов: [TASK-0004](../reports/2026-09-17-workflow-runtime-verification.md).
+Проверки: `python -m unittest tests.test_runtime_contracts tests.test_agent_runtime tests.test_agent_preparation`. [Отчёт удаления](../reports/2026-09-18-task-0034-callback-removal.md).

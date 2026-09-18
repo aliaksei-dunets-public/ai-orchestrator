@@ -4,7 +4,7 @@
 
 ## Выбор пути
 
-Для нового agent-driven процесса используйте `AgentGraphRuntime`. Существующие `GraphRuntime`/`PreparationWorkflow` работают отдельно в режиме legacy callbacks. Не передавайте один run_id между разными экземплярами/runtime и не переключайте путь скрыто после ошибки.
+Используйте `AgentGraphRuntime` — единственный поддерживаемый runtime. Callback GraphRuntime/PreparationWorkflow удалены в TASK-0034; [инструкция миграции](workflow-runtime.md). Не передавайте один run_id между разными экземплярами/runtime и не переключайте путь скрыто после ошибки.
 
 Нужен корневой исходный пакет `orchestrator` и уже установленный Task Manager (корневой facade импортирует существующие компоненты). В текущем репозитории пример работает из корня в `.venv`. Никаких Graphify зависимостей или настроек хоста для него не требуется.
 
@@ -48,7 +48,7 @@ assert [event["action"] for event in run.history] == ["submit_result", "resume_w
 
 Перед create прочитайте карточку Task Manager публичным API. Передайте task_ref=id и task_definition_version=definition_version. Перед каждым submit/resume/cancel перечитайте карточку и передайте её текущую definition_version и revision из inspect_run. task.version используется отдельно для мутаций Task Manager.
 
-Если definition изменилось, runtime вернёт stale_definition: новая подготовка/новый run, а не echo старой версии ради обхода. Runtime не проверяет базу самостоятельно. Lifecycle задачи остаётся отдельным: подготовка реально создаёт artifacts, plan/review/package и вызывает существующий mark_ready; исполнение требует claim. Сам process success не меняет задачу. Связывание новой подготовки ещё не реализовано; текущий PreparationWorkflow остаётся legacy.
+Если definition изменилось, runtime вернёт stale_definition: новая подготовка/новый run, а не echo старой версии ради обхода. Runtime не проверяет базу самостоятельно. Lifecycle задачи остаётся отдельным: подготовка реально создаёт artifacts, plan/review/package и вызывает существующий mark_ready; исполнение требует claim. Сам process success не меняет задачу. Связывание подготовки реализовано в [AgentPreparation](agent-preparation.md), а preflight/claim и work units — в [AgentExecution](agent-execution.md). Полные execution gates остаются следующим срезом.
 
 ## Отказ и возобновление
 

@@ -2,7 +2,7 @@
 
 > **Новое распределение ответственности:** [Orchestrator Agent](agent-centric-orchestration.md) выбирает маршрут, Graph Runtime хранит process state. Task Manager с SQLite не изменяется. [Knowledge Service](project-knowledge-service.md) хранит immutable graph/index в Artifact Repository и current pointer отдельно; это не хранилище задач и не checkpoint. Durable process store пока не реализован.
 
-**Статус:** согласованная архитектурная граница, актуализирована 2026-09-17. Хранилище задач, core in-memory Graph Runtime и Artifact Repository v1 реализованы. Минимальный интеграционный [Preparation Workflow](preparation-workflow.md) принят пользователем в TASK-0015 (completed, version 18).
+**Статус:** согласованная архитектурная граница, актуализирована 2026-09-18 после удаления callback-пути TASK-0034. Хранилище задач, core in-memory Graph Runtime и Artifact Repository v1 реализованы. Подготовка реализована в [AgentPreparation](agent-preparation.md); прежний callback PreparationWorkflow удалён.
 
 ## Владельцы данных
 
@@ -11,12 +11,11 @@
 | Снимок задачи, события, версии, claim, блокеры, решения пользователя | Task Manager Service | `.orchestrator/state/tasks.sqlite3` | Нет |
 | Тело артефакта, роль, версия и SHA-256 | Artifact Repository v1 | `.orchestrator/artifacts/<ref>/<role>/<version>/` | Нет, локальное runtime-хранилище |
 | Plan и каноническое определение задачи | Task Manager + проектные документы | `.orchestrator/tasks/TASK-xxxx/plan.md` и ссылка/хеш в карточке | Документ можно версионировать |
-| Состояние запуска, текущий узел и маршрутизация | Graph Runtime v1 | В памяти текущей сессии одного агента | Не применимо |
-| Состояние явного агентского запуска, revision, response и history | AgentGraphRuntime v1 | В памяти отдельного выбранного agent-driven runtime; не второй снимок legacy run | Не применимо |
+| Текущий узел, results, revision, response и history агентского запуска | AgentGraphRuntime v1 | В памяти единственного AgentGraphRuntime | Не применимо |
 | Execution checkpoint, completed units и pending/unknown effect cursor | AgentExecution | В памяти сессии; immutable preflight/results отдельно в Artifact Repository | Не применимо |
 | Будущие контрольные точки и рабочие материалы запуска | Будущий Graph Runtime | `.orchestrator/runs/` — пространство для расширения, не обязательное хранилище v1 | Политика будет определена при реализации сохранения |
 | Profile и Context проекта | Onboarding | `.orchestrator/project.json`, `project-context.md` | Да |
-| Code graph, indexed snapshot, provider identity/coverage | ProjectKnowledgeService + Artifact Repository | `.orchestrator/artifacts/project-knowledge/` | Нет |
+| Project Knowledge Graph (код + отобранная долговечная документация), indexed snapshot, provider identity/coverage | ProjectKnowledgeService + Artifact Repository | `.orchestrator/artifacts/project-knowledge/` | Нет |
 | Current knowledge pointer, writer lock, temporary build | ProjectKnowledgeService | `.orchestrator/knowledge/` | Нет |
 
 SQLite — единственный источник истины о состоянии задачи. `task.yaml` и `events.jsonl` не являются активным контрактом хранения. Git-версия документа не заменяет версию задачи и её событий. Внешние трекеры могут быть только проекциями.
@@ -49,4 +48,4 @@ TASK-0028 добавляет [AgentGraphRuntime](agent-runtime-contract.md) с e
 
 Этот документ заменяет предложения о файловом каноническом состоянии задач в импортированных материалах `docs/graph/` и `docs/development/`. Их процессные идеи остаются материалом для дальнейшего согласования, но примеры `task.yaml`, `events.jsonl` и `FilesystemTaskRepository` не должны использоваться для новой реализации.
 
-TASK-0015 связывает подготовительные runtime results, immutable payload и публичные Task Manager transitions до реального `mark_ready`. Общей транзакции этих владельцев нет: pending sync запрещает следующий шаг; восстановление после обычной ошибки явно выполняет caller. Execution gates, автоматическое восстановление между сессиями и checkpoints пока не реализованы.
+AgentPreparation связывает подготовительные runtime results, immutable payload и публичные Task Manager transitions до реального `mark_ready`. Общей транзакции этих владельцев нет: pending sync запрещает следующий шаг; восстановление после обычной ошибки явно выполняет caller. Execution gates, автоматическое восстановление между сессиями и checkpoints пока не реализованы.

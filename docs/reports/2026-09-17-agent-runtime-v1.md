@@ -18,7 +18,7 @@
 ## Изменения кода
 
 - [agent_runtime.py](../../orchestrator/agent_runtime.py): AgentWorkflowRun и AgentGraphRuntime; create/inspect/available_actions/submit_result/resume_wait/cancel.
-- [workflow_runtime.py](../../orchestrator/workflow_runtime.py): общая публичная структурная проверка validate_node_result вместо копирования validation logic; legacy валидные сценарии сохранены.
+- [workflow_runtime.py (исторический файл; миграция)](../guides/workflow-runtime.md): общая публичная структурная проверка validate_node_result вместо копирования validation logic; legacy валидные сценарии сохранены.
 - [Публичные импорты](../../orchestrator/__init__.py): экспорт нового runtime, снимка и validator.
 - [Предметные tests](../../tests/test_agent_runtime.py): 19 новых tests с positive/negative cases и integration с реальным публичным Task Manager во временном проекте.
 

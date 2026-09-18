@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -131,6 +132,89 @@ class AgentPreparationTests(unittest.TestCase):
         self.resume(resolution="Access granted")
         self.assertEqual(self.snapshot()["run"]["resumed_wait"]["resolution"], "Access granted")
         self.assertEqual(self.finish()["task"]["blockers"][0]["status"], "resolved")
+
+    def test_invalid_plan_constraints_dependencies_and_validation_do_not_publish(self):
+        self.reach("planning")
+        before = self.snapshot()
+        variants = [self.raw("planning") for _ in range(4)]
+        variants[0]["payload"]["global_constraints"] = []
+        variants[1]["payload"]["work_units"][0]["depends_on"] = ["WU-1"]
+        variants[2]["payload"]["work_units"][0]["validation"] = []
+        variants[3]["payload"]["work_units"][0]["depends_on"] = ["missing"]
+        for raw in variants:
+            with self.subTest(raw=raw), self.assertRaises(PreparationError):
+                self.submit(raw)
+            self.assertEqual(before, self.snapshot())
+        self.assertNotIn("plan", before["task"]["artifacts"])
+
+    def test_review_coverage_binding_and_malformed_findings_do_not_publish(self):
+        self.reach("plan_review")
+        before = self.snapshot()
+        variants = [self.raw("plan_review") for _ in range(7)]
+        variants[0]["payload"]["approved_binding"]["definition_version"] = True
+        variants[1]["payload"]["criterion_ids"] = ["AC-unknown"]
+        variants[2]["payload"]["findings"] = [{"summary": "Invalid", "severity": "unknown"}]
+        variants[3]["payload"]["findings"] = [{"summary": "Invalid", "severity": []}]
+        variants[4]["payload"]["findings"] = [{"summary": "Critical", "severity": "critical", "status": "open", "evidence_refs": ["src/api.py"]}]
+        variants[5]["payload"]["findings"] = [{"summary": "Missing evidence", "severity": "major"}]
+        variants[6]["route"] = "ready"
+        for raw in variants:
+            with self.subTest(raw=raw), self.assertRaises(PreparationError):
+                self.submit(raw)
+            self.assertEqual(before, self.snapshot())
+        self.assertNotIn("plan_review", before["task"]["artifacts"])
+
+    def test_wait_is_supported_at_each_semantic_stage_and_gate(self):
+        for stage in ("context", "analysis", "planning", "plan_review", "package", "ready"):
+            with self.subTest(stage=stage):
+                self.task = self.service.create_task(title="Wait", task_type="implementation", objective="Wait",
+                    original_request="Wait", acceptance_criteria=["Pass"], constraints=["Keep API"])
+                self.run = self.flow.start(self.task["id"], expected_task_version=self.task["version"], prepared_source_revision="src")
+                self.rid = self.run.run_id
+                self.reach(stage)
+                previous = self.snapshot()["run"]["results"]
+                self.submit({"outcome": "needs_input", "question": "Clarify"})
+                self.assertEqual(self.snapshot()["task"]["status"], "awaiting_input")
+                self.resume(answer="confirmed")
+                resumed = self.snapshot()
+                with self.assertRaises(PreparationError):
+                    self.submit({"outcome": "unknown"})
+                self.assertEqual(resumed, self.snapshot())
+                self.assertEqual(resumed["run"]["resumed_wait"]["answer"], "confirmed")
+                self.assertEqual(resumed["run"]["current_node"], stage)
+                for earlier, result in previous.items():
+                    if earlier != stage:
+                        self.assertEqual(resumed["run"]["results"][earlier], result)
+                self.assertEqual(self.finish()["task"]["status"], "ready")
+
+    def test_projection_io_failure_retries_sync_without_another_submit(self):
+        self.reach("planning")
+        original = os.replace
+        def fail_projection(source, target):
+            if Path(target).name == "plan.md":
+                raise PermissionError("injected projection failure")
+            return original(source, target)
+        with patch("orchestrator.preparation_primitives.os.replace", side_effect=fail_projection):
+            with self.assertRaises(PreparationError) as error:
+                self.submit(self.raw("planning"))
+        self.assertEqual(error.exception.code, "repository_failure")
+        accepted = self.snapshot()
+        self.assertTrue(accepted["sync_pending"])
+        self.assertNotIn("plan", accepted["task"]["artifacts"])
+        self.flow.synchronize(self.rid)
+        self.assertEqual(accepted["run"], self.snapshot()["run"])
+        self.assertEqual(self.finish()["task"]["status"], "ready")
+
+    def test_external_blocker_is_not_adopted_as_owned_preparation(self):
+        task = self.service.get_task(self.task["id"])
+        blocked = self.service.add_blocker(task["id"], task["version"], blocker_type="external", summary="Stop")
+        with self.assertRaises(PreparationError):
+            self.submit(self.raw("context"))
+        self.flow.reconcile(self.rid, expected_version=blocked["version"])
+        with self.assertRaises(PreparationError) as error:
+            self.submit(self.raw("context"))
+        self.assertEqual(error.exception.code, "invalid_state")
+        self.assertEqual(self.service.get_task(task["id"]), blocked)
 
     def test_review_revisions_binding_and_limits(self):
         self.reach("plan_review")

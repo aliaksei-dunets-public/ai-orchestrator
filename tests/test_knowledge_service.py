@@ -32,6 +32,20 @@ class FakeProvider:
                 manifest[rel]={"ast_hash":hashlib.md5(path.read_bytes(),usedforsecurity=False).hexdigest()}
         return json.dumps({"nodes":nodes,"edges":[]}).encode(),manifest
 
+    def incremental_update(self,corpus,*,base_graph,base_manifest):
+        self.calls.append(("incremental",corpus,base_manifest))
+        # The real provider delegates merge/pruning to graphify update; this
+        # fake keeps the service tests deterministic while exercising the same
+        # validated output boundary.
+        nodes=[]
+        manifest={}
+        for path in sorted(corpus.rglob("*")):
+            if path.is_file() and "graphify-out" not in path.relative_to(corpus).parts:
+                rel=path.relative_to(corpus).as_posix()
+                nodes.append({"id":rel,"label":path.stem,"source_file":rel})
+                manifest[rel]={"ast_hash":hashlib.md5(path.read_bytes(),usedforsecurity=False).hexdigest()}
+        return json.dumps({"nodes":nodes,"edges":[]}).encode(),manifest
+
     def query(self,graph_path,cwd,**kwargs):
         self.calls.append((graph_path,cwd,kwargs))
         return "NODE entry [src=entry.py loc=L1 community=]\nEDGE entry --calls [EXTRACTED]--> helper\n"
@@ -78,6 +92,63 @@ class KnowledgeServiceTests(unittest.TestCase):
         (self.root/"renamed.py").unlink()
         self.assertEqual(self.service.refresh().status,"indexed")
         self.assertEqual(self.service.status().state,"fresh")
+
+    def test_incremental_refresh_tracks_changes_and_noop(self):
+        self.assertEqual(self.service.refresh().mode, "full-rebuild")
+        calls_before = len(self.provider.calls)
+        self.assertEqual(self.service.refresh_incremental().status, "not_required")
+        self.assertEqual(len(self.provider.calls), calls_before)
+        (self.root/"entry.py").write_text("def changed(): return 2\n",encoding="utf-8")
+        (self.root/"added.py").write_text("def added(): return 3\n",encoding="utf-8")
+        result = self.service.refresh_incremental()
+        self.assertEqual(result.status, "indexed", result.error)
+        self.assertEqual(result.mode, "incremental")
+        self.assertEqual(result.details["changed"], ["entry.py"])
+        self.assertEqual(result.details["added"], ["added.py"])
+        self.assertEqual(result.details["deleted"], [])
+        self.assertEqual(self.service.status().state, "fresh")
+        self.assertEqual(self.service._load()["mode"], "incremental")
+
+    def test_incremental_failure_preserves_current_pointer(self):
+        self.service.refresh()
+        before = self.service.pointer.read_bytes()
+        (self.root/"entry.py").write_text("changed=1\n",encoding="utf-8")
+        with patch.object(self.provider, "incremental_update", side_effect=KnowledgeError("provider_timeout", "down")):
+            result = self.service.refresh_incremental()
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.mode, "incremental")
+        self.assertEqual(self.service.pointer.read_bytes(), before)
+        self.assertEqual(self.service.status().state, "stale")
+
+    def test_incremental_legacy_manifest_uses_explicit_full_fallback(self):
+        self.service.refresh()
+        legacy = dict(self.service._load())
+        legacy.pop("manifest")
+        with patch.object(self.service, "_load", return_value=legacy), patch.object(
+            self.service, "refresh", return_value=type("Result", (), {"mode": "full-rebuild-fallback"})()
+        ) as full:
+            result = self.service.refresh_incremental()
+        self.assertEqual(result.mode, "full-rebuild-fallback")
+        full.assert_called_once_with(_mode="full-rebuild-fallback", _fallback_reason="manifest_missing")
+
+    def test_incremental_strict_mode_surfaces_fallback_without_full_refresh(self):
+        self.service.refresh()
+        legacy = dict(self.service._load())
+        legacy.pop("manifest")
+        with patch.object(self.service, "_load", return_value=legacy), patch.object(self.service, "refresh") as full:
+            result = self.service.refresh_incremental(allow_full_fallback=False)
+        self.assertEqual(result.status, "fallback_required")
+        self.assertEqual(result.mode, "incremental")
+        self.assertEqual(result.details["reason"], "manifest_missing")
+        full.assert_not_called()
+
+    def test_precommit_gate_is_incremental_and_does_not_commit(self):
+        self.service.refresh()
+        before = self.service.pointer.read_bytes()
+        result = self.service.precommit_refresh()
+        self.assertEqual(result.status, "not_required")
+        self.assertEqual(result.mode, "incremental")
+        self.assertEqual(self.service.pointer.read_bytes(), before)
 
     def test_code_only_exclusions_and_policy_digest(self):
         for directory in ("obsolete",".venv",".tmp","node_modules","graphify-out","secrets"):
@@ -294,6 +365,35 @@ class KnowledgeTransportTests(unittest.TestCase):
         self.assertEqual(error.exception.code,"provider_version_mismatch")
 
 
+class ManifestCompatibilityTests(unittest.TestCase):
+    def test_documents_require_semantic_manifest_hash_and_graph_evidence(self):
+        from orchestrator.knowledge_contracts import SourceFile, SourceSnapshot
+        content = b"# Durable architecture\n"
+        path = "docs/architecture/knowledge.md"
+        snapshot = SourceSnapshot("0" * 64, "0" * 64,
+                                  (SourceFile(path, hashlib.sha256(content).hexdigest(), len(content)),), len(content))
+        md5 = {path: hashlib.md5(content, usedforsecurity=False).hexdigest()}
+        graph = json.dumps({"nodes": [{"id": "doc", "source_file": path}], "edges": []}).encode()
+        _, coverage = ProjectKnowledgeService._validate_graph(
+            graph, {path: {"ast_hash": "", "semantic_hash": md5[path]}}, snapshot, {path}, md5)
+        self.assertEqual(coverage["represented_files"], 1)
+        for manifest in ({path: {"ast_hash": md5[path]}}, {path: {"semantic_hash": "wrong"}}):
+            with self.assertRaises(KnowledgeError) as error:
+                ProjectKnowledgeService._validate_graph(graph, manifest, snapshot, {path}, md5)
+            self.assertEqual(error.exception.code, "incomplete_extraction")
+        with self.assertRaises(KnowledgeError):
+            ProjectKnowledgeService._validate_graph(b'{"nodes":[],"edges":[]}',
+                {path: {"semantic_hash": md5[path]}}, snapshot, {path}, md5)
+
+    def test_operational_sources_excluded_without_enabling_documents(self):
+        from orchestrator.knowledge_snapshot import allowed_durable_path
+        self.assertFalse(allowed_durable_path(Path("docs/plans/draft.md")))
+        self.assertFalse(allowed_durable_path(Path("Docs/Reports/intermediate.py")))
+        self.assertTrue(allowed_durable_path(Path("docs/architecture/knowledge.md")))
+        self.assertNotIn(".md", CorpusPolicy().extensions)
+        self.assertEqual(CorpusPolicy().version, "code-corpus/v1")
+
+
 class RealGraphifyIntegrationTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("ORCHESTRATOR_GRAPHIFY_PYTHON"),"explicit pinned Graphify interpreter required")
     def test_real_staging_refresh_mcp_unicode_frontend_rename_delete(self):
@@ -314,8 +414,15 @@ class RealGraphifyIntegrationTests(unittest.TestCase):
             (root/"модуль.py").rename(root/"renamed.py")
             (root/"Panel.vue").unlink()
             self.assertEqual(service.status().state,"stale")
-            self.assertEqual(service.refresh().status,"indexed")
+            before_update = json.loads(service.repository.get("project-knowledge", "graph", service.status().graph["version"], max_bytes=GraphifyProvider.max_graph_bytes).content)
+            self.assertEqual(service.refresh_incremental().status,"indexed")
+            self.assertEqual(service._load()["mode"], "incremental")
             self.assertEqual(ProjectKnowledgeService(root,service.provider).status().state,"fresh")
+            after_update = json.loads(service.repository.get("project-knowledge", "graph", service.status().graph["version"], max_bytes=GraphifyProvider.max_graph_bytes).content)
+            before_helper = {node["id"] for node in before_update["nodes"] if node.get("source_file") == "helper.py"}
+            after_helper = {node["id"] for node in after_update["nodes"] if node.get("source_file") == "helper.py"}
+            self.assertTrue(before_helper)
+            self.assertTrue(before_helper.issubset(after_helper))
             q=service.query("entry helper")
             self.assertEqual(q.status,"ok",q.error)
             self.assertNotIn("модуль.py",q.content)

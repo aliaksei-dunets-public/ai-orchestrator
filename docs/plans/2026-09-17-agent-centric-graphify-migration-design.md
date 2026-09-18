@@ -1,6 +1,6 @@
 # Проект миграции к Orchestrator Agent и Graphify
 
-**Статус:** дизайн поэтапной миграции подтверждён пользователем сообщением «Подтверждаю» 2026-09-17. Базовое агент-центричное направление и неизменность Task Manager подтверждены. Это не свидетельство готовности нового runtime; предметные implementation plans создаются для каждого среза.
+**Статус:** исторический baseline поэтапной миграции, подтверждённый пользователем 2026-09-17. Базовое агент-центричное направление и неизменность Task Manager остаются действующими. Graphify code-only этап и связанные ограничения ниже superseded уточнением TASK-0031: для документов выбран host-agent Graphify skill и один Project Knowledge Graph. Нормативный Graphify-контракт — [Project Knowledge Service](../architecture/project-knowledge-service.md), host-agent design и [PoC-отчёт](../reports/2026-09-18-single-project-knowledge-graph-v1.md). Это не свидетельство готовности нового runtime.
 
 **Задача:** TASK-0027. **Дата:** 2026-09-17.
 

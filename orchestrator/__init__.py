@@ -3,17 +3,18 @@
 from .request_flow import RequestFlow, RequestFlowResult
 from .request_router import RequestRouter, RoutingError, RoutingResult
 from .task_creator import TaskCreationResult, TaskCreator
-from .workflow_runtime import Graph, GraphRuntime, Node, NodeResult, RuntimeError, WaitState, WorkflowRun
+from .runtime_contracts import Graph, Node, NodeResult, RuntimeError, WaitState, WorkflowRun
 from .artifact_repository import ArtifactError, ArtifactRecord, ArtifactRepository, StoredArtifact
-from .preparation_workflow import PreparationError, PreparationWorkflow
+from .preparation_primitives import PreparationError
 from .agent_runtime import AgentGraphRuntime, AgentWorkflowRun
 from .agent_preparation import AgentPreparation
 from .agent_execution import AgentExecution
 from .execution_preflight import ExecutionPreflight, ExecutionError
 from .graphify_provider import GraphifyProvider
 from .knowledge_service import ProjectKnowledgeService
+from .knowledge_refresh_node import KnowledgeRefreshNode, KnowledgeRefreshPolicy, KnowledgeRefreshRequest, knowledge_refresh_graph
 from .knowledge_contracts import CorpusPolicy, SourceSnapshot, ProviderIdentity, ProviderCapabilities, GraphStatus, KnowledgeQueryResult, KnowledgeRefreshResult, KnowledgeError
-from .workflow_runtime import validate_node_result
+from .runtime_contracts import validate_node_result
 
 __all__ = [
     "RequestFlow",
@@ -24,7 +25,6 @@ __all__ = [
     "TaskCreationResult",
     "TaskCreator",
     "Graph",
-    "GraphRuntime",
     "Node",
     "NodeResult",
     "RuntimeError",
@@ -35,7 +35,6 @@ __all__ = [
     "ArtifactRepository",
     "StoredArtifact",
     "PreparationError",
-    "PreparationWorkflow",
     "AgentGraphRuntime",
     "AgentPreparation",
     "AgentExecution",
@@ -43,6 +42,10 @@ __all__ = [
     "ExecutionError",
     "GraphifyProvider",
     "ProjectKnowledgeService",
+    "KnowledgeRefreshNode",
+    "KnowledgeRefreshPolicy",
+    "KnowledgeRefreshRequest",
+    "knowledge_refresh_graph",
     "CorpusPolicy",
     "SourceSnapshot",
     "ProviderIdentity",

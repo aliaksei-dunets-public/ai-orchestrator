@@ -2,6 +2,11 @@
 
 **Статус:** навигационный реестр, не доказательство реализации. С 2026-09-17 приоритет направления задают агент-центричная оркестрация и Project Knowledge Service с Graphify.
 
+- [Разбор аудита Graph Runtime и объём TASK-0034](reports/2026-09-18-graph-runtime-audit-triage.md).
+- [Уточнённый объём TASK-0034: удаление callback GraphRuntime](plans/2026-09-18-remove-callback-runtime-scope.md).
+- [TASK-0034: выполненное удаление и результаты проверок](reports/2026-09-18-task-0034-callback-removal.md).
+- [TASK-0034: данные измерений AgentGraphRuntime](reports/2026-09-18-task-0034-runtime-measurements.json).
+
 - [Агент-центричная оркестрация](architecture/agent-centric-orchestration.md).
 - [Project Knowledge Service](architecture/project-knowledge-service.md).
 - [Проект миграции](plans/2026-09-17-agent-centric-graphify-migration-design.md).
@@ -15,7 +20,13 @@
 - [Self-review плана TASK-0029](plans/2026-09-18-agent-preparation-plan-review.md).
 - [Реальный upstream Graphify probe](reports/2026-09-18-graphify-upstream-probe.md).
 - [Guide знаний проекта](guides/project-knowledge.md).
+- [Host-agent Graphify: подтверждённый дизайн TASK-0031](plans/2026-09-18-graphify-host-agent-design.md).
+- [Единый код/документы граф: PoC TASK-0031](reports/2026-09-18-single-project-knowledge-graph-v1.md).
 - [Реализованный Knowledge Service: отчёт TASK-0030](reports/2026-09-18-project-knowledge-service-v1.md).
+- [Incremental Refresh TASK-0020: plan/review](plans/2026-09-18-task-0020-incremental-refresh-review.md).
+- [Incremental Refresh TASK-0020: результаты v1](reports/2026-09-18-task-0020-incremental-refresh-v1.md).
+- [KnowledgeRefreshNode: согласованный дизайн TASK-0033](plans/2026-09-18-knowledge-refresh-node-design.md).
+- [KnowledgeRefreshNode TASK-0033: результаты v1](reports/2026-09-18-task-0033-knowledge-refresh-node-v1.md).
 - [Self-review плана TASK-0030](plans/2026-09-18-knowledge-service-plan-review.md).
 - [Агентское исполнение — контракт](architecture/agent-execution.md).
 - [Агентское исполнение — guide](guides/agent-execution.md).

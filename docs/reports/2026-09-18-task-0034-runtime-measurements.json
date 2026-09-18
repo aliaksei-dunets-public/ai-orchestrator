@@ -1,0 +1,314 @@
+{
+  "baseline_32k": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "tracemalloc": true,
+    "results": [
+      {
+        "kind": "string",
+        "results": 10,
+        "payload_json_bytes": 32780,
+        "total_seconds": 0.0042,
+        "median_submit_ms": 0.392,
+        "first_submit_ms": 0.369,
+        "last_submit_ms": 0.511,
+        "inspect_ms_without_tracing": 0.062,
+        "retained_mib": 0.344,
+        "peak_mib": 0.39
+      },
+      {
+        "kind": "string",
+        "results": 50,
+        "payload_json_bytes": 32780,
+        "total_seconds": 0.047,
+        "median_submit_ms": 0.933,
+        "first_submit_ms": 0.275,
+        "last_submit_ms": 1.594,
+        "inspect_ms_without_tracing": 0.21,
+        "retained_mib": 1.681,
+        "peak_mib": 1.756
+      },
+      {
+        "kind": "string",
+        "results": 100,
+        "payload_json_bytes": 32780,
+        "total_seconds": 0.1606,
+        "median_submit_ms": 1.603,
+        "first_submit_ms": 0.289,
+        "last_submit_ms": 2.937,
+        "inspect_ms_without_tracing": 0.404,
+        "retained_mib": 3.347,
+        "peak_mib": 3.507
+      },
+      {
+        "kind": "nested_json",
+        "results": 10,
+        "payload_json_bytes": 30620,
+        "total_seconds": 0.1561,
+        "median_submit_ms": 15.087,
+        "first_submit_ms": 5.67,
+        "last_submit_ms": 26.587,
+        "inspect_ms_without_tracing": 2.495,
+        "retained_mib": 1.407,
+        "peak_mib": 2.686
+      },
+      {
+        "kind": "nested_json",
+        "results": 50,
+        "payload_json_bytes": 30620,
+        "total_seconds": 3.5557,
+        "median_submit_ms": 63.151,
+        "first_submit_ms": 5.574,
+        "last_submit_ms": 163.411,
+        "inspect_ms_without_tracing": 16.715,
+        "retained_mib": 6.584,
+        "peak_mib": 12.459
+      },
+      {
+        "kind": "nested_json",
+        "results": 100,
+        "payload_json_bytes": 30620,
+        "total_seconds": 17.5376,
+        "median_submit_ms": 176.359,
+        "first_submit_ms": 8.274,
+        "last_submit_ms": 264.629,
+        "inspect_ms_without_tracing": 24.413,
+        "retained_mib": 13.049,
+        "peak_mib": 24.886
+      }
+    ]
+  },
+  "after_32k": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "tracemalloc": true,
+    "results": [
+      {
+        "kind": "string",
+        "results": 10,
+        "payload_json_bytes": 32780,
+        "total_seconds": 0.0031,
+        "median_submit_ms": 0.302,
+        "first_submit_ms": 0.348,
+        "last_submit_ms": 0.35,
+        "inspect_ms_without_tracing": 0.062,
+        "retained_mib": 0.34,
+        "peak_mib": 0.387
+      },
+      {
+        "kind": "string",
+        "results": 50,
+        "payload_json_bytes": 32780,
+        "total_seconds": 0.0278,
+        "median_submit_ms": 0.544,
+        "first_submit_ms": 0.263,
+        "last_submit_ms": 0.867,
+        "inspect_ms_without_tracing": 0.21,
+        "retained_mib": 1.671,
+        "peak_mib": 1.718
+      },
+      {
+        "kind": "string",
+        "results": 100,
+        "payload_json_bytes": 32780,
+        "total_seconds": 0.0906,
+        "median_submit_ms": 0.919,
+        "first_submit_ms": 0.263,
+        "last_submit_ms": 1.669,
+        "inspect_ms_without_tracing": 0.406,
+        "retained_mib": 3.33,
+        "peak_mib": 3.423
+      },
+      {
+        "kind": "nested_json",
+        "results": 10,
+        "payload_json_bytes": 30620,
+        "total_seconds": 0.1018,
+        "median_submit_ms": 9.841,
+        "first_submit_ms": 5.573,
+        "last_submit_ms": 15.218,
+        "inspect_ms_without_tracing": 2.512,
+        "retained_mib": 1.405,
+        "peak_mib": 2.255
+      },
+      {
+        "kind": "nested_json",
+        "results": 50,
+        "payload_json_bytes": 30620,
+        "total_seconds": 1.7407,
+        "median_submit_ms": 34.994,
+        "first_submit_ms": 5.504,
+        "last_submit_ms": 67.322,
+        "inspect_ms_without_tracing": 11.677,
+        "retained_mib": 6.58,
+        "peak_mib": 10.119
+      },
+      {
+        "kind": "nested_json",
+        "results": 100,
+        "payload_json_bytes": 30620,
+        "total_seconds": 6.6959,
+        "median_submit_ms": 67.48,
+        "first_submit_ms": 5.532,
+        "last_submit_ms": 137.516,
+        "inspect_ms_without_tracing": 24.986,
+        "retained_mib": 13.045,
+        "peak_mib": 20.16
+      }
+    ]
+  },
+  "after_8k": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "tracemalloc": true,
+    "results": [
+      {
+        "kind": "string",
+        "results": 10,
+        "payload_json_bytes": 8204,
+        "total_seconds": 0.0029,
+        "median_submit_ms": 0.286,
+        "first_submit_ms": 0.361,
+        "last_submit_ms": 0.321,
+        "inspect_ms_without_tracing": 0.068,
+        "retained_mib": 0.106,
+        "peak_mib": 0.117
+      },
+      {
+        "kind": "string",
+        "results": 50,
+        "payload_json_bytes": 8204,
+        "total_seconds": 0.0272,
+        "median_submit_ms": 0.535,
+        "first_submit_ms": 0.222,
+        "last_submit_ms": 0.927,
+        "inspect_ms_without_tracing": 0.229,
+        "retained_mib": 0.499,
+        "peak_mib": 0.541
+      },
+      {
+        "kind": "string",
+        "results": 100,
+        "payload_json_bytes": 8204,
+        "total_seconds": 0.0851,
+        "median_submit_ms": 0.851,
+        "first_submit_ms": 0.209,
+        "last_submit_ms": 1.546,
+        "inspect_ms_without_tracing": 0.426,
+        "retained_mib": 0.986,
+        "peak_mib": 1.079
+      },
+      {
+        "kind": "nested_json",
+        "results": 10,
+        "payload_json_bytes": 7616,
+        "total_seconds": 0.0261,
+        "median_submit_ms": 2.606,
+        "first_submit_ms": 1.577,
+        "last_submit_ms": 3.71,
+        "inspect_ms_without_tracing": 0.713,
+        "retained_mib": 0.376,
+        "peak_mib": 0.58
+      },
+      {
+        "kind": "nested_json",
+        "results": 50,
+        "payload_json_bytes": 7616,
+        "total_seconds": 0.4275,
+        "median_submit_ms": 8.802,
+        "first_submit_ms": 1.514,
+        "last_submit_ms": 15.228,
+        "inspect_ms_without_tracing": 3.25,
+        "retained_mib": 1.725,
+        "peak_mib": 2.636
+      },
+      {
+        "kind": "nested_json",
+        "results": 100,
+        "payload_json_bytes": 7616,
+        "total_seconds": 1.5239,
+        "median_submit_ms": 15.008,
+        "first_submit_ms": 1.587,
+        "last_submit_ms": 32.929,
+        "inspect_ms_without_tracing": 7.605,
+        "retained_mib": 3.414,
+        "peak_mib": 5.222
+      }
+    ]
+  },
+  "after_128k": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "tracemalloc": true,
+    "results": [
+      {
+        "kind": "string",
+        "results": 10,
+        "payload_json_bytes": 131084,
+        "total_seconds": 0.0053,
+        "median_submit_ms": 0.517,
+        "first_submit_ms": 0.563,
+        "last_submit_ms": 0.564,
+        "inspect_ms_without_tracing": 0.059,
+        "retained_mib": 1.278,
+        "peak_mib": 1.465
+      },
+      {
+        "kind": "string",
+        "results": 50,
+        "payload_json_bytes": 131084,
+        "total_seconds": 0.0384,
+        "median_submit_ms": 0.762,
+        "first_submit_ms": 0.473,
+        "last_submit_ms": 1.078,
+        "inspect_ms_without_tracing": 0.202,
+        "retained_mib": 6.359,
+        "peak_mib": 6.546
+      },
+      {
+        "kind": "string",
+        "results": 100,
+        "payload_json_bytes": 131084,
+        "total_seconds": 0.1117,
+        "median_submit_ms": 1.122,
+        "first_submit_ms": 0.509,
+        "last_submit_ms": 1.785,
+        "inspect_ms_without_tracing": 0.389,
+        "retained_mib": 12.705,
+        "peak_mib": 12.892
+      },
+      {
+        "kind": "nested_json",
+        "results": 10,
+        "payload_json_bytes": 122804,
+        "total_seconds": 0.4208,
+        "median_submit_ms": 41.237,
+        "first_submit_ms": 21.441,
+        "last_submit_ms": 60.402,
+        "inspect_ms_without_tracing": 9.688,
+        "retained_mib": 5.718,
+        "peak_mib": 9.166
+      },
+      {
+        "kind": "nested_json",
+        "results": 50,
+        "payload_json_bytes": 122804,
+        "total_seconds": 8.736,
+        "median_submit_ms": 139.478,
+        "first_submit_ms": 21.073,
+        "last_submit_ms": 343.753,
+        "inspect_ms_without_tracing": 64.716,
+        "retained_mib": 27.014,
+        "peak_mib": 41.345
+      },
+      {
+        "kind": "nested_json",
+        "results": 100,
+        "payload_json_bytes": 122804,
+        "total_seconds": 43.6333,
+        "median_submit_ms": 406.219,
+        "first_submit_ms": 35.168,
+        "last_submit_ms": 741.22,
+        "inspect_ms_without_tracing": 148.702,
+        "retained_mib": 53.634,
+        "peak_mib": 81.91
+      }
+    ]
+  }
+}

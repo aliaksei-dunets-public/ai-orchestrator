@@ -67,6 +67,8 @@ with tempfile.TemporaryDirectory() as directory:
     print("agent execution guide: ok")
 ```
 
+Для code-only изменений перед `handoff` подключите тот же `ProjectKnowledgeService` через `AgentExecution(..., knowledge_service=knowledge)` и вызовите `precommit_gate` после последнего успешного work unit. `status=success` означает native incremental refresh и fresh graph; `status=degraded` допустим только для проверенного диагностического full-rebuild fallback. При `stale` или `failed` `commit_allowed=false`, поэтому физический commit выполнять нельзя. Facade не вызывает Git и не меняет Task Manager.
+
 Для реальных изменений сохраните request.source_before, выполните unit и проверки, вычислите source_after; changed_files должны отражать всю выбранную code delta. Не вызывайте новый request между partial edits и submit: checkpoint guard обнаружит незарегистрированное изменение. Docs/config не входят в code delta; проверяйте их отдельно и сохраняйте evidence.
 
 При pause подайте needs_input/question либо blocked/reason, затем используйте точные wait_id/node_id и актуальные обе версии в resume_wait. Resume получает новый claim; возвращённый answer/resolution остаётся доступным следующему unit. При истёкшем lease work/renew запрещены, но cleanup собственных ресурсов разрешён.

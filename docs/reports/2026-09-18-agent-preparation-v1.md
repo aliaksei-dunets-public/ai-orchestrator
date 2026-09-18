@@ -23,7 +23,7 @@
 | --- | --- |
 | [agent_preparation.py](../../orchestrator/agent_preparation.py) | Фиксированный root, явные start/request/submit/resume/cancel, версии, pending sync, unknown effect reconciliation, guards перед ready |
 | [preparation_primitives.py](../../orchestrator/preparation_primitives.py) | Выделены общие validators, graph policy, envelopes, artifact publication, projection, pending effects и публичная Task Manager синхронизация |
-| [preparation_workflow.py](../../orchestrator/preparation_workflow.py) | Сохраняет legacy semantic callbacks и прежние сигнатуры, наследует общие deterministic primitives; новый путь его не вызывает |
+| [preparation_workflow.py (исторический файл; миграция)](../guides/workflow-runtime.md) | Сохраняет legacy semantic callbacks и прежние сигнатуры, наследует общие deterministic primitives; новый путь его не вызывает |
 | [Публичные импорты](../../orchestrator/__init__.py) | AgentPreparation доступен из orchestrator |
 | [tests](../../tests/test_agent_preparation.py) | 23 новых предметных теста, включая реальные временные проекты и fault injection |
 | [Контракт](../architecture/agent-preparation.md) / [guide](../guides/agent-preparation.md) | Русские API, инструкции агента, исполняемый пример и ограничения |

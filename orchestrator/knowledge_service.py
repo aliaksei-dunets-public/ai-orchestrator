@@ -9,6 +9,7 @@ import stat
 import tempfile
 import threading
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -91,68 +92,181 @@ class ProjectKnowledgeService:
         except KnowledgeError as exc:
             return GraphStatus("failed",None,None,None,self.provider.identity.to_dict(),exc.as_dict())
 
-    def refresh(self) -> KnowledgeRefreshResult:
+    @contextmanager
+    def _writer_lock(self):
+        checked_path(self.root, self.folder)
+        self.folder.mkdir(parents=True, exist_ok=True)
+        lock_path = checked_path(self.root, self.folder / "refresh.lock")
+        try:
+            handle = lock_path.open("xb")
+        except FileExistsError as exc:
+            raise KnowledgeError("refresh_conflict", "Другой writer или stale lock") from exc
+        except OSError as exc:
+            raise KnowledgeError("repository_failure", "Не удалось создать writer lock") from exc
+        try:
+            with handle:
+                handle.write(str(os.getpid()).encode("ascii"))
+                handle.flush()
+                os.fsync(handle.fileno())
+            yield
+        finally:
+            lock_path.unlink(missing_ok=True)
+
+    def refresh(self, *, _mode: str = "full-rebuild", _fallback_reason: str | None = None) -> KnowledgeRefreshResult:
         with self._lock:
-            checked_path(self.root,self.folder)
-            self.folder.mkdir(parents=True,exist_ok=True)
-            lock_path = checked_path(self.root,self.folder / "refresh.lock")
+            # Keep repository path validation outside the structured provider
+            # failure boundary: a junction/reparse store is a caller/configuration
+            # violation and must remain fail-closed (the legacy contract raises).
+            checked_path(self.root, self.folder)
             try:
-                handle = lock_path.open("xb")
-            except FileExistsError:
-                return KnowledgeRefreshResult("failed",None,None,error=KnowledgeError("refresh_conflict","Другой writer или stale lock").as_dict())
-            except OSError as exc:
-                raise KnowledgeError("repository_failure","Не удалось создать writer lock") from exc
-            try:
-                with handle:
-                    handle.write(str(os.getpid()).encode("ascii"))
-                    handle.flush()
-                    os.fsync(handle.fileno())
+                with self._writer_lock():
                 # Не затираем повреждённый/неизвестный current pointer автоматически.
-                self._load()
-                before = self.snapshot()
-                with tempfile.TemporaryDirectory(prefix="build-",dir=self.folder) as name:
-                    stage = checked_path(self.root,Path(name))
-                    corpus, output = stage / "corpus", stage / "output"
-                    corpus.mkdir()
-                    nonblank = set()
-                    md5 = {}
-                    for source in before.files:
-                        data = source_bytes(self.root,source,self.policy.max_file_bytes)
-                        target = checked_path(self.root,corpus / source.path)
-                        target.parent.mkdir(parents=True,exist_ok=True)
-                        target.write_bytes(data)
-                        if data.strip():
-                            nonblank.add(source.path)
-                        md5[source.path] = hashlib.md5(data,usedforsecurity=False).hexdigest()
-                    content, manifest = self.provider.index(corpus,output)
-                    graph, coverage = self._validate_graph(content,manifest,before,nonblank,md5)
-                    if self.snapshot().digest != before.digest:
-                        raise KnowledgeError("source_drift","Corpus изменился во время индексации")
-                    version = "v" + uuid.uuid4().hex
-                    record = self.repository.put("project-knowledge","graph",version,content,
-                        contract=self.provider.identity.schema,media_type="application/json")
-                    payload = {"contract":"knowledge-index/v1", "provider":self.provider.identity.to_dict(),
-                        "snapshot":before.to_dict(), "policy":self.policy.to_dict(), "graph":record.to_dict(),
-                        "coverage":coverage, "node_count":len(graph["nodes"]), "edge_count":len(graph["edges"]),
-                        "indexed_at":datetime.now(timezone.utc).isoformat(), "mode":"full-rebuild"}
-                    index_content = canonical_json(payload)
-                    if len(index_content) > 2 * 1024 * 1024:
-                        raise KnowledgeError("provider_output_limit","Index превышает 2 MiB")
-                    index = self.repository.put("project-knowledge","index",version,index_content,
-                        contract="knowledge-index/v1",media_type="application/json")
-                    # Ещё одна сверка после publication, до выбора новой current version.
-                    if self.snapshot().digest != before.digest:
-                        raise KnowledgeError("source_drift","Corpus изменился перед current publication")
-                    self._publish_pointer(index.to_dict())
-                    self.last_error = None
-                    return KnowledgeRefreshResult("indexed",before.to_dict(),record.to_dict(),len(graph["nodes"]),len(graph["edges"]))
+                    self._load()
+                    before = self.snapshot()
+                    with tempfile.TemporaryDirectory(prefix="build-",dir=self.folder) as name:
+                        stage = checked_path(self.root,Path(name))
+                        corpus, output = stage / "corpus", stage / "output"
+                        corpus.mkdir()
+                        nonblank = set()
+                        md5 = {}
+                        for source in before.files:
+                            data = source_bytes(self.root,source,self.policy.max_file_bytes)
+                            target = checked_path(self.root,corpus / source.path)
+                            target.parent.mkdir(parents=True,exist_ok=True)
+                            target.write_bytes(data)
+                            if data.strip():
+                                nonblank.add(source.path)
+                            md5[source.path] = hashlib.md5(data,usedforsecurity=False).hexdigest()
+                        content, manifest = self.provider.index(corpus,output)
+                        graph, coverage = self._validate_graph(content,manifest,before,nonblank,md5)
+                        if self.snapshot().digest != before.digest:
+                            raise KnowledgeError("source_drift","Corpus изменился во время индексации")
+                        version = "v" + uuid.uuid4().hex
+                        record = self.repository.put("project-knowledge","graph",version,content,
+                            contract=self.provider.identity.schema,media_type="application/json")
+                        payload = {"contract":"knowledge-index/v1", "provider":self.provider.identity.to_dict(),
+                            "snapshot":before.to_dict(), "policy":self.policy.to_dict(), "graph":record.to_dict(),
+                            "manifest":manifest, "coverage":coverage, "node_count":len(graph["nodes"]), "edge_count":len(graph["edges"]),
+                            "indexed_at":datetime.now(timezone.utc).isoformat(), "mode":_mode}
+                        if _fallback_reason:
+                            payload["fallback_reason"] = _fallback_reason
+                        index_content = canonical_json(payload)
+                        if len(index_content) > 2 * 1024 * 1024:
+                            raise KnowledgeError("provider_output_limit","Index превышает 2 MiB")
+                        index = self.repository.put("project-knowledge","index",version,index_content,
+                            contract="knowledge-index/v1",media_type="application/json")
+                        # Ещё одна сверка после publication, до выбора новой current version.
+                        if self.snapshot().digest != before.digest:
+                            raise KnowledgeError("source_drift","Corpus изменился перед current publication")
+                        self._publish_pointer(index.to_dict())
+                        self.last_error = None
+                        return KnowledgeRefreshResult("indexed",before.to_dict(),record.to_dict(),len(graph["nodes"]),len(graph["edges"]),mode=_mode,details={"fallback_reason":_fallback_reason} if _fallback_reason else None)
             except (KnowledgeError, ArtifactError, OSError) as exc:
                 error = exc.as_dict() if isinstance(exc,KnowledgeError) else KnowledgeError(
                     exc.code if isinstance(exc,ArtifactError) else "repository_failure",str(exc)).as_dict()
                 self.last_error = error
-                return KnowledgeRefreshResult("failed",None,None,error=error)
-            finally:
-                lock_path.unlink(missing_ok=True)
+                return KnowledgeRefreshResult("failed",None,None,error=error,mode=_mode)
+
+    def refresh_incremental(self, *, allow_full_fallback: bool = True) -> KnowledgeRefreshResult:
+        """Refresh changed code sources through Graphify's native update path.
+
+        ``allow_full_fallback`` preserves TASK-0020 compatibility by default,
+        while Workflow Graph nodes can disable it and surface an explicit
+        ``fallback_required`` result instead of silently rebuilding the graph.
+        """
+        if type(allow_full_fallback) is not bool:
+            raise KnowledgeError("validation_failed", "allow_full_fallback должен быть bool")
+        with self._lock:
+            try:
+                indexed = self._load()
+                if indexed is None:
+                    if not allow_full_fallback:
+                        current = self.snapshot()
+                        return KnowledgeRefreshResult("fallback_required", current.to_dict(), None,
+                            error={"code": "fallback_required", "message": "Нет baseline для incremental refresh",
+                                   "details": {"reason": "missing_baseline", "fallback": "full-rebuild"}},
+                            mode="incremental", details={"fallback": "full-rebuild", "reason": "missing_baseline"})
+                    return self.refresh(_mode="full-rebuild-fallback", _fallback_reason="missing_baseline")
+                baseline_manifest = indexed.get("manifest")
+                if not isinstance(baseline_manifest, dict):
+                    if not allow_full_fallback:
+                        current = self.snapshot()
+                        return KnowledgeRefreshResult("fallback_required", current.to_dict(), indexed["graph"],
+                            indexed.get("node_count", 0), indexed.get("edge_count", 0),
+                            error={"code": "fallback_required", "message": "Нет validated Graphify manifest baseline",
+                                   "details": {"reason": "manifest_missing", "fallback": "full-rebuild"}},
+                            mode="incremental", details={"fallback": "full-rebuild", "reason": "manifest_missing"})
+                    return self.refresh(_mode="full-rebuild-fallback", _fallback_reason="manifest_missing")
+                before = self.snapshot()
+                old = {entry["path"]: entry for entry in indexed["snapshot"]["files"]}
+                current = {entry.path: {"path": entry.path, "sha256": entry.sha256, "size": entry.size}
+                           for entry in before.files}
+                added = sorted(set(current) - set(old))
+                deleted = sorted(set(old) - set(current))
+                changed = sorted(path for path in set(current) & set(old)
+                                 if current[path]["sha256"] != old[path].get("sha256") or current[path]["size"] != old[path].get("size"))
+                if not (added or deleted or changed):
+                    return KnowledgeRefreshResult("not_required", before.to_dict(), indexed["graph"],
+                        indexed.get("node_count", 0), indexed.get("edge_count", 0), mode="incremental",
+                        details={"added": [], "changed": [], "deleted": [], "renamed": []})
+                renamed = []
+                for deleted_path in list(deleted):
+                    match = next((path for path in added if current[path]["sha256"] == old[deleted_path].get("sha256")), None)
+                    if match:
+                        renamed.append({"from": deleted_path, "to": match})
+                with self._writer_lock():
+                    latest = self._load()
+                    if latest is None or latest["graph"]["version"] != indexed["graph"]["version"]:
+                        raise KnowledgeError("refresh_conflict", "Current graph изменился до incremental publication")
+                    with tempfile.TemporaryDirectory(prefix="incremental-", dir=self.folder) as name:
+                        stage = checked_path(self.root, Path(name))
+                        corpus = stage / "corpus"
+                        corpus.mkdir()
+                        nonblank, md5 = set(), {}
+                        for source in before.files:
+                            data = source_bytes(self.root, source, self.policy.max_file_bytes)
+                            target = checked_path(self.root, corpus / source.path)
+                            target.parent.mkdir(parents=True, exist_ok=True)
+                            target.write_bytes(data)
+                            if data.strip(): nonblank.add(source.path)
+                            md5[source.path] = hashlib.md5(data, usedforsecurity=False).hexdigest()
+                        graph_artifact = self.repository.get(indexed["graph"]["ref"], indexed["graph"]["role"], indexed["graph"]["version"], max_bytes=GraphifyProvider.max_graph_bytes)
+                        content, manifest = self.provider.incremental_update(corpus, base_graph=graph_artifact.content, base_manifest=baseline_manifest)
+                        graph, coverage = self._validate_graph(content, manifest, before, nonblank, md5)
+                        if self.snapshot().digest != before.digest:
+                            raise KnowledgeError("source_drift", "Corpus изменился во время incremental update")
+                        version = "v" + uuid.uuid4().hex
+                        record = self.repository.put("project-knowledge", "graph", version, content,
+                            contract=self.provider.identity.schema, media_type="application/json")
+                        changes = {"added": added, "changed": changed, "deleted": deleted, "renamed": renamed}
+                        payload = {"contract": "knowledge-index/v1", "provider": self.provider.identity.to_dict(),
+                            "snapshot": before.to_dict(), "policy": self.policy.to_dict(), "graph": record.to_dict(),
+                            "manifest": manifest, "coverage": coverage, "node_count": len(graph["nodes"]),
+                            "edge_count": len(graph["edges"]), "indexed_at": datetime.now(timezone.utc).isoformat(),
+                            "mode": "incremental", "base_version": indexed["graph"]["version"], "changes": changes}
+                        index = self.repository.put("project-knowledge", "index", version, canonical_json(payload),
+                            contract="knowledge-index/v1", media_type="application/json")
+                        if self.snapshot().digest != before.digest:
+                            raise KnowledgeError("source_drift", "Corpus изменился перед current publication")
+                        self._publish_pointer(index.to_dict())
+                        self.last_error = None
+                        return KnowledgeRefreshResult("indexed", before.to_dict(), record.to_dict(), len(graph["nodes"]),
+                            len(graph["edges"]), mode="incremental", details=changes)
+            except (KnowledgeError, ArtifactError, OSError) as exc:
+                error = exc.as_dict() if isinstance(exc, KnowledgeError) else KnowledgeError(
+                    exc.code if isinstance(exc, ArtifactError) else "repository_failure", str(exc)).as_dict()
+                self.last_error = error
+                return KnowledgeRefreshResult("failed", None, None, error=error, mode="incremental",
+                    details={"fallback_available": "full-rebuild", "preserved_current": True})
+
+    def precommit_refresh(self) -> KnowledgeRefreshResult:
+        """Agent-facing source-only pre-commit gate.
+
+        The orchestrator decides when this gate is required and whether its
+        structured result permits a commit; the service never performs Git
+        operations itself.
+        """
+        return self.refresh_incremental()
 
     def _publish_pointer(self, value):
         checked_path(self.root,self.pointer)
@@ -208,9 +322,13 @@ class ProjectKnowledgeService:
                     raise KnowledgeError("provider_contract_violation","Edge содержит чужой source")
             if not isinstance(manifest,dict) or any(safe_relative(path) not in paths for path in manifest):
                 raise KnowledgeError("provider_contract_violation","Manifest содержит чужие sources")
-            indexed={path for path,row in manifest.items() if isinstance(row,dict) and row.get("ast_hash") == md5[path]}
+            # Graphify stamps document extraction as semantic_hash, not ast_hash.
+            # This compatibility check does not enable documents in code-only policy.
+            indexed={path for path,row in manifest.items() if isinstance(row,dict)
+                     and row.get("semantic_hash" if Path(path).suffix.lower() in {".md", ".mdx", ".rst", ".txt"}
+                                 else "ast_hash") == md5[path]}
             if not nonblank.issubset(indexed) or not nonblank.issubset(sources):
-                raise KnowledgeError("incomplete_extraction","Не все непустые sources представлены в AST manifest/graph",
+                raise KnowledgeError("incomplete_extraction","Не все непустые sources представлены в extraction manifest/graph",
                                      missing=sorted(nonblank-(indexed & sources)))
             return graph,{"selected_files":len(paths),"represented_files":len(sources),"blank_files":sorted(paths-nonblank),
                           "unresolved_nodes":unresolved,"external_import_edges":external_imports}

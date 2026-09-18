@@ -17,10 +17,12 @@ from .agent_preparation import _AgentSession
 from .agent_runtime import AgentGraphRuntime,_UNSET,_json_copy
 from .execution_preflight import ExecutionPreflight,ExecutionError,revision
 from .knowledge_contracts import CorpusPolicy
+from .knowledge_refresh_node import KnowledgeRefreshNode, KnowledgeRefreshRequest
+from .knowledge_service import ProjectKnowledgeService
 from .knowledge_snapshot import canonical_json,safe_relative,allowed_parts
 from .preparation_primitives import PreparationPrimitives,PreparationError,_text,_strings,_json_bytes
 from .task_effects import TaskEffectSync,_locked
-from .workflow_runtime import Graph,Node,NodeResult,WaitState
+from .runtime_contracts import Graph,Node,NodeResult,WaitState
 
 
 @dataclass
@@ -33,6 +35,7 @@ class _ExecutionSession(_AgentSession):
     lease_seconds: int = 900
     effect_phase: str = "starting"
     run_id: str = ""
+    knowledge_gate: dict | None = None
 
 
 def _graph():
@@ -45,12 +48,14 @@ def _graph():
 class AgentExecution(TaskEffectSync,PreparationPrimitives):
     """Одна in-memory сессия; physical edits выполняет агент, не facade."""
 
-    def __init__(self,project_root: Path,*,policy: CorpusPolicy | None=None,max_results: int=200):
+    def __init__(self,project_root: Path,*,policy: CorpusPolicy | None=None,max_results: int=200,
+                 knowledge_service: ProjectKnowledgeService | None = None):
         if type(max_results) is not int or max_results < 1:
             raise ExecutionError("contract_violation","max_results должен быть положительным целым")
         self.preflight=ExecutionPreflight(project_root,policy=policy)
         self.repository=self.preflight.repository
         self.service=self.preflight.service
+        self.knowledge_service=knowledge_service
         self.runtime=AgentGraphRuntime()
         self.max_results=max_results
         self._sessions={}
@@ -180,8 +185,40 @@ class AgentExecution(TaskEffectSync,PreparationPrimitives):
         result=super().inspect(run_id)
         session=self._session(run_id)
         result.update(unknown_effect=copy.deepcopy(session.uncertain),completed_units=list(session.completed),
-            checkpoint_revision=revision(session.checkpoint),claim_ref=session.claim_ref)
+            checkpoint_revision=revision(session.checkpoint),claim_ref=session.claim_ref,
+            knowledge_gate=copy.deepcopy(session.knowledge_gate))
         return result
+
+    @_locked
+    def precommit_gate(self,run_id,*,expected_revision,expected_task_version,
+                       request: KnowledgeRefreshRequest | Mapping[str, Any] | None = None,
+                       decision: Mapping[str, Any] | None = None):
+        """Run the code-only knowledge gate before the agent's physical commit.
+
+        AgentExecution owns the policy/moment of the gate, while the injected
+        ProjectKnowledgeService owns Graphify refresh and immutable publication.
+        This method never runs Git and reports an explicit denial whenever the
+        graph cannot be proven fresh for the current candidate.
+        """
+        session,run=self._guard(run_id,expected_revision,expected_task_version)
+        if self.knowledge_service is None:
+            raise ExecutionError("knowledge_unavailable",
+                "Для pre-commit gate нужен явно подключённый ProjectKnowledgeService")
+        if len(session.completed)!=len(session.binding["work_units"]):
+            raise ExecutionError("knowledge_gate_required",
+                "Knowledge gate доступен только после завершения всех work units")
+        node = KnowledgeRefreshNode(self.knowledge_service)
+        node_result = node.execute(request or KnowledgeRefreshRequest(), decision=decision)
+        value = node_result.data["result"]
+        if node_result.wait is not None:
+            value["wait"] = node_result.wait.to_dict()
+        if node_result.error is not None:
+            value["error"] = copy.deepcopy(node_result.error)
+        value={"contract":"knowledge-precommit-gate/v1",**value,"run_id":run_id,
+            "limitations":["Git commit выполняет вызывающий агент после commit_allowed=true",
+                "degraded разрешён только для провалидированного full-rebuild-fallback"]}
+        session.knowledge_gate=value
+        return copy.deepcopy(value)
 
     def _available_units(self,session):
         return [copy.deepcopy(u) for u in session.binding["work_units"] if u["id"] not in session.completed

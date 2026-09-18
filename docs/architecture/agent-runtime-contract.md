@@ -1,12 +1,12 @@
 # AgentGraphRuntime v1: явные действия агента
 
-**Статус:** реализованный Python-контракт первого среза TASK-0028, 2026-09-17. In-memory runtime; не MCP-сервер, не durable workflow и не полный Orchestrator Agent.
+**Статус:** действующий Python-контракт TASK-0028, актуализирован после удаления callback-пути в TASK-0034, 2026-09-18. In-memory runtime; не MCP-сервер, не durable workflow и не полный Orchestrator Agent.
 
 ## Владельцы
 
 `AgentGraphRuntime` хранит отдельные агентские runs и не вызывает executor/classifier/planner/reviewer. Агент читает доступные actions, выполняет работу средствами хоста, выбирает подтверждённый outcome и явно подаёт NodeResult. Объявленный Graph ограничивает переход; произвольного route.target нет.
 
-Legacy `GraphRuntime` и `PreparationWorkflow` сохраняют старые callbacks. Новый runtime не оборачивает `step` и не держит второй canonical снимок legacy run: на каждый run есть один владелец процесса. Graph/Node/NodeResult/WaitState переиспользуются; общий публичный `validate_node_result` выполняет структурную проверку и используется обоими runtime.
+Callback `GraphRuntime` и `PreparationWorkflow` удалены в TASK-0034. Единственный runtime процесса — AgentGraphRuntime; на каждый run есть один владелец. Общие Graph/Node/NodeResult/WaitState/WorkflowRun и публичный `validate_node_result` находятся в [runtime_contracts.py](../../orchestrator/runtime_contracts.py). [Миграция старого API](../guides/workflow-runtime.md).
 
 Task Manager полностью неизменён. Новый runtime не импортирует его и не меняет task lifecycle, events или SQLite. `phase="execution"` — метка процесса, не разрешение исполнять ещё не ready задачу. Caller отдельно соблюдает ready/claim/acceptance guards через публичный сервис. NodeResult hash проверяется по форме, не по payload repository; это не semantic gate.
 
@@ -43,7 +43,7 @@ Graph соответствует [существующим моделям](graph
 | history | Все принятые submit/resume/cancel с новой revision и данными action, только в памяти |
 | resumed_wait | Принятый ответ или resolution для текущего узла; очищается следующим валидным submit/cancel |
 
-Legacy WorkflowRun serialization не получает этих полей. Runtime.results хранит последний result каждого узла, history — все принятые actions нового процесса. Graph/версия неизменны внутри run. Для другой версии workflow нужен новый run.
+Базовая WorkflowRun serialization не получает этих полей; это общая модель, а не отдельный runtime. Runtime.results хранит последний result каждого узла, history — все принятые actions нового процесса. Graph/версия неизменны внутри run. Для другой версии workflow нужен новый run.
 
 ## Submit и границы проверки
 
@@ -73,4 +73,4 @@ Cancel увеличивает revision, фиксирует reason и очища�
 
 RLock защищает compare/check/publish и снимки внутри одного процесса; два submit с одинаковой revision дают один accepted и один conflict. Это не lease исполнителя, actor authorization или multiprocess coordination. После неизвестного результата caller сначала inspect/history, затем решает, безопасно ли новое действие; автоматической idempotent retry нет.
 
-История и deep-copy snapshots требуют память, зависящую от payload и числа действий. Budget ограничивает число results, но не размер payload. Persistence/checkpoints, внешние permission guards, semantic review и transaction с artifacts/tasks остаются последующими срезами. Тесты: [Agent Runtime](../../tests/test_agent_runtime.py), использование: [guide](../guides/agent-runtime.md).
+Рабочее состояние действия копирует только изменяемые контейнеры results/result_counts/history; уже принятые внутренние payload повторно не копируются и не изменяются. Перед публикацией и при inspect_run публичный snapshot по-прежнему создаётся полным deepcopy. Это сохраняет изоляцию и уменьшает лишнюю работу, но возврат всей history на каждом action всё ещё даёт квадратичный совокупный объём копирования. История и deep-copy snapshots требуют память, зависящую от payload и числа действий. Budget ограничивает число results, но не размер payload. Persistence/checkpoints, внешние permission guards, semantic review и transaction с artifacts/tasks остаются последующими срезами. Тесты: [Agent Runtime](../../tests/test_agent_runtime.py), использование: [guide](../guides/agent-runtime.md).

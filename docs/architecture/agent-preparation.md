@@ -6,9 +6,9 @@
 
 `AgentPreparation(project_root, *, max_review_cycles=2, max_context_expansions=2, max_results=100)` создаёт Task Manager Service и Artifact Repository для одного проверенного root и собственный AgentGraphRuntime. Внешний агент выполняет осмотр, анализ, планирование и review и подаёт готовые envelopes. Нет adapters, step, executor или скрытого вызова LLM. Project profile — пользовательский JSON-контекст, не инструкции ядру.
 
-Общие validators, publication, projection и sync находятся в [preparation_primitives.py](../../orchestrator/preparation_primitives.py). Legacy [PreparationWorkflow](preparation-workflow.md) использует те же primitives, но сохраняет свои callback-сигнатуры. Новый путь не вызывает legacy controller. Эквивалентность предметных контрактов не означает независимого semantic review.
+Общие validators, publication, projection и sync находятся в [preparation_primitives.py](../../orchestrator/preparation_primitives.py). Callback PreparationWorkflow удалён в TASK-0034; primitives остаются общими для агентских facade. Общие модели процесса находятся в [runtime_contracts.py](../../orchestrator/runtime_contracts.py). Эквивалентность предметных контрактов не означает независимого semantic review.
 
-В TASK-0016 pending/unknown task-effect protocol вынесен в общий [TaskEffectSync](../../orchestrator/task_effects.py) для AgentPreparation и [AgentExecution](agent-execution.md). Публичные preparation контракты не изменены; 23 preparation regression tests сохранены.
+В TASK-0016 pending/unknown task-effect protocol вынесен в общий [TaskEffectSync](../../orchestrator/task_effects.py) для AgentPreparation и [AgentExecution](agent-execution.md). Публичные preparation контракты не изменены; Предметные preparation regressions сохранены и расширены при удалении callback-пути.
 
 Карточка SQLite Task Manager остаётся канонической; TaskML и отдельная specification не возвращаются. Код, схема, resources и API пакета Task Manager не менялись. Подготовка не делает claim и не начинает исполнение.
 
@@ -59,7 +59,7 @@ Next submit/resume/cancel запрещён до окончания pending. По
 
 Wait приостанавливает процесс, переводит задачу в awaiting_input/blocked и закрывает active link. Resume сохраняет реальный clarification/разрешает собственный blocker, возвращает preparing и открывает ссылку; узел не выполняется. Ответ хранится в resumed_wait до следующего принятого submit; отвергнутый result его не теряет.
 
-Context expansions и review cycles ограничены общими с legacy правилами: превышение превращает результат в owned blocker; последний review payload сохраняется. Max_results ограничивает общее число принятых results, включая waits/failure. Resume/cancel не списывают result budget. Повтор resume не сбрасывает исчерпанные смысловые бюджеты; новый цикл требует диагностики и новой подготовки, а не бесконечного retry.
+Context expansions и review cycles ограничены правилами подготовки: превышение превращает результат в owned blocker; последний review payload сохраняется. Max_results ограничивает общее число принятых results, включая waits/failure. Resume/cancel не списывают result budget. Повтор resume не сбрасывает исчерпанные смысловые бюджеты; новый цикл требует диагностики и новой подготовки, а не бесконечного retry.
 
 ## Пределы
 

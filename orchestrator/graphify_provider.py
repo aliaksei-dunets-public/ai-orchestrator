@@ -50,6 +50,49 @@ class GraphifyProvider:
             raise KnowledgeError("provider_contract_violation", "Не получены валидные graph/manifest") from exc
         return content, manifest
 
+    def incremental_update(self, corpus_root: Path, *, base_graph: bytes, base_manifest: dict):
+        """Run Graphify's native AST-only incremental update on a staged corpus.
+
+        The caller supplies the last validated graph and manifest. Graphify owns
+        changed-file extraction, dependency refresh and pruning of deleted files;
+        this adapter only prepares the provider workspace and reads its output.
+        """
+        self.verify(corpus_root)
+        if not isinstance(base_graph, bytes) or len(base_graph) > self.max_graph_bytes:
+            raise KnowledgeError("provider_output_limit", "Base graph превышает byte budget")
+        if not isinstance(base_manifest, dict):
+            raise KnowledgeError("incremental_baseline_missing", "Нет валидного Graphify manifest baseline")
+        provider_out = corpus_root / "graphify-out"
+        provider_out.mkdir(parents=True, exist_ok=True)
+        (provider_out / "graph.json").write_bytes(base_graph)
+        (provider_out / "manifest.json").write_text(
+            json.dumps(base_manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        bounded_run([str(self.python), "-X", "utf8", "-m", "graphify", "update", str(corpus_root), "--no-cluster"],
+                    corpus_root, timeout=self.index_timeout, byte_limit=self.process_byte_limit)
+        try:
+            content = (provider_out / "graph.json").read_bytes()
+            manifest = json.loads((provider_out / "manifest.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError, UnicodeDecodeError) as exc:
+            raise KnowledgeError("provider_contract_violation", "Incremental Graphify output недоступен") from exc
+        if len(content) > self.max_graph_bytes or not isinstance(manifest, dict):
+            raise KnowledgeError("provider_output_limit", "Incremental graph/manifest превышает byte budget")
+        # Graphify's native update path emits the classic node-link spelling
+        # ``links`` while full extract emits ``edges``.  Normalize the contract
+        # for ProjectKnowledgeService while preserving the upstream field for
+        # MCP/query compatibility and auditability.
+        try:
+            graph = json.loads(content)
+            if isinstance(graph, dict) and "edges" not in graph and isinstance(graph.get("links"), list):
+                graph["edges"] = graph["links"]
+                content = json.dumps(graph, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        except (ValueError, TypeError, UnicodeDecodeError) as exc:
+            raise KnowledgeError("provider_contract_violation", "Incremental graph JSON недействителен") from exc
+        if len(content) > self.max_graph_bytes:
+            raise KnowledgeError("provider_output_limit", "Нормализованный incremental graph превышает byte budget")
+        return content, manifest
+
     def query(self, graph_path: Path, cwd: Path, *, question: str, mode: str, depth: int, token_budget: int):
         # Upstream отвергает payload.bin: ему требуется .json. Изолированная
         # копия также не позволяет подмешать work-memory sidecars repository.

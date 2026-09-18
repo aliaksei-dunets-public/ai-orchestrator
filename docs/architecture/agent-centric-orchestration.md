@@ -37,8 +37,8 @@
 | Task Manager | Уже реализованное детерминированное состояние задачи без изменений |
 | Artifact Repository | Immutable payload, версия, SHA-256 и проверенное чтение |
 | Project Knowledge Service | Независимая от провайдера граница доступа к структурным знаниям и их свежести |
-| Graphify | Первый выбранный backend code graph; не workflow engine и не источник истины задачи |
-| Project Memory | Отдельная будущая память решений и выводов с provenance; не code graph |
+| Graphify | Первый provider единого Project Knowledge Graph для кода и отобранной долговечной документации; не workflow engine и не источник истины задачи |
+| Project Memory | Отдельная будущая оперативная память решений с provenance; не часть Project Knowledge Graph и не Task Manager |
 | Платформенные адаптеры | Особенности Codex, Claude, Copilot и других хостов, разрешений и инструментов |
 
 Один глобальный агент означает владельца активной сессии, а не глобальный daemon или блокировку всех проектов. Sub-agents необязательны; возможность их запуска зависит от платформы, разрешений и принятой review-политики.
@@ -51,7 +51,7 @@
 
 ## Совместимость и приоритет
 
-Это решение заменяет controller-centric направление дальнейшего развития, но не стирает факты реализации TASK-0002–0004, TASK-0014–0015 и их API. `GraphRuntime.step/resume` и `PreparationWorkflow` работают в прежней форме; их гайды описывают этот код. TASK-0028 добавляет отдельный явный process API AgentGraphRuntime без callback dispatch, с revision/definition/wait guards и budgets. TASK-0029 добавляет [AgentPreparation](agent-preparation.md), общий deterministic validation/publication/sync и агентские инструкции в [гайде](../guides/agent-preparation.md). TASK-0030 добавляет [Knowledge Service/Graphify adapter](project-knowledge-service.md), initial load и explicit refresh/query. TASK-0016 добавляет [AgentExecution](agent-execution.md): preflight до claim и явные work units с dependencies/checkpoints/lease/pending guards. Installed Agent skill, durable runtime checkpoints и full execution gates пока отсутствуют.
+Это решение заменяет controller-centric направление дальнейшего развития, но не стирает факты реализации TASK-0002–0004, TASK-0014–0015. Callback GraphRuntime/PreparationWorkflow удалены в TASK-0034 после реализации заменяющего агентского пути; их прежние гайды стали инструкциями миграции. TASK-0028 добавляет отдельный явный process API AgentGraphRuntime без callback dispatch, с revision/definition/wait guards и budgets. TASK-0029 добавляет [AgentPreparation](agent-preparation.md), общий deterministic validation/publication/sync и агентские инструкции в [гайде](../guides/agent-preparation.md). TASK-0030 добавляет [Knowledge Service/Graphify adapter](project-knowledge-service.md), initial load и explicit refresh/query. TASK-0016 добавляет [AgentExecution](agent-execution.md): preflight до claim и явные work units с dependencies/checkpoints/lease/pending guards. TASK-0020 добавляет явный `AgentExecution.precommit_gate` для code-only incremental knowledge refresh. TASK-0033 реализует configurable `KnowledgeRefreshNode` Workflow Graph с explicit full-refresh authorization; node остаётся executor-free и возвращает результат для обычного AgentGraphRuntime CAS/wait flow. Installed Agent skill, durable runtime checkpoints и остальные full execution gates пока отсутствуют.
 
 В вопросах состояния задачи приоритет имеет [неизменяемый контракт Task Manager](../../packages/task-manager/src/orchestrator_task_manager/resources/docs/contract.md). В вопросах нового распределения ответственности — этот документ; реализованные детали явного процесса закреплены в [контракте AgentGraphRuntime](agent-runtime-contract.md). Импортированные англоязычные материалы остаются исходниками для сверки; их controller logic и примеры файловой задачи не переносятся автоматически.
 

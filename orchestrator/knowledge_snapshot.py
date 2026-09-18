@@ -13,6 +13,9 @@ from .knowledge_contracts import CorpusPolicy, KnowledgeError, SourceFile, Sourc
 
 DENIED = {".git", ".venv", "venv", ".tmp", ".orchestrator", "obsolete", "node_modules", "__pycache__",
           "build", "dist", ".agents", ".codex", ".idea", ".vscode", "graphify-out", "releases"}
+# Plans/reports are operational evidence, not durable project truth. They remain
+# available in the repository and Task Context but never enter Project Knowledge.
+DENIED_DURABLE_ROOTS = {"docs/plans", "docs/reports"}
 SENSITIVE = re.compile(r"(^|[._-])(secret|secrets|credential|credentials|private|token|tokens|password|passwords|api-key|apikey)([._-]|$)", re.I)
 
 
@@ -51,6 +54,12 @@ def allowed_parts(path: Path):
     return not any(part.lower() in DENIED or part.startswith(".") or SENSITIVE.search(part) for part in path.parts)
 
 
+def allowed_durable_path(path: Path) -> bool:
+    """Return whether a relative source is eligible for the durable graph."""
+    normalized = path.as_posix().lower().strip("/")
+    return not any(normalized == root or normalized.startswith(root + "/") for root in DENIED_DURABLE_ROOTS)
+
+
 def source_bytes(root: Path, entry: SourceFile, limit: int) -> bytes:
     path = checked_path(root, root / safe_relative(entry.path))
     try:
@@ -71,7 +80,7 @@ def snapshot_sources(root: Path, policy: CorpusPolicy) -> SourceSnapshot:
     for include in policy.include_roots:
         candidate = checked_path(root, root / safe_relative(include))
         relative = candidate.relative_to(root)
-        if relative.parts and not allowed_parts(relative):
+        if relative.parts and (not allowed_parts(relative) or not allowed_durable_path(relative)):
             raise KnowledgeError("validation_failed", "Include root запрещён corpus policy")
         if not candidate.exists():
             raise KnowledgeError("source_unavailable", "Include root отсутствует", path=include)
@@ -82,7 +91,7 @@ def snapshot_sources(root: Path, policy: CorpusPolicy) -> SourceSnapshot:
             if visited > policy.max_files * 20:
                 raise KnowledgeError("corpus_limit_exceeded", "Слишком много filesystem entries")
             rel = path.relative_to(root)
-            if rel.parts and not allowed_parts(rel):
+            if rel.parts and (not allowed_parts(rel) or not allowed_durable_path(rel)):
                 continue
             checked_path(root, path)
             if path.is_dir():

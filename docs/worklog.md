@@ -1,10 +1,95 @@
 # Журнал работ
 
+## 2026-09-18 — TASK-0034: callback-путь удалён, кандидат проверен
+
+- После явного разрешения пользователя задача прошла AgentPreparation с immutable Plan/Review/Package, self-review, настоящими ready guards и source preflight, затем публичный claim. Self-review не выдаётся за независимый аудит; исполнение не означает пользовательскую приёмку.
+- Удалены GraphRuntime, PreparationWorkflow, два callback-модуля и их exports. Общие модели и validator перенесены в `runtime_contracts.py`; агентские facade/KnowledgeRefreshNode используют его. Удалена неиспользуемая callback resume-ветвь `_queue`; общая sync, необходимая TaskEffectSync, сохранена.
+- Перенесены необходимые graph/artifact/snapshot проверки и недостающие plan/review/wait/projection/external-blocker сценарии. Действующие guides/контракты, README, roadmap и project-status обновлены; исторические ссылки на удалённые файлы ведут к явно обозначенной миграции, исторические facts/hashes сохранены.
+- Оптимизирована рабочая копия agent action без полной deep-copy принятых payload. Изоляция публичных snapshots, guards/history/budgets сохранены. Один замер 100 nested JSON results около 30 KiB под tracemalloc: 17,5376 → 6,6959 s, peak 24,886 → 20,160 MiB; полный snapshot истории всё ещё имеет растущую стоимость. Измерены также 8/128 KiB payload.
+- Полный набор с real pinned Graphify: root 148 (147 passed/1 Windows skip), onboarding 19 (18 passed/1 Windows skip), Task Manager 73/73. Всего 240 tests, 238 passed, 2 skipped. Три действующих agent guides исполнены; AST imports/classes, compileall, относительные ссылки и diff check проверены. [Подробный отчёт](reports/2026-09-18-task-0034-callback-removal.md), [полные измерения](reports/2026-09-18-task-0034-runtime-measurements.json).
+- Кандидат передан в awaiting_acceptance с хешированными readiness/acceptance artifacts. Existing unrelated working-tree changes сохранены; Task Manager code/schema, соседние задачи, `.venv/`, `obsolete/` и production knowledge pointer этой работой не изменены.
+
+## 2026-09-18 — TASK-0034: направление изменено на удаление callback-runtime
+
+- Пользователь предложил удалить GraphRuntime и обновить документацию. Проверены его зависимости: callback PreparationWorkflow, exports и legacy tests; агентские facade используют общие модели и validator из того же модуля.
+- [Новый объём](plans/2026-09-18-remove-callback-runtime-scope.md) требует удалить callback-путь, сохранить общие контракты, перенести нужные проверки и актуализировать гайды. Ремонт гонок/diagnostics удаляемого runtime исключён; оценка ресурсов agent history остаётся.
+- Каноническая TASK-0034 уточнена публичным CLI с актуальными версиями; статус остаётся created. Документы отмечают решение и существующий код отдельно; удаление, подготовка и исполнение не выполнялись.
+
+## 2026-09-18 — разбор аудита Graph Runtime, TASK-0034
+
+- Проверен переданный пользователем аудит по текущему коду, тестам и действующим контрактам; [решение по каждому замечанию](reports/2026-09-18-graph-runtime-audit-triage.md) отделяет дефекты, намеренные различия API и будущие возможности.
+- Изолированными in-memory пробами воспроизведены потеря отмены после callback, неоднозначность имени `succeeded`, отсутствие cancel reason в snapshot и ожидаемое исчерпание бюджета после вопроса. Через публичный CLI создана HIGH-задача TASK-0034 в `created`; runtime, соседние задачи и Task Manager code/schema не менялись.
+- В callback-контракте исправлены keyword-only сигнатуры, уточнены специальные wait outcomes и отсутствие встроенной retry policy. Измерения производительности оставлены в критериях новой задачи: доказанная DoS-уязвимость или новый durable runtime не заявляются.
+- Проверки: публичные карточка/история/validate, сигнатуры API и относительные ссылки изменённых материалов; полный suite не запускался, поскольку код runtime не менялся.
+
+## 2026-09-18 — TASK-0020: native Incremental Refresh Graphify
+
+- Найдена каноническая задача TASK-0020: AC-05–AC-09 прямо требуют обновление только changed/added/renamed/deleted sources перед source-only commit, dependency impact, source-drift validation, fallback и agent-facing commit gate. Через публичный Task Manager задача прошла `created → preparing → ready → active → awaiting_acceptance` (version 29 после обновления evidence), без изменений Task Manager/SQLite.
+- Реализован `GraphifyProvider.incremental_update()` поверх pinned Graphify 0.9.63 `graphify update --no-cluster`. Service переносит validated graph+manifest в isolated staging; native Graphify выполняет extraction/merge/prune, включая deleted sources. Upstream `links` нормализуется в service contract `edges` с сохранением исходного поля для query/audit.
+- Full index теперь сохраняет manifest в immutable index. `ProjectKnowledgeService.refresh_incremental()` классифицирует added/changed/deleted и одинаковые по хешу rename, возвращает `not_required` для no-op, публикует immutable incremental version атомарно и сохраняет старый pointer при ошибке. Legacy index без manifest получает диагностируемый `full-rebuild-fallback`; `precommit_refresh()` возвращает structured result и не выполняет Git commit.
+- Добавлены 27 knowledge tests (включая real pinned Graphify fixture): no-op, change/add, rename/delete, unchanged node retention, provider failure, fallback и pre-commit gate; все 27 прошли, real fixture не skipped при заданном `ORCHESTRATOR_GRAPHIFY_PYTHON`. Обновлены контракт, guide, roadmap, status и MANIFEST. Acceptance evidence и пользовательская приёмка ещё не зарегистрированы; TASK-0020 не закрыта.
+- `AgentExecution` получил явный `precommit_gate` с injected `ProjectKnowledgeService`: после всех work units он возвращает `success/degraded/stale/failed` и `commit_allowed`, запрещая внешний commit при stale/failed без запуска Git или изменения Task Manager. Добавлены orchestration tests и актуализированы agent/knowledge contracts.
+
+## 2026-09-18 — TASK-0033: configurable KnowledgeRefreshNode — дизайн принят
+
+- Пользователь подтвердил отдельную Workflow Graph node для последнего шага перед commit: после work units, tests и final validation.
+- Зафиксированы режимы `auto`/`incremental`/`full`. `auto` и `incremental` никогда не запускают full refresh автоматически; full требует отдельного explicit decision.
+- Зафиксирована authorization policy: default `required` с Graph Runtime wait/resume; `automatic` разрешается только для конкретной доверенной ноды в graph configuration. Создана HIGH-задача TASK-0033 через публичный Task Manager API, статус `created v2`, implementation не начиналась.
+
+## 2026-09-18 — TASK-0020 принята; TASK-0033 начата
+
+- Пользователь явно принял candidate revision `task-0020-incremental-refresh-v1:agent-precommit-gate-20260918`. Публичный Task Manager атомарно перевёл TASK-0020 в `completed v30`; active claim/run отсутствуют, `health_check=[]`.
+- По распоряжению пользователя TASK-0033 переведена из `created v2` в `preparing v3` с run ref `codex-task-0033-knowledge-refresh-node-20260918`. Подготовка начата; кодовая реализация KnowledgeRefreshNode ещё не выполнялась.
+- Execution plan/review/package TASK-0033 прикреплены через публичный Task Manager API. AgentPreparation не обходит projection guard существующего plan.md; потерянные in-memory run links закрыты публичным `link_workflow_run(..., relation="finished")`. Текущее состояние `preparing v15`, active run отсутствует, `health_check=[]`; реализация не начиналась.
+
+## 2026-09-18 — TASK-0033: KnowledgeRefreshNode реализована
+
+- Добавлены `KnowledgeRefreshPolicy`, `KnowledgeRefreshRequest`, `KnowledgeRefreshNode` и reusable graph definition `knowledge-refresh-v1`. Full refresh требует confirmation по умолчанию; trusted `authorization=automatic` задаётся только конкретной node.
+- `ProjectKnowledgeService.refresh_incremental(allow_full_fallback=False)` теперь позволяет строгий orchestration path: auto/incremental возвращают `fallback_required` вместо скрытого full. TASK-0020 default compatibility сохранена.
+- `AgentExecution.precommit_gate` делегирует новой node, добавлены 6 node tests и strict-fallback regression. Root suite после среза: 164 tests, 162 passed, 2 skipped. Acceptance package прикреплён через публичный Task Manager API; TASK-0033 переведена в `awaiting_acceptance v29`.
+
+## 2026-09-18 — TASK-0033 принята пользователем
+
+- Пользователь подтвердил приёмку реализации configurable `KnowledgeRefreshNode` для candidate revision `task-0033-knowledge-refresh-node-v1:dd885691e7c3f4dbd79aa8f36800b2a19ff6135385d19dd43be8d8824cdc9300`.
+- Публичный `TaskManagerService.accept_task` атомарно зарегистрировал решение `user-acceptance/TASK-0033/2026-09-18` и перевёл задачу из `awaiting_acceptance v29` в `completed v30`.
+- Active claim/run отсутствуют; `health_check=[]`. Новые backend-интеграции, Git hooks и изменения Task Manager не добавлялись.
+
+## 2026-09-18 — TASK-0031: Graphify skill / host-agent PoC подтверждён
+
+- Уточнение пользователя принято: отдельный semantic backend нужен headless CLI, а не Graphify skill с текущим host development agent. Прежний вывод был ошибочно обобщён; ниже сохранена история отказа headless, не актуальное ограничение варианта A. Использованы полностью прочитанные bundled skill-codex.md и extraction/query references установленного graphifyy 0.9.63, без установки нового skill/backend/API-ключа. Semantic extraction делегирован ограниченному агенту согласно upstream skill; собственный Markdown extractor не написан.
+- Два документа — architecture/agent-runtime-contract.md и architecture/project-knowledge-service.md — объединены с проверенной прежней immutable кодовой версией в одном изолированном кандидате `.tmp/graphify-host-poc-0031/graphify-out/graph.json`. Первый результат: 22 doc-sourced nodes, 24 semantic edges, прямых document→code связей 0. После передачи трёх canonical AST IDs host-agent извлёк три явные references на AgentGraphRuntime, ProjectKnowledgeService и GraphifyProvider. Итог upstream graph: 1052 nodes / 3238 edges; кодовые IDs и source evidence сохранены. Это документальные упоминания, не доказательство реализации и не автоматическое связывание labels.
+- Существующий GraphifyProvider/query_graph MCP нашёл оба документа реальными запросами. Manifest semantic_hash совпадает с MD5 обоих PoC sources, ast_hash пустой. Отмечены loc=None у doc citations, мягкий upstream token budget, links/edges format boundary и прежние baseline diagnostics; clean/fresh graph не заявлен. Host token usage неизвестен, стоимость не объявлена нулевой.
+- Production current pointer SHA-256 не изменён: `07cb3e94c50f267d1b662633ba28360092a9e5af47a7b549f6d3df708bb44134`. Default code-only pipeline и execution fingerprint сохранены; docs/AST freshness раздельно пока не реализована, старый кодовый snapshot и скопированные до актуализации docs не выданы за fresh. Целевые refresh_code_graph/refresh_document_graph описаны как будущие операции одного графа. Task Context/plans/reports/obsolete не включены.
+- Публичный Task Manager: TASK-0031 blocked v21 без run/claim; documentation/testing evidence обновлены, BLOCK-01 provider_access разрешён результатом host PoC. Открыт BLOCK-02 preparation_binding: прежние plan/review/package устарели, blocked resume=ready не разрешает прямой reprepare публичным API; старый пакет не используется для ложного ready. TASK-0032 уточнена как будущий автономный headless вариант B, created v3/definition v2, не запущена. health_check=[]. Task Manager code/schema/guards не менялись.
+- Повторная knowledge regression с реальным pinned code/MCP integration: 23/23 passed. Полная регрессия 243/241 passed/2 skipped относится к предыдущему compatibility/rollback срезу, не объявляется повторно выполненной здесь. Обновлены контракт, guide, status, roadmap и реестр; [короткий отчёт](reports/2026-09-18-single-project-knowledge-graph-v1.md), [дизайн](plans/2026-09-18-graphify-host-agent-design.md).
+
+## 2026-09-18 — TASK-0031: scope ограничен PoC, backend setup остановлен
+
+- По явному уточнению пользователя прекращены проверки Claude CLI/LM Studio/локальных LLM; backend/model parameters и credential propagation удалены из кода, удалены созданные `.orchestrator/knowledge-provider.json` и `scripts/project_knowledge.py`. Никакие модели или новые backend зависимости не установлены. Default CorpusPolicy/provider pipeline/execution fingerprint возвращены к рабочему code-only/code-corpus/v1; прежняя установка Graphify и graph artifacts сохранены.
+- PoC на одном текущем `docs/architecture/project-knowledge-service.md` вместе с `orchestrator/knowledge_service.py`, в `.tmp/graphify-document-poc-0031/corpus/`, без backend flag: Graphify 0.9.63 обнаружил 1 code/1 docs и отказал с `no LLM API key found ... need semantic extraction`, exit 1. По stop condition дальнейший refresh прекращён. Документный поиск и реальные code/document связи не подтверждены; отдельный documentation graph не создан.
+- Отдельный compatibility fix: validator проверяет semantic_hash для Markdown/RST/TXT вместо ast_hash, с hash/source evidence guards. Добавлены предметные positive/negative тесты. docs/plans/reports исключены из обхода, obsolete и весь `.orchestrator` уже исключались. Это не включает Markdown в default corpus.
+- Current pointer SHA-256 до/после `07cb3e94c50f267d1b662633ba28360092a9e5af47a7b549f6d3df708bb44134`, version `v673911d8ff29485ea54cf5f6da3e2fdb`. Read-only существующий MCP query ProjectKnowledgeService работает, но честно stale/degraded после изменений исходников; Markdown в indexed corpus нет.
+- Через публичный Task Manager сохранены явное user scope decision и scope evidence в TASK-0031; задача остаётся blocked без run/claim, BLOCK-01 не выдан за решённый. Создана только created TASK-0032 для отдельного решения по mandatory semantic extraction, не запущена. Прежние plan/review/package — исторические workspace-ссылки, не immutable records; требуют reprepare. [Короткий отчёт](reports/2026-09-18-single-project-knowledge-graph-v1.md).
+- Финальная регрессия после rollback/compatibility fix: root 151 (150 passed/1 Windows skip, real pinned code/MCP integration), Task Manager 73/73, onboarding 19 (18 passed/1 Windows skip); итого 243, 241 passed/2 skipped/0 failures. Knowledge suite 23/23. Task Manager health_check=[]; пакет Task Manager и obsolete не изменялись.
+
 ## 2026-09-18 — TASK-0016 принята; создана TASK-0031
 
 - Пользователь явно принял AgentExecution candidate. Через публичный `accept_task` TASK-0016 завершена атомарно: `completed v19`, candidate revision `agent-execution-v1:625b6d2c66ef06541fe732d247ea14f3370e23ed16ad9bdeb5447989ccbdf3d0`, completion decision `user-acceptance:2026-09-18:TASK-0016`; active run/claim отсутствуют, `health_check=[]`.
 - По отдельному запросу создана TASK-0031 `HIGH: единый Project Knowledge Graph на базе Graphify`, статус `created v1`. Задача не запускалась: нет plan, claim, run или подготовки. В карточке закреплены требования одного графа для кода и долговечной документации, исключения временного Task Context и запрета отдельного documentation graph. Отдельного поля priority в текущем публичном Task Manager нет, поэтому высокий приоритет зафиксирован в title/constraints.
 - Новая задача не меняет код, граф, Task Manager schema/API или `obsolete/`; дальнейшее выполнение начнётся только отдельным явным запуском TASK-0031.
+
+## 2026-09-18 — TASK-0031 запущена: единый Project Knowledge Graph
+
+- По явному запросу пользователя TASK-0031 переведена через публичный API из `created v1` в `preparing v3`, run_ref `codex-task-0031-knowledge-architecture-20260918`; задача ещё не claimed и не закрыта.
+- Уточнена карточка: `docs/plans/`, `docs/reports/`, `.orchestrator/` Task Context и `obsolete/` явно исключены из snapshot/Graphify refresh. Высокий приоритет сохранён в title/constraints.
+- Начата реализация `project-knowledge/v2`: единый durable code+documentation corpus, provider mixed extraction без отдельного documentation graph, migration-compatible old code-only pointer и structured fallback при provider failure. Tests добавляют shared graph policy и operational-doc exclusion.
+
+## 2026-09-18 — TASK-0031: mixed Graphify provider blocker
+
+- TASK-0031 прошла `preparing → ready → active`; mixed policy, durable allow-list и provider flag реализованы. Публичный run link завершён после regression/refresh attempt; claim освобождён.
+- Полный regression: root 151 (150 passed/1 Windows skip), onboarding 19 (18 passed/1 Windows skip), Task Manager 73/73; всего 243, 241 passed, 2 skipped, 0 failures.
+- Реальный mixed refresh pinned Graphify 0.9.63 вернул `provider_failure`, потому что semantic provider/API credential отсутствует. Старый current pointer сохранён, code-only fallback не выдан за mixed graph. В TASK-0031 открыт публичный `BLOCK-01`, статус `blocked v13`, health_check=[].
+- Ожидается внешний provider backend/API credential; после него повторить refresh/query, добавить immutable testing/readiness/acceptance и только затем закрывать TASK-0031. TASK-0019/0020 пока не закрываются.
 
 ## 2026-09-18 — TASK-0030 принята; TASK-0016 AgentExecution
 

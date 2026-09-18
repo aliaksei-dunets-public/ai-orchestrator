@@ -12,14 +12,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from orchestrator_task_manager import TaskError, TaskManagerService
+from orchestrator_task_manager import TaskError
 
-from .artifact_repository import ArtifactRepository, ArtifactRecord, ArtifactError
-from .workflow_runtime import Graph, GraphRuntime, Node, NodeResult, RuntimeError, WaitState, WorkflowRun
+from .artifact_repository import ArtifactRecord, ArtifactError
+from .runtime_contracts import Graph, Node, NodeResult, RuntimeError, WaitState, WorkflowRun
 
 
 class PreparationError(RuntimeError):
-    """Непринятый результат адаптера или незавершённая синхронизация."""
+    """Непринятый результат агента или незавершённая синхронизация."""
 
 
 def _text(value: Any, field_name: str) -> str:
@@ -74,7 +74,7 @@ class _Session:
 
 
 class PreparationPrimitives:
-    """Без semantic dispatch; используется legacy и явным агентным путём."""
+    """Детерминированные проверки и публикация явной агентской подготовки."""
 
     def inspect(self, run_id: str) -> dict[str, Any]:
         session = self._session(run_id)
@@ -224,21 +224,11 @@ class PreparationPrimitives:
             raise PreparationError("integrity_error", "Хеш принятого результата изменился")
         session.records[record.role] = record
 
-    def _queue(self, run_id: str, *, answer: Any = None, resumed: str | None = None,
-               resolution: str | None = None) -> None:
+    def _queue(self, run_id: str) -> None:
         session = self._session(run_id)
         result = self.runtime.inspect_run(run_id).last_result
         assert result is not None
         actions = []
-        if resumed:
-            if resumed == "user_input":
-                actions.append(lambda: self._call(session, "record_user_decision", decision_type="clarification",
-                                                  value=_json_bytes(answer).decode("utf-8")))
-            else:
-                actions.append(lambda: self._call(session, "resolve_blocker", blocker_ref=session.blocker,
-                                                  resolution=resolution))
-            actions.append(lambda: self._call(session, "transition_status", to="preparing", reason="Возобновление подготовки"))
-            actions.append(lambda: self._call(session, "link_workflow_run", run_ref=run_id, relation="active"))
         for artifact in result.artifacts.values():
             actions.append(lambda artifact=artifact: self._publish(session, artifact))
         if result.outcome == "needs_input":
@@ -317,11 +307,11 @@ class PreparationPrimitives:
         """Проверка предоставленного агентом envelope без вызова reasoning."""
         stage = node.node_id
         if not isinstance(raw, Mapping):
-            raise PreparationError("contract_violation", "Адаптер должен вернуть объект", stage=stage)
+            raise PreparationError("contract_violation", "Агент должен предоставить объект", stage=stage)
         raw = copy.deepcopy(dict(raw))
         _json_bytes(raw)
         if set(raw) - {"outcome", "payload", "question", "reason"}:
-            raise PreparationError("contract_violation", "Неизвестные поля envelope адаптера", stage=stage)
+            raise PreparationError("contract_violation", "Неизвестные поля envelope агента", stage=stage)
         outcome = raw.get("outcome")
         if not isinstance(outcome, str) or outcome not in node.outcomes:
             raise PreparationError("unknown_outcome", "Исход не объявлен графом", stage=stage)

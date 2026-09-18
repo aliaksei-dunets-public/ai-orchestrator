@@ -1,9 +1,11 @@
 # Graphify Integration for AI Orchestrator
 
-**Status:** Working architecture decision  
+**Status:** Historical source material — superseded by the Russian normative contract
 **Scope:** Project Knowledge Graph for AI Orchestrator  
 **Current target stack:** Python + React / Vue  
 **SAP / ABAP support:** planned later as a separate extension
+
+> **Важно для текущей архитектуры (2026-09-18).** Этот англоязычный материал сохранён как исходник для сверки и не является действующим контрактом. Его ранние формулировки про Code Graph, отдельную Memory-комбинацию, headless CLI configuration, incremental updates и будущую конкретную Graphify configuration superseded. Действующее решение описано в [Project Knowledge Service](../architecture/project-knowledge-service.md) и [host-agent design](../plans/2026-09-18-graphify-host-agent-design.md): Orchestrator Agent использует Graphify skill текущего host-agent; один Project Knowledge Graph содержит код и только долговечную документацию; tasks/plans/reports/runs/scratch/obsolete исключаются; новый semantic backend и отдельный documentation graph для v1 не создаются. `refresh_code_graph()` и `refresh_document_graph()` — целевые раздельные операции одного графа, но пока не реализованный API.
 
 ---
 
