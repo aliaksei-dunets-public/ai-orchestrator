@@ -1,0 +1,180 @@
+{
+  "required_outputs": [
+    {
+      "required": [],
+      "outcome": "needs_input",
+      "state": "waiting_input",
+      "revision": 2
+    },
+    {
+      "required": [],
+      "outcome": "blocked",
+      "state": "blocked",
+      "revision": 2
+    },
+    {
+      "required": [],
+      "outcome": "failure",
+      "state": "failed",
+      "revision": 2
+    },
+    {
+      "required": [],
+      "outcome": "success",
+      "state": "succeeded",
+      "revision": 2
+    },
+    {
+      "required": [
+        "plan"
+      ],
+      "outcome": "needs_input",
+      "error": "contract_violation",
+      "missing": [
+        "plan"
+      ],
+      "unchanged": true
+    },
+    {
+      "required": [
+        "plan"
+      ],
+      "outcome": "blocked",
+      "error": "contract_violation",
+      "missing": [
+        "plan"
+      ],
+      "unchanged": true
+    },
+    {
+      "required": [
+        "plan"
+      ],
+      "outcome": "failure",
+      "error": "contract_violation",
+      "missing": [
+        "plan"
+      ],
+      "unchanged": true
+    },
+    {
+      "required": [
+        "plan"
+      ],
+      "outcome": "success",
+      "error": "contract_violation",
+      "missing": [
+        "plan"
+      ],
+      "unchanged": true
+    },
+    {
+      "required": [
+        "plan"
+      ],
+      "outcome": "success",
+      "output_present": true,
+      "state": "succeeded"
+    }
+  ],
+  "budgets": [
+    {
+      "limits": {
+        "max_results": 1
+      },
+      "outcome": "needs_input",
+      "remaining_after_resume": 0,
+      "actions_after_resume": [
+        "cancel"
+      ],
+      "finish": "result_limit_exceeded"
+    },
+    {
+      "limits": {
+        "max_results": 1
+      },
+      "outcome": "blocked",
+      "remaining_after_resume": 0,
+      "actions_after_resume": [
+        "cancel"
+      ],
+      "finish": "result_limit_exceeded"
+    },
+    {
+      "limits": {
+        "node_limits": {
+          "work": 1
+        }
+      },
+      "outcome": "needs_input",
+      "remaining_after_resume": 0,
+      "actions_after_resume": [
+        "cancel"
+      ],
+      "finish": "result_limit_exceeded"
+    },
+    {
+      "limits": {
+        "node_limits": {
+          "work": 1
+        }
+      },
+      "outcome": "blocked",
+      "remaining_after_resume": 0,
+      "actions_after_resume": [
+        "cancel"
+      ],
+      "finish": "result_limit_exceeded"
+    },
+    {
+      "limits": {
+        "max_results": 2
+      },
+      "outcome": "needs_input",
+      "remaining_after_resume": 1,
+      "actions_after_resume": [
+        "submit_result",
+        "cancel"
+      ],
+      "finish": "succeeded"
+    },
+    {
+      "limits": {
+        "max_results": 2
+      },
+      "outcome": "blocked",
+      "remaining_after_resume": 1,
+      "actions_after_resume": [
+        "submit_result",
+        "cancel"
+      ],
+      "finish": "succeeded"
+    }
+  ],
+  "definition_binding": [
+    {
+      "bound": 1,
+      "supplied": 1,
+      "status": "succeeded"
+    },
+    {
+      "bound": 1,
+      "supplied": 2,
+      "status": "stale_definition"
+    }
+  ],
+  "wait_target": {
+    "declared": "ask",
+    "current_node": "work",
+    "state": "waiting_input"
+  },
+  "knowledge_confirmation": {
+    "outcome": "awaiting_confirmation",
+    "wait_kind": "user_input",
+    "required_output_present": true,
+    "error": "contract_violation",
+    "message": "Этот outcome не допускает wait",
+    "unchanged": true,
+    "full_refresh_calls": 0
+  }
+}

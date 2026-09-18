@@ -119,6 +119,7 @@ class AgentGraphRuntime:
                     "node": None if node is None else {
                         "node_id": node.node_id, "input_contract": node.input_contract,
                         "output_contract": node.output_contract, "required_outputs": list(node.required_outputs),
+                        "required_outputs_by_outcome": {outcome: list(keys) for outcome, keys in node.required_outputs_by_outcome.items()},
                         "outcomes": list(node.outcomes), "transitions": dict(node.transitions)},
                     "wait": run.wait.to_dict() if run.wait else None}
 

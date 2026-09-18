@@ -1,0 +1,21 @@
+schema_version = 1
+[component]
+id = "core/test-scope"
+version = 1
+kind = "node"
+title = "Область тестирования"
+description = "Выбрать проверки по цели задачи и возможностям проекта."
+[inputs]
+task = "task-request/v1"
+project_profile = "project-profile/v1"
+[outputs]
+scope = "test-scope/v1"
+[outcomes]
+success = ["scope"]
+[execution]
+kind = "agent"
+instruction = "Определи предметные проверки по objective и test_capability проекта. Не запускай проверки и не изменяй исходники. Верни scope с непустым checks."
+[effects]
+writes_repository = false
+writes_task_manager = false
+external_actions = false

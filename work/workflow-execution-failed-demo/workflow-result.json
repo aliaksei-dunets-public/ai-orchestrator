@@ -1,0 +1,502 @@
+{
+  "run": {
+    "run_id": "RUN-3906dc7d2d7047ef82efdff696e1e8be",
+    "task_ref": null,
+    "graph_ref": "examples/testing-and-documentation",
+    "graph_version": 1,
+    "phase": "execution",
+    "state": "failed",
+    "current_node": null,
+    "inputs": {
+      "workflow_digest": "workflow/v1:2b6eb67df5a8399c6f66ea458c10b22c91c858a57cfb3876997a6e244a6224c9"
+    },
+    "results": {
+      "testing.scope": {
+        "node_id": "testing.scope",
+        "outcome": "success",
+        "artifacts": {
+          "scope": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "output-2e543a502d97d308",
+            "version": "v2-1",
+            "record": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "output-2e543a502d97d308",
+              "version": "v2-1",
+              "contract": "test-scope/v1",
+              "media_type": "application/json",
+              "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+              "size": 25,
+              "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-2e543a502d97d308/v2-1/payload.bin"
+            },
+            "field": null,
+            "port": "scope",
+            "contract": "test-scope/v1",
+            "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+            "value": {
+              "checks": [
+                "arithmetic"
+              ]
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "agent",
+            "executor_ref": "local-fixture-process",
+            "requested_profile": "standard",
+            "executed_profile": "standard",
+            "provider": "local-fixture",
+            "model": "fixture-v1",
+            "reasoning": null,
+            "fallback_reason": null,
+            "policy": "single_agent"
+          },
+          "evidence": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "node_evidence",
+            "version": "v2-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "7721c1e3b272467a618350a9fbe30d8fcddcf144a53a929c3261fce397303330",
+            "size": 2337,
+            "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v2-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      },
+      "testing.run": {
+        "node_id": "testing.run",
+        "outcome": "failure",
+        "artifacts": {
+          "execution_record": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "output-f40e7ae423660036",
+            "version": "v3-1",
+            "record": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "output-f40e7ae423660036",
+              "version": "v3-1",
+              "contract": "test-execution-record/v1",
+              "media_type": "application/json",
+              "sha256": "7c04ea10145bd39ac6507c7bf6bc7b9e9dd0d7ce31cecee3f7b5b3dab1db69b4",
+              "size": 160,
+              "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-f40e7ae423660036/v3-1/payload.bin"
+            },
+            "field": null,
+            "port": "execution_record",
+            "contract": "test-execution-record/v1",
+            "sha256": "7c04ea10145bd39ac6507c7bf6bc7b9e9dd0d7ce31cecee3f7b5b3dab1db69b4",
+            "value": {
+              "evidence_refs": [
+                "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+              ],
+              "failed": 1,
+              "passed": 0
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "tool",
+            "executor_ref": "stdlib-unittest",
+            "capability": "project-test-runner"
+          },
+          "evidence": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "node_evidence",
+            "version": "v3-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "895ff68b37519d79d29299f55f51aa53d373f8a6baef6f3b61cb67310748c994",
+            "size": 2280,
+            "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v3-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      },
+      "testing.summary": {
+        "node_id": "testing.summary",
+        "outcome": "failed",
+        "artifacts": {
+          "result": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "output-d9fd9a3d81d750e6",
+            "version": "v4-1",
+            "record": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "output-d9fd9a3d81d750e6",
+              "version": "v4-1",
+              "contract": "testing-summary/v1",
+              "media_type": "application/json",
+              "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+              "size": 236,
+              "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+            },
+            "field": null,
+            "port": "result",
+            "contract": "testing-summary/v1",
+            "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+            "value": {
+              "evidence_refs": [
+                "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+              ],
+              "status": "failed",
+              "summary": "Результат реального локального unittest"
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "agent",
+            "executor_ref": "local-fixture-process",
+            "requested_profile": "standard",
+            "executed_profile": "standard",
+            "provider": "local-fixture",
+            "model": "fixture-v1",
+            "reasoning": null,
+            "fallback_reason": null,
+            "policy": "single_agent"
+          },
+          "evidence": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "node_evidence",
+            "version": "v4-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "58d8f593197d031006a11a23641e901febf830e09c1b636b80e833c896201002",
+            "size": 2669,
+            "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v4-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      }
+    },
+    "wait": null,
+    "last_result": {
+      "node_id": "testing.summary",
+      "outcome": "failed",
+      "artifacts": {
+        "result": {
+          "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+          "role": "output-d9fd9a3d81d750e6",
+          "version": "v4-1",
+          "record": {
+            "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+            "role": "output-d9fd9a3d81d750e6",
+            "version": "v4-1",
+            "contract": "testing-summary/v1",
+            "media_type": "application/json",
+            "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+            "size": 236,
+            "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+          },
+          "field": null,
+          "port": "result",
+          "contract": "testing-summary/v1",
+          "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+          "value": {
+            "evidence_refs": [
+              "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+            ],
+            "status": "failed",
+            "summary": "Результат реального локального unittest"
+          }
+        }
+      },
+      "data": {
+        "receipt": {
+          "kind": "agent",
+          "executor_ref": "local-fixture-process",
+          "requested_profile": "standard",
+          "executed_profile": "standard",
+          "provider": "local-fixture",
+          "model": "fixture-v1",
+          "reasoning": null,
+          "fallback_reason": null,
+          "policy": "single_agent"
+        },
+        "evidence": {
+          "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+          "role": "node_evidence",
+          "version": "v4-1",
+          "contract": "workflow-node-evidence/v1",
+          "media_type": "application/json",
+          "sha256": "58d8f593197d031006a11a23641e901febf830e09c1b636b80e833c896201002",
+          "size": 2669,
+          "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v4-1/payload.bin"
+        }
+      },
+      "error": null,
+      "wait": null
+    },
+    "revision": 4,
+    "task_definition_version": null,
+    "max_results": 50,
+    "node_limits": {},
+    "result_counts": {
+      "testing.scope": 1,
+      "testing.run": 1,
+      "testing.summary": 1
+    },
+    "history": [
+      {
+        "revision": 2,
+        "action": "submit_result",
+        "result": {
+          "node_id": "testing.scope",
+          "outcome": "success",
+          "artifacts": {
+            "scope": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "output-2e543a502d97d308",
+              "version": "v2-1",
+              "record": {
+                "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+                "role": "output-2e543a502d97d308",
+                "version": "v2-1",
+                "contract": "test-scope/v1",
+                "media_type": "application/json",
+                "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+                "size": 25,
+                "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-2e543a502d97d308/v2-1/payload.bin"
+              },
+              "field": null,
+              "port": "scope",
+              "contract": "test-scope/v1",
+              "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+              "value": {
+                "checks": [
+                  "arithmetic"
+                ]
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "agent",
+              "executor_ref": "local-fixture-process",
+              "requested_profile": "standard",
+              "executed_profile": "standard",
+              "provider": "local-fixture",
+              "model": "fixture-v1",
+              "reasoning": null,
+              "fallback_reason": null,
+              "policy": "single_agent"
+            },
+            "evidence": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "node_evidence",
+              "version": "v2-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "7721c1e3b272467a618350a9fbe30d8fcddcf144a53a929c3261fce397303330",
+              "size": 2337,
+              "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v2-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      },
+      {
+        "revision": 3,
+        "action": "submit_result",
+        "result": {
+          "node_id": "testing.run",
+          "outcome": "failure",
+          "artifacts": {
+            "execution_record": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "output-f40e7ae423660036",
+              "version": "v3-1",
+              "record": {
+                "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+                "role": "output-f40e7ae423660036",
+                "version": "v3-1",
+                "contract": "test-execution-record/v1",
+                "media_type": "application/json",
+                "sha256": "7c04ea10145bd39ac6507c7bf6bc7b9e9dd0d7ce31cecee3f7b5b3dab1db69b4",
+                "size": 160,
+                "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-f40e7ae423660036/v3-1/payload.bin"
+              },
+              "field": null,
+              "port": "execution_record",
+              "contract": "test-execution-record/v1",
+              "sha256": "7c04ea10145bd39ac6507c7bf6bc7b9e9dd0d7ce31cecee3f7b5b3dab1db69b4",
+              "value": {
+                "evidence_refs": [
+                  "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+                ],
+                "failed": 1,
+                "passed": 0
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "tool",
+              "executor_ref": "stdlib-unittest",
+              "capability": "project-test-runner"
+            },
+            "evidence": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "node_evidence",
+              "version": "v3-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "895ff68b37519d79d29299f55f51aa53d373f8a6baef6f3b61cb67310748c994",
+              "size": 2280,
+              "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v3-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      },
+      {
+        "revision": 4,
+        "action": "submit_result",
+        "result": {
+          "node_id": "testing.summary",
+          "outcome": "failed",
+          "artifacts": {
+            "result": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "output-d9fd9a3d81d750e6",
+              "version": "v4-1",
+              "record": {
+                "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+                "role": "output-d9fd9a3d81d750e6",
+                "version": "v4-1",
+                "contract": "testing-summary/v1",
+                "media_type": "application/json",
+                "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+                "size": 236,
+                "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+              },
+              "field": null,
+              "port": "result",
+              "contract": "testing-summary/v1",
+              "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+              "value": {
+                "evidence_refs": [
+                  "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+                ],
+                "status": "failed",
+                "summary": "Результат реального локального unittest"
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "agent",
+              "executor_ref": "local-fixture-process",
+              "requested_profile": "standard",
+              "executed_profile": "standard",
+              "provider": "local-fixture",
+              "model": "fixture-v1",
+              "reasoning": null,
+              "fallback_reason": null,
+              "policy": "single_agent"
+            },
+            "evidence": {
+              "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+              "role": "node_evidence",
+              "version": "v4-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "58d8f593197d031006a11a23641e901febf830e09c1b636b80e833c896201002",
+              "size": 2669,
+              "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v4-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      }
+    ],
+    "resumed_wait": null
+  },
+  "workflow_digest": "workflow/v1:2b6eb67df5a8399c6f66ea458c10b22c91c858a57cfb3876997a6e244a6224c9",
+  "pending_effect": null,
+  "execution_policy": {
+    "mode": "single_agent",
+    "fallbacks": {}
+  },
+  "evidence": [
+    {
+      "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+      "role": "node_evidence",
+      "version": "v2-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "7721c1e3b272467a618350a9fbe30d8fcddcf144a53a929c3261fce397303330",
+      "size": 2337,
+      "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v2-1/payload.bin"
+    },
+    {
+      "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+      "role": "node_evidence",
+      "version": "v3-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "895ff68b37519d79d29299f55f51aa53d373f8a6baef6f3b61cb67310748c994",
+      "size": 2280,
+      "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v3-1/payload.bin"
+    },
+    {
+      "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+      "role": "node_evidence",
+      "version": "v4-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "58d8f593197d031006a11a23641e901febf830e09c1b636b80e833c896201002",
+      "size": 2669,
+      "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/node_evidence/v4-1/payload.bin"
+    }
+  ],
+  "result": {
+    "outcome": "failure",
+    "outputs": {
+      "testing_result": {
+        "evidence_refs": [
+          "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+        ],
+        "status": "failed",
+        "summary": "Результат реального локального unittest"
+      }
+    },
+    "artifacts": {
+      "testing_result": {
+        "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+        "role": "output-d9fd9a3d81d750e6",
+        "version": "v4-1",
+        "record": {
+          "ref": "WF-c1f5c70471724a3e8efd0a86405b40a4",
+          "role": "output-d9fd9a3d81d750e6",
+          "version": "v4-1",
+          "contract": "testing-summary/v1",
+          "media_type": "application/json",
+          "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+          "size": 236,
+          "path": ".orchestrator/artifacts/WF-c1f5c70471724a3e8efd0a86405b40a4/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+        },
+        "field": null,
+        "port": "result",
+        "contract": "testing-summary/v1",
+        "sha256": "71608d73ef798975b62b3b013f235804cffdebf73f672d73bc5622a939406afc",
+        "value": {
+          "evidence_refs": [
+            "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-failed-demo\\unittest-result.txt"
+          ],
+          "status": "failed",
+          "summary": "Результат реального локального unittest"
+        }
+      }
+    }
+  }
+}

@@ -75,4 +75,4 @@ with tempfile.TemporaryDirectory() as directory:
 
 При sync error прочитайте inspect и public history. Known pending: synchronize либо explicit cancel с причиной. Unknown: только reconcile_effect с доказанной актуальной task version и boolean applied, потом synchronize. Не повторяйте work unit или claim вслепую. Дополнительные события требуют ручной оценки; автоматический restart recovery не обещается.
 
-После handoff агент должен отдельно пройти review/tests/docs/knowledge/final-validation и подготовить acceptance package; это следующий TASK-0017, не реализованный этим guide шаг. До него нельзя удерживать lease без управления или объявлять задачу принятой за пользователя.
+После handoff агент должен отдельно пройти review/tests/docs/knowledge/final-validation и подготовить acceptance package по [guide execution gates](execution-gates.md). До этого нельзя объявлять задачу принятой за пользователя.

@@ -1,0 +1,45 @@
+schema_version = 1
+[component]
+id = "core/testing"
+version = 1
+kind = "subgraph"
+title = "Тестирование"
+description = "Учебный срез: область → проверки → разбор; возвращает результат caller."
+entry = "scope"
+[inputs]
+task = "task-request/v1"
+project_profile = "project-profile/v1"
+[outputs]
+result = "testing-summary/v1"
+[outcomes]
+passed = ["result"]
+failed = ["result"]
+[execution]
+model_profile = "standard"
+[nodes.scope]
+ref = "core/test-scope@1"
+[nodes.scope.inputs]
+task = "input:task"
+project_profile = "input:project_profile"
+[nodes.scope.transitions]
+success = "run"
+[nodes.run]
+ref = "core/test-runner@1"
+[nodes.run.inputs]
+scope = "scope.scope"
+project_profile = "input:project_profile"
+[nodes.run.transitions]
+finished = "summary"
+failure = "summary"
+[nodes.summary]
+ref = "core/testing-summary@1"
+[nodes.summary.inputs]
+execution_record = "run.execution_record"
+task = "input:task"
+[nodes.summary.transitions]
+passed = "exit:passed"
+failed = "exit:failed"
+[exits.passed]
+result = "summary.result"
+[exits.failed]
+result = "summary.result"

@@ -71,6 +71,7 @@ class _Session:
     review_cycles: int = 0
     expansions: int = 0
     blocker: str | None = None
+    workflow_binding: dict[str, Any] | None = None
 
 
 class PreparationPrimitives:
@@ -149,6 +150,12 @@ class PreparationPrimitives:
         return NodeResult(stage, outcome, artifacts={role: artifact}, data={"payload": payload, "reason": reason}, wait=wait)
 
     def _plan_document(self, payload: dict[str, Any], session: _Session, run: WorkflowRun) -> str:
+        if session.workflow_binding is not None:
+            if "workflow_binding" in payload and payload["workflow_binding"] != session.workflow_binding:
+                raise PreparationError("stale_workflow", "План связан с другим workflow")
+            payload["workflow_binding"] = copy.deepcopy(session.workflow_binding)
+        elif "workflow_binding" in payload:
+            raise PreparationError("stale_workflow", "Workflow должен быть задан доверенным host при start")
         _text(payload.get("goal"), "goal")
         scope = payload.get("scope")
         if not isinstance(scope, dict):
@@ -202,9 +209,11 @@ class PreparationPrimitives:
                 _strings(finding.get("evidence_refs"), "finding.evidence_refs", nonempty=True)
         if outcome == "approved":
             binding = payload.get("approved_binding", {})
-            if (not isinstance(binding, dict) or binding.get("plan_sha256") != session.records["plan"].sha256
-                    or type(binding.get("definition_version")) is not int
-                    or binding.get("definition_version") != session.task["definition_version"]):
+            expected = {"plan_sha256": session.records["plan"].sha256,
+                        "definition_version": session.task["definition_version"]}
+            if session.workflow_binding is not None:
+                expected["workflow_digest"] = session.workflow_binding["digest"]
+            if binding != expected or type(binding.get("definition_version")) is not int:
                 raise PreparationError("stale_review", "Одобрение не связано с актуальным plan/definition")
             covered = _strings(payload.get("criterion_ids"), "criterion_ids", nonempty=True)
             if (set(covered) != {criterion["id"] for criterion in session.task["acceptance_criteria"]}
@@ -361,6 +370,8 @@ class PreparationPrimitives:
             payload = {"task_ref": session.task["id"], "definition_version": session.task["definition_version"],
                        "plan": plan.to_dict(), "plan_review": review.to_dict(),
                        "prepared_source_revision": session.revision, "entrypoint": "execution_preflight"}
+            if session.workflow_binding is not None:
+                payload["workflow_binding"] = copy.deepcopy(session.workflow_binding)
             return self._artifact_result(session, stage, "success", payload, "execution_package")
 
 __all__ = ["PreparationError", "PreparationPrimitives"]

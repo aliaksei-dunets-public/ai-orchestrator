@@ -1,0 +1,6 @@
+schema_version = 1
+[nodes."testing.summary"]
+operation = "replace"
+ref = "project/testing-summary@1"
+[nodes."testing.summary".execution]
+model_profile = "expert"

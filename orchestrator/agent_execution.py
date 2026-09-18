@@ -11,13 +11,15 @@ from datetime import datetime,timezone
 from pathlib import Path
 from typing import Any,Mapping
 
-from orchestrator_task_manager import TaskManagerService
+from orchestrator_task_manager import TaskError, TaskManagerService
 
 from .agent_preparation import _AgentSession
 from .agent_runtime import AgentGraphRuntime,_UNSET,_json_copy
 from .execution_preflight import ExecutionPreflight,ExecutionError,revision
+from .execution_gates import (candidate_fingerprint, execution_gates_graph,
+                               validate_gate_envelope)
 from .knowledge_contracts import CorpusPolicy
-from .knowledge_refresh_node import KnowledgeRefreshNode, KnowledgeRefreshRequest
+from .knowledge_refresh_node import KnowledgeRefreshNode, KnowledgeRefreshPolicy, KnowledgeRefreshRequest
 from .knowledge_service import ProjectKnowledgeService
 from .knowledge_snapshot import canonical_json,safe_relative,allowed_parts
 from .preparation_primitives import PreparationPrimitives,PreparationError,_text,_strings,_json_bytes
@@ -38,6 +40,21 @@ class _ExecutionSession(_AgentSession):
     knowledge_gate: dict | None = None
 
 
+@dataclass
+class _GateSession:
+    task: dict
+    execution_run_id: str
+    gate_run_id: str
+    candidate_revision: str
+    source_revision: str
+    package_ref: str
+    worker_ref: str
+    knowledge_required: bool = False
+    ref: str = ""
+    records: dict[str, dict] = field(default_factory=dict)
+    knowledge: dict | None = None
+
+
 def _graph():
     transitions={"success":"work_unit","handoff":"succeeded","needs_input":"work_unit",
                  "blocked":"work_unit","failure":"failed"}
@@ -49,17 +66,19 @@ class AgentExecution(TaskEffectSync,PreparationPrimitives):
     """Одна in-memory сессия; physical edits выполняет агент, не facade."""
 
     def __init__(self,project_root: Path,*,policy: CorpusPolicy | None=None,max_results: int=200,
-                 knowledge_service: ProjectKnowledgeService | None = None):
+                 knowledge_service: ProjectKnowledgeService | None = None, workflow_source=None):
         if type(max_results) is not int or max_results < 1:
             raise ExecutionError("contract_violation","max_results должен быть положительным целым")
-        self.preflight=ExecutionPreflight(project_root,policy=policy)
+        self.preflight=ExecutionPreflight(project_root,policy=policy,workflow_source=workflow_source)
         self.repository=self.preflight.repository
         self.service=self.preflight.service
         self.knowledge_service=knowledge_service
         self.runtime=AgentGraphRuntime()
         self.max_results=max_results
         self._sessions={}
+        self._gate_sessions={}
         self._lock=threading.RLock()
+        self._components={}
 
     def source_revision(self):
         return self.preflight.source_revision()
@@ -219,6 +238,271 @@ class AgentExecution(TaskEffectSync,PreparationPrimitives):
                 "degraded разрешён только для провалидированного full-rebuild-fallback"]}
         session.knowledge_gate=value
         return copy.deepcopy(value)
+
+    @_locked
+    def start_gates(self,run_id,*,expected_revision,expected_task_version,
+                    knowledge_required=False):
+        """Start the explicit post-work-unit gate graph.
+
+        The implementation agent supplies review/testing/documentation/final
+        results. This method only creates process state and binds it to the
+        current task/claim/package.
+        """
+        session=self._session(run_id)
+        if session.pending:
+            raise ExecutionError("sync_pending","Сначала завершите принятые effects")
+        execution=self.runtime.inspect_run(run_id)
+        if execution.state!="succeeded" or len(session.completed)!=len(session.binding["work_units"]):
+            raise ExecutionError("invalid_state","Gates доступны только после handoff всех work units")
+        if type(knowledge_required) is not bool:
+            raise ExecutionError("contract_violation","knowledge_required должен быть bool")
+        actual=self.service.get_task(session.task["id"])
+        self._task_guard(actual,expected_task_version)
+        self._integrity(session,actual)
+        if actual["status"]!="active" or actual["active_claim"] is None or actual["active_run_ref"] is not None:
+            raise ExecutionError("invalid_state","Нужна active task с собственным claim без active run")
+        if actual["active_claim"]["ref"]!=session.claim_ref:
+            raise ExecutionError("claim_conflict","Execution claim принадлежит другой сессии")
+        source=self.source_revision()
+        if source!=revision(session.checkpoint):
+            raise ExecutionError("source_drift","Source изменился перед gates")
+        package_ref=actual["artifacts"]["execution_package"]["ref"]
+        candidate=candidate_fingerprint(task_id=actual["id"],definition_version=actual["definition_version"],
+                                        package_ref=package_ref,source_revision=source)
+        gate=self.runtime.create_run(execution_gates_graph(),
+            {"candidate_revision":candidate,"source_revision":source,"package_ref":package_ref},
+            task_ref=actual["id"],task_definition_version=actual["definition_version"],phase="execution",
+            max_results=10)
+        gate_session=_GateSession(actual,run_id,gate.run_id,candidate,source,package_ref,session.worker_ref,
+                                  knowledge_required,ref="GATE-"+uuid.uuid4().hex)
+        self._gate_sessions[gate.run_id]=gate_session
+        try:
+            gate_session.task=self.service.link_workflow_run(actual["id"],actual["version"],
+                                                             run_ref=gate.run_id,relation="active")
+        except TaskError as exc:
+            self._gate_sessions.pop(gate.run_id,None)
+            raise ExecutionError(exc.code,str(exc),**exc.details) from exc
+        return self.gate_inspect(gate.run_id)
+
+    @_locked
+    def gate_inspect(self,gate_run_id):
+        gate=self._gate_session(gate_run_id)
+        run=self.runtime.inspect_run(gate_run_id)
+        return {"run":run.to_dict(),"task":self.service.get_task(gate.task["id"]),
+                "candidate_revision":gate.candidate_revision,"source_revision":gate.source_revision,
+                "knowledge_required":gate.knowledge_required,
+                "artifacts":copy.deepcopy(gate.records),"knowledge":copy.deepcopy(gate.knowledge)}
+
+    @_locked
+    def gate_request(self,gate_run_id):
+        gate=self._gate_session(gate_run_id)
+        run=self.runtime.inspect_run(gate_run_id)
+        actions=self.runtime.available_actions(gate_run_id)
+        actions["actions"]=["submit_gate" if item=="submit_result" else item for item in actions["actions"]]
+        if (run.current_node=="knowledge_refresh" and run.state in {"created","running","waiting_input"}
+                and actions["remaining_results"] > 0):
+            actions["actions"].append("refresh_knowledge")
+        return {"contract":actions["node"]["input_contract"] if actions["node"] else None,
+                "actions":actions,"task":self.service.get_task(gate.task["id"]),
+                "candidate_revision":gate.candidate_revision,"source_revision":gate.source_revision,
+                "previous":copy.deepcopy(run.results),"artifacts":copy.deepcopy(gate.records),
+                "knowledge":copy.deepcopy(gate.knowledge)}
+
+    def _gate_session(self,gate_run_id):
+        gate=self._gate_sessions.get(gate_run_id)
+        if gate is None:
+            raise ExecutionError("run_not_found","Gate run не найден",run_id=gate_run_id)
+        return gate
+
+    def _gate_guard(self,gate_run_id,expected_revision,expected_task_version):
+        gate=self._gate_session(gate_run_id)
+        run=self.runtime.inspect_run(gate_run_id)
+        if type(expected_revision) is not int or run.revision!=expected_revision:
+            raise ExecutionError("run_revision_conflict","Нужна текущая gate process revision")
+        task=self.service.get_task(gate.task["id"])
+        self._task_guard(task,expected_task_version)
+        if task["status"]!="active" or task["active_run_ref"]!=gate_run_id or not task["active_claim"]:
+            raise ExecutionError("invalid_state","Task Manager не связан с gate run")
+        original=self._session(gate.execution_run_id)
+        self._integrity(original,task)
+        self._lease(original,task)
+        if any(b["blocking"] and b["status"]=="open" for b in task["blockers"]):
+            raise ExecutionError("invalid_state","Открытый blocker запрещает gate execution")
+        if task["active_claim"]["ref"]!=original.claim_ref:
+            raise ExecutionError("claim_conflict","Gate claim принадлежит другой сессии")
+        if self.source_revision()!=gate.source_revision:
+            raise ExecutionError("source_drift","Candidate source revision устарела")
+        return gate,run,task
+
+    @_locked
+    def start_component(self,gate_run_id,*,roles,executors,inputs,expected_revision,
+                        expected_task_version,fallbacks=None):
+        gate,run,task=self._gate_guard(gate_run_id,expected_revision,expected_task_version)
+        if run.current_node not in {"code_review","testing","documentation","final_validation"}:
+            raise ExecutionError("invalid_state","Knowledge gate остаётся отдельным guarded action")
+        if "submit_result" not in self.runtime.available_actions(gate_run_id)["actions"]:
+            raise ExecutionError("invalid_state","Компонент сейчас недоступен")
+        binding=self._session(gate.execution_run_id).binding.get("workflow_binding")
+        if binding is None:
+            raise ExecutionError("workflow_required","Нужен workflow binding в package")
+        if any(c.owner==gate_run_id and c.role.role==run.current_node
+               and c.request["actions"]["revision"]==run.revision for c in self._components.values()):
+            raise ExecutionError("component_exists","Для этапа уже создан компонент; продолжите или сверьте его")
+        from .workflow_roles import start_role
+        def guard():
+            with self._lock:
+                self._gate_guard(gate_run_id,expected_revision,expected_task_version)
+        component=start_role(self.repository,binding,roles,run.current_node,"execution",executors,
+                             inputs,guard,fallbacks,self.gate_request(gate_run_id),gate_run_id)
+        self._components[id(component)]=component
+        return component
+
+    @_locked
+    def submit_component(self,gate_run_id,component,*,expected_revision,expected_task_version):
+        gate,run,task=self._gate_guard(gate_run_id,expected_revision,expected_task_version)
+        binding=self._session(gate.execution_run_id).binding.get("workflow_binding")
+        from .workflow_roles import role_envelope
+        envelope=role_envelope(component,self._components,gate_run_id,run.current_node,"execution",binding)
+        return self.submit_gate(gate_run_id,envelope,expected_revision=expected_revision,
+                                expected_task_version=expected_task_version)
+
+    def _publish_gate(self,gate,node_id,outcome,payload,*,role=None,version="v1"):
+        role=role or node_id
+        value={"contract":f"{node_id.replace('_','-')}-evidence/v1","task_ref":gate.task["id"],
+               "candidate_revision":gate.candidate_revision,"source_revision":gate.source_revision,
+               "outcome":outcome,"payload":copy.deepcopy(payload)}
+        record=self.repository.put_json(gate.ref,role,version,value,contract=value["contract"])
+        evidence={"ref":record.ref,"role":record.role,"version":record.version,"contract":record.contract,
+                  "sha256":record.sha256,"value":value}
+        gate.records[node_id]={**record.to_dict(),"evidence_ref":f"{record.ref}:{record.role}:{record.version}",
+                              "outcome":outcome}
+        return record,evidence,value
+
+    def _attach_gate(self,gate,task,role,record,outcome):
+        ref=f"{record.ref}:{record.role}:{record.version}"
+        metadata={"status":outcome,"candidate_revision":gate.candidate_revision,
+                  "source_revision":gate.source_revision,"repository":record.to_dict()}
+        try:
+            self.service.attach_artifact(task["id"],task["version"],role=role,ref=ref,metadata=metadata)
+            return self.service.get_task(task["id"])
+        except TaskError as exc:
+            raise ExecutionError(exc.code,str(exc),**exc.details) from exc
+
+    @_locked
+    def submit_gate(self,gate_run_id,envelope,*,expected_revision,expected_task_version):
+        gate,run,task=self._gate_guard(gate_run_id,expected_revision,expected_task_version)
+        node=run.current_node
+        if node in {None,"knowledge_refresh"}:
+            raise ExecutionError("invalid_state","Для knowledge_refresh используйте refresh_knowledge")
+        checked=validate_gate_envelope(node,envelope,candidate=gate.candidate_revision,source=gate.source_revision,
+                                       acceptance_criteria=task["acceptance_criteria"])
+        outcome,payload=checked["outcome"],checked["payload"]
+        if node=="final_validation":
+            if gate.knowledge is None:
+                raise ExecutionError("knowledge_gate_required","Final validation требует knowledge evidence")
+            if payload.get("knowledge_status")!=gate.knowledge.get("status"):
+                raise ExecutionError("stale_evidence","Final validation скрывает другой knowledge status")
+            if payload.get("knowledge_required") is not gate.knowledge_required:
+                raise ExecutionError("stale_evidence","Final validation скрывает knowledge policy")
+            docs=run.results.get("documentation",{}).get("data",{}).get("result",{})
+            docs_payload=docs.get("payload",{}) if isinstance(docs,Mapping) else {}
+            if docs_payload.get("source_adjacent_changed") is True:
+                raise ExecutionError("not_ready","Source-adjacent docs требуют delta review до readiness")
+        role="readiness" if node=="final_validation" else node
+        record,evidence,value=self._publish_gate(gate,node,outcome,payload,role=role)
+        if node!="final_validation":
+            task=self._attach_gate(gate,task,role,record,outcome) or self.service.get_task(task["id"])
+        package_record=None
+        package_payload=None
+        if node=="final_validation" and outcome=="ready":
+            task=self._attach_gate(gate,task,"readiness",record,outcome) or self.service.get_task(task["id"])
+            package_payload=dict(payload["acceptance_package"])
+            package_payload.update({"contract":"acceptance-package/v1","task_ref":task["id"],
+                                    "candidate_revision":gate.candidate_revision,
+                                    "source_revision":gate.source_revision})
+            package_record=self.repository.put_json(gate.ref,"acceptance_package","v1",package_payload,
+                                                    contract="acceptance-package/v1")
+            task=self._attach_gate(gate,task,"acceptance_package",package_record,outcome) or self.service.get_task(task["id"])
+        result=NodeResult(node,outcome,artifacts={role:evidence},data={"result":value})
+        accepted=self.runtime.submit_result(gate_run_id,result,expected_revision=expected_revision,
+                                            task_definition_version=task["definition_version"])
+        gate.task=task
+        if node=="final_validation" and outcome=="ready":
+            try:
+                task=self.service.link_workflow_run(task["id"],task["version"],run_ref=gate_run_id,relation="finished")
+                task=self.service.mark_awaiting_acceptance(task["id"],task["version"])
+            except TaskError as exc:
+                raise ExecutionError(exc.code,str(exc),**exc.details) from exc
+            gate.task=task
+        return accepted
+
+    @_locked
+    def refresh_knowledge(self,gate_run_id,*,expected_revision,expected_task_version,
+                          request=None,decision=None):
+        gate,run,task=self._gate_guard(gate_run_id,expected_revision,expected_task_version)
+        if run.current_node!="knowledge_refresh" or run.state not in {"created","running","waiting_input"}:
+            raise ExecutionError("invalid_state","Knowledge gate сейчас недоступен")
+        if self.knowledge_service is None:
+            raise ExecutionError("knowledge_unavailable","Для knowledge gate нужен ProjectKnowledgeService")
+        if self.runtime.available_actions(gate_run_id)["remaining_results"] < 1:
+            raise ExecutionError("result_limit_exceeded","Исчерпан budget knowledge gate")
+        node=KnowledgeRefreshNode(self.knowledge_service)
+        pending_request=gate.knowledge.get("request") if gate.knowledge and run.state=="waiting_input" else None
+        request=node.request_from(request if request is not None else pending_request or KnowledgeRefreshRequest())
+        if pending_request is not None and request.to_dict()!=pending_request:
+            raise ExecutionError("stale_request","Нельзя менять request активного подтверждения")
+        if decision is not None:
+            if not isinstance(decision,Mapping):
+                raise ExecutionError("contract_violation","Decision должен быть объектом")
+            decision=_json_copy(dict(decision))
+        if run.state=="waiting_input":
+            if run.wait is None or decision is None:
+                raise ExecutionError("wait_required","Передайте decision для продолжения knowledge gate")
+            self.runtime.resume_wait(gate_run_id,expected_revision=expected_revision,
+                                     task_definition_version=task["definition_version"],
+                                     wait_id=run.wait.wait_id,node_id=run.wait.node_id,answer=decision)
+            run=self.runtime.inspect_run(gate_run_id)
+            expected_revision=run.revision
+        node_result=node.execute(request,decision=decision)
+        value=copy.deepcopy(node_result.data["result"])
+        value.update({"candidate_revision":gate.candidate_revision,"source_revision":gate.source_revision,
+                      "request":request.to_dict()})
+        if node_result.wait is not None:
+            value["wait"]=node_result.wait.to_dict()
+        if node_result.error is not None:
+            value["error"]=copy.deepcopy(node_result.error)
+        status=value.get("status")
+        record,evidence,stored=self._publish_gate(gate,"knowledge_refresh",node_result.outcome,value,
+                                                role="knowledge_refresh",version=f"v{run.revision}")
+        result=NodeResult("knowledge_refresh",node_result.outcome,artifacts={"knowledge_refresh":evidence},
+                          data={"result":stored},wait=node_result.wait)
+        accepted=self.runtime.submit_result(gate_run_id,result,expected_revision=expected_revision,
+                                            task_definition_version=task["definition_version"])
+        gate.knowledge=value
+        gate.records["knowledge_refresh"]["status"]=status
+        return accepted
+
+    @_locked
+    def release_gates(self,gate_run_id,*,expected_task_version,reason,target_status="preparing"):
+        gate=self._gate_session(gate_run_id)
+        task=self.service.get_task(gate.task["id"])
+        self._task_guard(task,expected_task_version)
+        if target_status not in {"preparing","ready"}:
+            raise ExecutionError("contract_violation","Недопустимый target_status")
+        run=self.runtime.inspect_run(gate_run_id)
+        if run.state not in {"failed","blocked","cancelled"}:
+            raise ExecutionError("invalid_state","Освободить можно только остановленный gate run")
+        try:
+            if task["active_run_ref"]==gate_run_id:
+                task=self.service.link_workflow_run(task["id"],task["version"],run_ref=gate_run_id,relation="finished")
+            task=self.service.release_claim(task["id"],task["version"],claim_ref=task["active_claim"]["ref"],
+                                            target_status=target_status,reason=reason)
+        except (TaskError,KeyError) as exc:
+            if isinstance(exc,TaskError):
+                raise ExecutionError(exc.code,str(exc),**exc.details) from exc
+            raise ExecutionError("claim_conflict","Gate claim отсутствует") from exc
+        gate.task=task
+        return task
 
     def _available_units(self,session):
         return [copy.deepcopy(u) for u in session.binding["work_units"] if u["id"] not in session.completed

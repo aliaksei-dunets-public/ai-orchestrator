@@ -1,5 +1,79 @@
 # Журнал работ
 
+## 2026-09-18 — TASK-0037: configurable execution реализовано
+
+- Реальная подготовка/self-review/ready/preflight и публичный claim TASK-0037 до изменений. Реализованы explicit WorkflowExecutor, model/capability registry и JSON subprocess transport, scoped payload/immutable ports, explicit fallback/receipt и unknown-effect reconciliation.
+- Optional WorkflowSource связал Plan/Review/Package/preflight; registered roles preparation/gates используют прежние validators/publication/sync. Проверены source/claim/lease/blockers/package guards, compatible project replacement и frozen active model. [Контракт](architecture/workflow-execution.md), [guide](guides/workflow-execution.md), [отчёт](reports/2026-09-18-task-0037-workflow-execution.md).
+- 25 новых предметных tests; root 206 (205 passed/1 Windows symlink skip), 0 failures. Compileall, runnable positive/failed guide, skill sync/metadata, links и diff-check. Локальный model subprocess — явно fixture; tool реально запускает unittest, Documentation реально пишет Markdown. External LLM/production knowledge refresh и independent audit не заявляются.
+- Candidate подготовлен для отдельной пользовательской приёмки; Task Manager code, obsolete и .venv сохранены, исторические hashed artifacts TASK-0036 не переписаны.
+
+## 2026-09-19 — TASK-0037: пользовательская приёмка зарегистрирована
+
+- После явного сообщения пользователя «принято» публичный `accept_task` с актуальной `expected_version=14` атомарно завершил TASK-0037: completed v15, без active run/claim.
+- Candidate `workflow-execution-v1:ed78ed8d6cfd44eb6acdcb4d18f01238e5822fb149f9a0eeafc6fce1b5b616cd` принят с decision ref `user-acceptance/task-0037/2026-09-19`; acceptance package сохранён. Публичный `validate`/health check прошёл без проблем.
+
+## 2026-09-18 — TASK-0036: пользовательская приёмка зарегистрирована
+
+- После явной приёмки «Принято» публичный accept_task с прочитанной expected_version=22 завершил TASK-0036: completed v23, без active run/claim. Принят candidate `workflow-builder-v1:c41b55d06d40674a5e6f159d220ec45be2d0beb8f8449d7965795a861af469d7`.
+- Decision ref: `user-acceptance/task-0036/2026-09-18`; operation ID: `task-0036-accept-workflow-builder-20260918`. SHA-256 readiness/acceptance artifacts проверены; хешированные отчёт и пакеты кандидата сохранены. Последующая приёмка отражена в status/roadmap/журнале.
+- Проверены публичная карточка, событие task_completed и health_check=[]; код и TASK-0037 не менялись, тесты повторно не запускались.
+
+## 2026-09-18 — TASK-0036: конструктор процессов реализован
+
+- Публичным Task Manager созданы TASK-0036 и зависимая TASK-0037. Реальная preparation/self-review/ready/preflight/claim первой задачи; protected .agents scope исключён из work-unit source scope без изменения guards, предыдущий собственный plan сохранён. Skill подключён отдельным разрешённым действием.
+- Реализованы TOML/catalog/schema/compiler, data-flow, namespace/exit mapping, patch/replace, модельные descriptors/provenance/digest, builder skill и самостоятельный HTML-инспектор. [Контракт](architecture/workflow-builder.md), [guide](guides/workflow-builder.md), [отчёт](reports/2026-09-18-task-0036-workflow-builder-v1.md).
+- 22 предметных tests passed, root 181 (180 passed/1 Windows symlink skip), real pinned Graphify fixture; compileall/guide/CLI и browser checks прошли. Исправлено наложение ребра на узел; вредоносная инструкция остаётся текстом, сетевых запросов нет. Skill metadata проверены fallback после отсутствующего PyYAML в bundled validator; зависимости не менялись.
+- Подготовлен проверенный кандидат для отдельной пользовательской приёмки. TASK-0037 хранит model dispatch, реальные artifact bindings и фазовые/preflight integrations; эти возможности не заявляются выполненными.
+
+## 2026-09-18 — уточнён интерфейс сборки процессов
+
+- Пользователь выбрал совместное проектирование с агентом через skill как основной способ сборки узлов, подграфов и workflow. В [предложение](plans/2026-09-18-workflow-config-subgraphs-model-policy-design.md) добавлены границы будущего skill и локальный HTML-инспектор с раскрытием подграфов и карточками узлов.
+- Определение процесса остаётся источником для проверок и визуализации; отделены проектирование, просмотр и исполнение. Новые skill/renderer/runtime API не создавались. Проверены ссылки, TOML-пример и отсутствие ошибок whitespace.
+
+## 2026-09-18 — конфигурация workflow, подграфы и модельная политика
+
+- Изучены прежние правила reusable subgraphs, Context overrides, model routing, Testing и Documentation; сопоставлены с текущим плоским Graph и агентскими фасадами. [Сохранено предложение](plans/2026-09-18-workflow-config-subgraphs-model-policy-design.md): библиотека компонентов, project patch/replace, модельные профили через host adapter, компиляция и фиксированный workflow snapshot.
+- Разделены существующие решения и отсутствующая реализация; отмечены необходимые изменения фасадов, передачи артефактов и preflight. Исправлено устаревшее утверждение об отсутствии execution gates в агент-центричной архитектуре. Проверены TOML-синтаксис, локальные ссылки и diff; код и задачи не изменялись.
+
+## 2026-09-18 — обзорный граф Orchestrator сохранён
+
+- По запросу пользователя подготовлена Mermaid-схема фактического агентского пути: AgentPreparation, AgentExecution work units, execution gates, knowledge confirmation и пользовательская приёмка.
+- Схема сохранена в [архитектурном документе](architecture/orchestrator-graph-overview.md), добавлена в MANIFEST и README. Проверены переходы по исходникам и относительные ссылки; `git diff --check` прошёл. Код и состояние задач не менялись.
+
+## 2026-09-18 — TASK-0035: пользовательская приёмка зарегистрирована
+
+- Пользователь явно принял показанный результат («да, принято.»). Публичный `accept` атомарно зарегистрировал приёмку candidate `agent-runtime-fixes-v1:45ab45f9dee487d9aa0897c909f80dc9b5ca7dcc5639f2b073fc9ec5df7fe149` и завершил TASK-0035: completed, version 16, без active run/claim.
+- Decision ref: `user-acceptance/task-0035/2026-09-18`; operation ID: `task-0035-accept-agent-runtime-fixes-20260918`. Использован существующий acceptance package с проверенным SHA-256. Хешированные отчёт кандидата, readiness и acceptance artifacts сохранены; последующая приёмка отражена здесь, в project-status и roadmap.
+- Проверены актуальная карточка, финальное task_completed событие и публичный health check; код не менялся, тесты повторно не запускались.
+
+## 2026-09-18 — TASK-0035: подтверждённые исправления повторного аудита
+
+- По поручению пользователя создана новая HIGH implementation задача. Выполнены реальные AgentPreparation/immutable Plan-Review-Package/ready/ExecutionPreflight/claim. Первый план отклонён за потерянные inherited invariants; после завершения driver утраченная in-memory run-ссылка закрыта публично и выполнена новая preparation со всеми constraints. Self-review обозначен; независимый аудит и приёмка не заявляются.
+- Добавлены совместимые immutable outcome overrides в Node/Graph loader/validator/actions. KnowledgeRefreshNode и knowledge execution gates используют стандартный needs_input с domain awaiting_confirmation. Request сохраняется и не меняется во время wait; decisions/budget/state проверяются до refresh; повторные knowledge payload публикуются отдельными immutable versions.
+- Обновлены контракты и runnable guides, навигационный README, status/roadmap/MANIFEST. Новые guards и полный confirmation→final readiness цикл покрыты 8 предметными тестами. Root с real pinned Graphify: 159 tests, 158 passed/1 Windows symlink skip; 3 guide блока исполнены, compileall успешен. [Подробный отчёт](reports/2026-09-18-task-0035-agent-runtime-audit-fixes.md).
+- Подготовлены хешированные readiness/acceptance artifacts для передачи кандидата публичным Task Manager API. Budget/definition policy, Task Manager/Onboarding code, чужие задачи, obsolete/.venv и production knowledge pointer не изменены; существующие изменения execution gates соседнего этапа сохранены.
+
+## 2026-09-18 — повторный аудит Agent Runtime: оценка замечаний
+
+- Проверен новый отчёт после TASK-0034; [разбор](reports/2026-09-18-agent-runtime-audit-followup-triage.md) отделяет ограничение required outputs от предусмотренных правил бюджета, definition binding и пауз. MCP отнесён к этапу поставки; критический отказ основных фасадов по required outputs не подтверждён.
+- Дополнительно воспроизведена несовместимость KnowledgeRefreshNode confirmation с AgentGraphRuntime: `awaiting_confirmation` с wait отклоняется, несмотря на присутствие required result. Отмечены недостающая интеграционная регрессия и устаревшее описание callback методов в docs/README.
+- Профильные runtime/contracts/preparation/execution tests — 92/92; knowledge node — 6/6. Собственные изолированные пробы прошли, [результаты](reports/2026-09-18-agent-runtime-audit-followup-evidence.json) сохранены. Изменены только материалы оценки и навигация; код, production задачи/claims и knowledge pointer не менялись. Пользователь запросил оценку, поэтому создание задач и реализация исправлений не выполнялись.
+
+## 2026-09-18 — TASK-0017: execution gates реализованы, кандидат ожидает приёмки
+
+- По публичному Task Manager API TASK-0017 прошла `created → preparing → ready → active → awaiting_acceptance`; текущая карточка v26, active run/claim отсутствуют, `validate` чистый. Plan/Review/Execution Package привязаны к source revision `code-corpus/v1:016fde70adbba7901ec83a4ac63cdf56929c228ae6faa451608d6bd5847c2416`.
+- Первый self-check остановился до work-unit submit из-за неверного чтения `inspect()`; созданный run/claim закрыты только публичными `link_workflow_run(..., finished)` и `release_claim(..., ready)`, не вошли в acceptance evidence.
+- Добавлен отдельный `execution-gates-v1` process run в `AgentExecution`: `code_review → testing → documentation → knowledge_refresh → final_validation`. Agent envelopes проходят CAS и task/package/source/candidate guards; kernel не выполняет semantic review, tests, docs или Git commit.
+- Gate evidence публикуется immutable в Artifact Repository и регистрируется через допустимые роли Task Manager. Readiness требует согласованные revisions, полное AC coverage, пустые blocking findings и явную knowledge policy; успешный путь публикует readiness/acceptance package и переводит задачу в `awaiting_acceptance`.
+- Negative checks подтверждены: `changes_required` не получает readiness и требует remediation; required knowledge не принимает `degraded`; stale/failure/blocked/fallback evidence запрещены. Пользовательская приёмка не подменена: текущий candidate `CANDIDATE-783ecd77ea7e3c103772b5bf956944ec6392a4d775f5a98328440b1f4c99caf2` ждёт явного `accept_task`.
+- Добавлены [архитектура](architecture/execution-gates.md), [guide](guides/execution-gates.md), [дизайн](plans/2026-09-18-task-0017-execution-gates-design.md) и [отчёт](reports/2026-09-18-task-0017-execution-gates-v1.md). Root suite: 151 tests, 149 passed, 2 skipped; package suites и validate прошли.
+
+## 2026-09-18 — TASK-0034: пользовательская приёмка и завершение
+
+- Пользователь явно принял показанный результат сообщением «принято». Через публичный CLI `accept` с прочитанной expected_version=19 атомарно зарегистрирована приёмка candidate `callback-removal-v1:deb47e44de0fc290606a5299bd2948261f8c08f282425e48e1c928b356aad4e3` и завершена TASK-0034: completed, version 20, без active run/claim.
+- Decision ref: `user-acceptance/task-0034/2026-09-18`; operation ID: `task-0034-accept-callback-removal-20260918`. Привязка — существующий `.orchestrator/tasks/TASK-0034/acceptance-package.json`. Исторический хешированный отчёт кандидата и его артефакты сохранены; факт последующей приёмки отражён здесь, в project-status и roadmap.
+- Проверены карточка, финальное task_completed событие и публичный validate; код не менялся и тесты повторно не запускались.
+
 ## 2026-09-18 — TASK-0034: callback-путь удалён, кандидат проверен
 
 - После явного разрешения пользователя задача прошла AgentPreparation с immutable Plan/Review/Package, self-review, настоящими ready guards и source preflight, затем публичный claim. Self-review не выдаётся за независимый аудит; исполнение не означает пользовательскую приёмку.

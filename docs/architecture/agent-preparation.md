@@ -4,7 +4,7 @@
 
 ## Ответственность
 
-`AgentPreparation(project_root, *, max_review_cycles=2, max_context_expansions=2, max_results=100)` создаёт Task Manager Service и Artifact Repository для одного проверенного root и собственный AgentGraphRuntime. Внешний агент выполняет осмотр, анализ, планирование и review и подаёт готовые envelopes. Нет adapters, step, executor или скрытого вызова LLM. Project profile — пользовательский JSON-контекст, не инструкции ядру.
+`AgentPreparation(project_root, *, max_review_cycles=2, max_context_expansions=2, max_results=100, workflow_source=None)` создаёт Task Manager Service и Artifact Repository для одного проверенного root и собственный AgentGraphRuntime. Внешний агент выполняет осмотр, анализ, планирование и review и подаёт готовые envelopes. Скрытого вызова LLM нет. TASK-0037 добавляет optional [workflow binding и зарегистрированные роли](workflow-execution.md): start_component создаёт отдельный explicit executor, submit_component принимает его envelope через прежние guards. Project profile — пользовательский JSON-контекст, не инструкции ядру.
 
 Общие validators, publication, projection и sync находятся в [preparation_primitives.py](../../orchestrator/preparation_primitives.py). Callback PreparationWorkflow удалён в TASK-0034; primitives остаются общими для агентских facade. Общие модели процесса находятся в [runtime_contracts.py](../../orchestrator/runtime_contracts.py). Эквивалентность предметных контрактов не означает независимого semantic review.
 

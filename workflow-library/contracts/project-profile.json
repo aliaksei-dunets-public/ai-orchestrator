@@ -1,0 +1,1 @@
+{"id":"project-profile/v1","schema":{"type":"object","properties":{"test_capability":{"type":"string","minLength":1},"documentation_targets":{"type":"array","items":{"type":"string"}}},"required":["test_capability","documentation_targets"],"additionalProperties":false}}

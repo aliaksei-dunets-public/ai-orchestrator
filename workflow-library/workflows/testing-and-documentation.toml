@@ -1,0 +1,51 @@
+schema_version = 1
+[component]
+id = "examples/testing-and-documentation"
+version = 1
+kind = "workflow"
+title = "Тестирование и документация"
+description = "Пример композиции двух подграфов; определение не запускает действия."
+entry = "testing"
+[inputs]
+task = "task-request/v1"
+project_profile = "project-profile/v1"
+[outputs]
+testing_result = "testing-summary/v1"
+documentation_result = "documentation-summary/v1"
+[outcomes]
+success = ["testing_result", "documentation_result"]
+failure = ["testing_result"]
+[terminal_states]
+success = "succeeded"
+failure = "failed"
+[model_profiles.standard]
+provider = "host"
+model = "current-host-model"
+[model_profiles.expert]
+provider = "host"
+model = "project-expert-model"
+[runtime]
+max_results = 50
+[nodes.testing]
+ref = "core/testing@1"
+[nodes.testing.inputs]
+task = "input:task"
+project_profile = "input:project_profile"
+[nodes.testing.transitions]
+passed = "documentation"
+failed = "exit:failure"
+[nodes.documentation]
+ref = "core/documentation@1"
+[nodes.documentation.inputs]
+task = "input:task"
+project_profile = "input:project_profile"
+testing_result = "testing.result"
+[nodes.documentation.transitions]
+success = "exit:success"
+no_change = "exit:success"
+failure = "exit:failure"
+[exits.success]
+testing_result = "testing.result"
+documentation_result = "documentation.result"
+[exits.failure]
+testing_result = "testing.result"

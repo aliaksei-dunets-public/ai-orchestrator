@@ -44,11 +44,40 @@ assert [event["action"] for event in run.history] == ["submit_result", "resume_w
 
 Строка ответа в примере демонстрационная. В реальной работе нельзя выдавать выдуманный ответ за user decision; runtime не проводит аутентификацию автора. NodeResult outcome агент выбирает по evidence, а target ограничен transitions.
 
+## Итоговый output и промежуточный вопрос
+
+Если обязательный документ появляется только после ответа, задайте требования по outcome. Пример исполняется отдельно; ответ демонстрационный:
+
+```python
+from orchestrator import AgentGraphRuntime, Graph, Node, NodeResult, WaitState
+
+node = Node("planning", "request/v1", "plan-result/v1",
+            ("success", "needs_input", "blocked", "failure"),
+            {"success": "succeeded", "needs_input": "planning",
+             "blocked": "planning", "failure": "failed"},
+            required_outputs=("plan",),
+            required_outputs_by_outcome={"needs_input": [], "blocked": [],
+                                        "failure": ["diagnostics"]})
+runtime = AgentGraphRuntime()
+run = runtime.create_run(Graph("planning-example", 1, "planning", {"planning": node}), {})
+run = runtime.submit_result(run.run_id, NodeResult(
+    "planning", "needs_input", wait=WaitState("WAIT-SCOPE", "planning", "user_input",
+                                             question="Какой объём?")), expected_revision=run.revision)
+run = runtime.resume_wait(run.run_id, expected_revision=run.revision,
+                          wait_id="WAIT-SCOPE", node_id="planning", answer="Один модуль")
+run = runtime.submit_result(run.run_id, NodeResult(
+    "planning", "success", data={"plan": {"scope": run.resumed_wait["answer"]}}),
+    expected_revision=run.revision)
+assert run.state == "succeeded"
+```
+
+Override полностью заменяет базовый список для одного исхода. Для других исходов базовый список остаётся обязательным. Пустой список не отключает проверку wait, артефактов или JSON. У старых графов без overrides все исходы по-прежнему требуют базовые outputs.
+
 ## Привязка к задаче
 
 Перед create прочитайте карточку Task Manager публичным API. Передайте task_ref=id и task_definition_version=definition_version. Перед каждым submit/resume/cancel перечитайте карточку и передайте её текущую definition_version и revision из inspect_run. task.version используется отдельно для мутаций Task Manager.
 
-Если definition изменилось, runtime вернёт stale_definition: новая подготовка/новый run, а не echo старой версии ради обхода. Runtime не проверяет базу самостоятельно. Lifecycle задачи остаётся отдельным: подготовка реально создаёт artifacts, plan/review/package и вызывает существующий mark_ready; исполнение требует claim. Сам process success не меняет задачу. Связывание подготовки реализовано в [AgentPreparation](agent-preparation.md), а preflight/claim и work units — в [AgentExecution](agent-execution.md). Полные execution gates остаются следующим срезом.
+Если definition изменилось, runtime вернёт stale_definition: новая подготовка/новый run, а не echo старой версии ради обхода. Runtime не проверяет базу самостоятельно. Lifecycle задачи остаётся отдельным: подготовка реально создаёт artifacts, plan/review/package и вызывает существующий mark_ready; исполнение требует claim. Сам process success не меняет задачу. Связывание подготовки реализовано в [AgentPreparation](agent-preparation.md), preflight/claim и work units — в [AgentExecution](agent-execution.md), post-work-unit проверки — в [execution gates](execution-gates.md).
 
 ## Отказ и возобновление
 

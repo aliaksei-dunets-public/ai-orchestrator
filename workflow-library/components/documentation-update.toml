@@ -1,0 +1,23 @@
+schema_version = 1
+[component]
+id = "core/documentation-update"
+version = 1
+kind = "node"
+title = "Обновление документации"
+description = "Обновить затронутые документы или вернуть подтверждённый no_change."
+[inputs]
+impact = "documentation-impact/v1"
+testing_result = "testing-summary/v1"
+[outputs]
+result = "documentation-summary/v1"
+[outcomes]
+success = ["result"]
+no_change = ["result"]
+failure = ["result"]
+[execution]
+kind = "agent"
+instruction = "При impacted=false верни no_change. Иначе обнови только перечисленные документы на русском языке и проверь их по фактической реализации/testing_result. Не меняй исполняемые контракты или код после тестов без возврата на review/testing. Верни result с evidence_refs и соответствующим status."
+[effects]
+writes_repository = true
+writes_task_manager = false
+external_actions = false

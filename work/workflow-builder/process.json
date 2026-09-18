@@ -1,0 +1,1263 @@
+{
+  "component_digests": {
+    "core/documentation-impact@1": "4992f8e2981f30f081c9e536bc16ddd98317d1bdd2b77d573512795e54cf6098",
+    "core/documentation-update@1": "6bcc83dc955639f6411d634b82ff5c711c49e188d60ac68820919045852079e2",
+    "core/documentation@1": "2cd935faf5d5638eefa4a398cfdae3e4b9a8568517edf09ac3d06775d52957e9",
+    "core/test-runner@1": "b3141d49d13697d0e627193151536b1447f1cc17abb2b9fb83879d4366504fea",
+    "core/test-scope@1": "4b7d86382e4e30c6e875c3648cb0c4ce3b8ea09c0347cc643c29617acfe25579",
+    "core/testing-summary@1": "fe325ef3ea3b42379c3eb82b991d2cacb05730532bb3fa4de9319efc8aad6750",
+    "core/testing@1": "b68d0eab21c650532adc75bf678b5676b954ce8f37541484ed94fc4f8b815a4e"
+  },
+  "contracts": {
+    "documentation-impact/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "impacted": {
+          "type": "boolean"
+        },
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "impacted",
+        "targets"
+      ],
+      "type": "object"
+    },
+    "documentation-summary/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_refs": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "success",
+            "no_change",
+            "failure"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "summary",
+        "evidence_refs"
+      ],
+      "type": "object"
+    },
+    "project-profile/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "documentation_targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "test_capability": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "test_capability",
+        "documentation_targets"
+      ],
+      "type": "object"
+    },
+    "task-request/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "objective": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "objective"
+      ],
+      "type": "object"
+    },
+    "test-execution-record/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_refs": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "failed": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "passed": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "passed",
+        "failed",
+        "evidence_refs"
+      ],
+      "type": "object"
+    },
+    "test-scope/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "checks": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "checks"
+      ],
+      "type": "object"
+    },
+    "testing-summary/v1": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_refs": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "summary",
+        "evidence_refs"
+      ],
+      "type": "object"
+    }
+  },
+  "digest": "workflow/v1:9c0fc619aded49835de22ceb040db94590caca606174af4200330be1629d4c2d",
+  "graph": {
+    "entry_node": "testing.scope",
+    "graph_id": "examples/testing-and-documentation",
+    "nodes": {
+      "documentation.impact": {
+        "input_contract": "core/documentation-impact@1:inputs",
+        "node_id": "documentation.impact",
+        "outcomes": [
+          "assessed"
+        ],
+        "output_contract": "core/documentation-impact@1:outputs",
+        "required_outputs_by_outcome": {
+          "assessed": [
+            "impact"
+          ]
+        },
+        "transitions": {
+          "assessed": "documentation.update"
+        }
+      },
+      "documentation.update": {
+        "input_contract": "core/documentation-update@1:inputs",
+        "node_id": "documentation.update",
+        "outcomes": [
+          "success",
+          "no_change",
+          "failure"
+        ],
+        "output_contract": "core/documentation-update@1:outputs",
+        "required_outputs_by_outcome": {
+          "failure": [
+            "result"
+          ],
+          "no_change": [
+            "result"
+          ],
+          "success": [
+            "result"
+          ]
+        },
+        "transitions": {
+          "failure": "failed",
+          "no_change": "succeeded",
+          "success": "succeeded"
+        }
+      },
+      "testing.run": {
+        "input_contract": "core/test-runner@1:inputs",
+        "node_id": "testing.run",
+        "outcomes": [
+          "finished",
+          "failure"
+        ],
+        "output_contract": "core/test-runner@1:outputs",
+        "required_outputs_by_outcome": {
+          "failure": [
+            "execution_record"
+          ],
+          "finished": [
+            "execution_record"
+          ]
+        },
+        "transitions": {
+          "failure": "testing.summary",
+          "finished": "testing.summary"
+        }
+      },
+      "testing.scope": {
+        "input_contract": "core/test-scope@1:inputs",
+        "node_id": "testing.scope",
+        "outcomes": [
+          "success"
+        ],
+        "output_contract": "core/test-scope@1:outputs",
+        "required_outputs_by_outcome": {
+          "success": [
+            "scope"
+          ]
+        },
+        "transitions": {
+          "success": "testing.run"
+        }
+      },
+      "testing.summary": {
+        "input_contract": "core/testing-summary@1:inputs",
+        "node_id": "testing.summary",
+        "outcomes": [
+          "passed",
+          "failed"
+        ],
+        "output_contract": "core/testing-summary@1:outputs",
+        "required_outputs_by_outcome": {
+          "failed": [
+            "result"
+          ],
+          "passed": [
+            "result"
+          ]
+        },
+        "transitions": {
+          "failed": "failed",
+          "passed": "documentation.impact"
+        }
+      }
+    },
+    "version": 1
+  },
+  "leaves": {
+    "documentation.impact": {
+      "bindings": {
+        "project_profile": "input:project_profile",
+        "task": "input:task",
+        "testing_result": "input:testing_result"
+      },
+      "config": {},
+      "execution": {
+        "instruction": "Проверь необходимость изменения документации по objective, фактическим изменениям и документационным целям профиля. Верни impact; отсутствие влияния допустимо. Не исправляй несвязанную документацию.",
+        "kind": "agent",
+        "model_profile": "standard"
+      },
+      "inputs": {
+        "project_profile": "project-profile/v1",
+        "task": "task-request/v1",
+        "testing_result": "testing-summary/v1"
+      },
+      "outcomes": {
+        "assessed": [
+          "impact"
+        ]
+      },
+      "outputs": {
+        "impact": "documentation-impact/v1"
+      },
+      "ref": "core/documentation-impact@1"
+    },
+    "documentation.update": {
+      "bindings": {
+        "impact": "impact.impact",
+        "testing_result": "input:testing_result"
+      },
+      "config": {},
+      "execution": {
+        "instruction": "При impacted=false верни no_change. Иначе обнови только перечисленные документы на русском языке и проверь их по фактической реализации/testing_result. Не меняй исполняемые контракты или код после тестов без возврата на review/testing. Верни result с evidence_refs и соответствующим status.",
+        "kind": "agent",
+        "model_profile": "standard"
+      },
+      "inputs": {
+        "impact": "documentation-impact/v1",
+        "testing_result": "testing-summary/v1"
+      },
+      "outcomes": {
+        "failure": [
+          "result"
+        ],
+        "no_change": [
+          "result"
+        ],
+        "success": [
+          "result"
+        ]
+      },
+      "outputs": {
+        "result": "documentation-summary/v1"
+      },
+      "ref": "core/documentation-update@1"
+    },
+    "testing.run": {
+      "bindings": {
+        "project_profile": "input:project_profile",
+        "scope": "scope.scope"
+      },
+      "config": {
+        "max_transient_retries": 0
+      },
+      "execution": {
+        "capability": "project-test-runner",
+        "kind": "tool"
+      },
+      "inputs": {
+        "project_profile": "project-profile/v1",
+        "scope": "test-scope/v1"
+      },
+      "outcomes": {
+        "failure": [
+          "execution_record"
+        ],
+        "finished": [
+          "execution_record"
+        ]
+      },
+      "outputs": {
+        "execution_record": "test-execution-record/v1"
+      },
+      "ref": "core/test-runner@1"
+    },
+    "testing.scope": {
+      "bindings": {
+        "project_profile": "input:project_profile",
+        "task": "input:task"
+      },
+      "config": {},
+      "execution": {
+        "instruction": "Определи предметные проверки по objective и test_capability проекта. Не запускай проверки и не изменяй исходники. Верни scope с непустым checks.",
+        "kind": "agent",
+        "model_profile": "standard"
+      },
+      "inputs": {
+        "project_profile": "project-profile/v1",
+        "task": "task-request/v1"
+      },
+      "outcomes": {
+        "success": [
+          "scope"
+        ]
+      },
+      "outputs": {
+        "scope": "test-scope/v1"
+      },
+      "ref": "core/test-scope@1"
+    },
+    "testing.summary": {
+      "bindings": {
+        "execution_record": "run.execution_record",
+        "task": "input:task"
+      },
+      "config": {},
+      "execution": {
+        "instruction": "Сопоставь execution_record с objective. Не объявляй passed при failed checks или отсутствии подтверждений. Верни result со status passed/failed, summary и фактическими evidence_refs. Дальнейший маршрут выбирает caller.",
+        "kind": "agent",
+        "model_profile": "expert"
+      },
+      "inputs": {
+        "execution_record": "test-execution-record/v1",
+        "task": "task-request/v1"
+      },
+      "outcomes": {
+        "failed": [
+          "result"
+        ],
+        "passed": [
+          "result"
+        ]
+      },
+      "outputs": {
+        "result": "testing-summary/v1"
+      },
+      "ref": "core/testing-summary@1"
+    }
+  },
+  "model_profile_provenance": {
+    "expert.model": "workflow-library/examples/project-overlay.toml",
+    "expert.provider": "workflow-library/examples/project-overlay.toml",
+    "standard.model": "workflow-library/workflows/testing-and-documentation.toml",
+    "standard.provider": "workflow-library/workflows/testing-and-documentation.toml"
+  },
+  "model_profiles": {
+    "expert": {
+      "model": "project-selected-model",
+      "provider": "host"
+    },
+    "standard": {
+      "model": "current-host-model",
+      "provider": "host"
+    }
+  },
+  "purpose": "workflow-definition",
+  "runtime": {
+    "max_results": 50,
+    "node_limits": {
+      "testing.summary": 3
+    }
+  },
+  "runtime_provenance": {
+    "max_results": "workflow-library/workflows/testing-and-documentation.toml",
+    "node_limits.testing.summary": "workflow-library/examples/project-overlay.toml"
+  },
+  "schema_version": 1,
+  "tree": {
+    "children": {
+      "documentation": {
+        "children": {
+          "impact": {
+            "config": {},
+            "definition": {
+              "component": {
+                "description": "Определить связанные документные цели в пределах выполненной задачи.",
+                "id": "core/documentation-impact",
+                "kind": "node",
+                "title": "Влияние на документацию",
+                "version": 1
+              },
+              "effects": {
+                "external_actions": false,
+                "writes_repository": false,
+                "writes_task_manager": false
+              },
+              "execution": {
+                "instruction": "Проверь необходимость изменения документации по objective, фактическим изменениям и документационным целям профиля. Верни impact; отсутствие влияния допустимо. Не исправляй несвязанную документацию.",
+                "kind": "agent"
+              },
+              "inputs": {
+                "project_profile": "project-profile/v1",
+                "task": "task-request/v1",
+                "testing_result": "testing-summary/v1"
+              },
+              "outcomes": {
+                "assessed": [
+                  "impact"
+                ]
+              },
+              "outputs": {
+                "impact": "documentation-impact/v1"
+              },
+              "schema_version": 1
+            },
+            "effects": {
+              "external_actions": false,
+              "writes_repository": false,
+              "writes_task_manager": false
+            },
+            "execution": {
+              "instruction": "Проверь необходимость изменения документации по objective, фактическим изменениям и документационным целям профиля. Верни impact; отсутствие влияния допустимо. Не исправляй несвязанную документацию.",
+              "kind": "agent",
+              "model_profile": "standard"
+            },
+            "id": "documentation.impact",
+            "inputs": {
+              "project_profile": "input:project_profile",
+              "task": "input:task",
+              "testing_result": "input:testing_result"
+            },
+            "provenance": {
+              "component.description": "library:core/documentation-impact@1",
+              "component.id": "library:core/documentation-impact@1",
+              "component.kind": "library:core/documentation-impact@1",
+              "component.title": "library:core/documentation-impact@1",
+              "component.version": "library:core/documentation-impact@1",
+              "effects.external_actions": "library:core/documentation-impact@1",
+              "effects.writes_repository": "library:core/documentation-impact@1",
+              "effects.writes_task_manager": "library:core/documentation-impact@1",
+              "execution.instruction": "library:core/documentation-impact@1",
+              "execution.kind": "library:core/documentation-impact@1",
+              "execution.model_profile": "library:core/documentation@1",
+              "inputs.project_profile": "workflow-library/workflows/testing-and-documentation.toml",
+              "inputs.task": "workflow-library/workflows/testing-and-documentation.toml",
+              "inputs.testing_result": "workflow-library/workflows/testing-and-documentation.toml",
+              "outcomes.assessed": "library:core/documentation-impact@1",
+              "outputs.impact": "library:core/documentation-impact@1",
+              "ref": "workflow-library/workflows/testing-and-documentation.toml",
+              "schema_version": "library:core/documentation-impact@1",
+              "transitions.assessed": "workflow-library/workflows/testing-and-documentation.toml"
+            },
+            "ref": "core/documentation-impact@1",
+            "transitions": {
+              "assessed": "update"
+            }
+          },
+          "update": {
+            "config": {},
+            "definition": {
+              "component": {
+                "description": "Обновить затронутые документы или вернуть подтверждённый no_change.",
+                "id": "core/documentation-update",
+                "kind": "node",
+                "title": "Обновление документации",
+                "version": 1
+              },
+              "effects": {
+                "external_actions": false,
+                "writes_repository": true,
+                "writes_task_manager": false
+              },
+              "execution": {
+                "instruction": "При impacted=false верни no_change. Иначе обнови только перечисленные документы на русском языке и проверь их по фактической реализации/testing_result. Не меняй исполняемые контракты или код после тестов без возврата на review/testing. Верни result с evidence_refs и соответствующим status.",
+                "kind": "agent"
+              },
+              "inputs": {
+                "impact": "documentation-impact/v1",
+                "testing_result": "testing-summary/v1"
+              },
+              "outcomes": {
+                "failure": [
+                  "result"
+                ],
+                "no_change": [
+                  "result"
+                ],
+                "success": [
+                  "result"
+                ]
+              },
+              "outputs": {
+                "result": "documentation-summary/v1"
+              },
+              "schema_version": 1
+            },
+            "effects": {
+              "external_actions": false,
+              "writes_repository": true,
+              "writes_task_manager": false
+            },
+            "execution": {
+              "instruction": "При impacted=false верни no_change. Иначе обнови только перечисленные документы на русском языке и проверь их по фактической реализации/testing_result. Не меняй исполняемые контракты или код после тестов без возврата на review/testing. Верни result с evidence_refs и соответствующим status.",
+              "kind": "agent",
+              "model_profile": "standard"
+            },
+            "id": "documentation.update",
+            "inputs": {
+              "impact": "impact.impact",
+              "testing_result": "input:testing_result"
+            },
+            "provenance": {
+              "component.description": "library:core/documentation-update@1",
+              "component.id": "library:core/documentation-update@1",
+              "component.kind": "library:core/documentation-update@1",
+              "component.title": "library:core/documentation-update@1",
+              "component.version": "library:core/documentation-update@1",
+              "effects.external_actions": "library:core/documentation-update@1",
+              "effects.writes_repository": "library:core/documentation-update@1",
+              "effects.writes_task_manager": "library:core/documentation-update@1",
+              "execution.instruction": "library:core/documentation-update@1",
+              "execution.kind": "library:core/documentation-update@1",
+              "execution.model_profile": "library:core/documentation@1",
+              "inputs.impact": "workflow-library/workflows/testing-and-documentation.toml",
+              "inputs.testing_result": "workflow-library/workflows/testing-and-documentation.toml",
+              "outcomes.failure": "library:core/documentation-update@1",
+              "outcomes.no_change": "library:core/documentation-update@1",
+              "outcomes.success": "library:core/documentation-update@1",
+              "outputs.result": "library:core/documentation-update@1",
+              "ref": "workflow-library/workflows/testing-and-documentation.toml",
+              "schema_version": "library:core/documentation-update@1",
+              "transitions.failure": "workflow-library/workflows/testing-and-documentation.toml",
+              "transitions.no_change": "workflow-library/workflows/testing-and-documentation.toml",
+              "transitions.success": "workflow-library/workflows/testing-and-documentation.toml"
+            },
+            "ref": "core/documentation-update@1",
+            "transitions": {
+              "failure": "exit:failure",
+              "no_change": "exit:no_change",
+              "success": "exit:success"
+            }
+          }
+        },
+        "config": {},
+        "definition": {
+          "component": {
+            "description": "Учебный срез проверки влияния и условного обновления документов.",
+            "entry": "impact",
+            "id": "core/documentation",
+            "kind": "subgraph",
+            "title": "Документация",
+            "version": 1
+          },
+          "effects": {
+            "external_actions": false,
+            "writes_repository": true,
+            "writes_task_manager": false
+          },
+          "execution": {
+            "model_profile": "standard"
+          },
+          "exits": {
+            "failure": {
+              "result": "update.result"
+            },
+            "no_change": {
+              "result": "update.result"
+            },
+            "success": {
+              "result": "update.result"
+            }
+          },
+          "inputs": {
+            "project_profile": "project-profile/v1",
+            "task": "task-request/v1",
+            "testing_result": "testing-summary/v1"
+          },
+          "nodes": {
+            "impact": {
+              "inputs": {
+                "project_profile": "input:project_profile",
+                "task": "input:task",
+                "testing_result": "input:testing_result"
+              },
+              "ref": "core/documentation-impact@1",
+              "transitions": {
+                "assessed": "update"
+              }
+            },
+            "update": {
+              "inputs": {
+                "impact": "impact.impact",
+                "testing_result": "input:testing_result"
+              },
+              "ref": "core/documentation-update@1",
+              "transitions": {
+                "failure": "exit:failure",
+                "no_change": "exit:no_change",
+                "success": "exit:success"
+              }
+            }
+          },
+          "outcomes": {
+            "failure": [
+              "result"
+            ],
+            "no_change": [
+              "result"
+            ],
+            "success": [
+              "result"
+            ]
+          },
+          "outputs": {
+            "result": "documentation-summary/v1"
+          },
+          "schema_version": 1
+        },
+        "effects": {
+          "external_actions": false,
+          "writes_repository": true,
+          "writes_task_manager": false
+        },
+        "execution": {
+          "model_profile": "standard"
+        },
+        "id": "documentation",
+        "inputs": {
+          "project_profile": "input:project_profile",
+          "task": "input:task",
+          "testing_result": "testing.result"
+        },
+        "provenance": {
+          "component.description": "library:core/documentation@1",
+          "component.entry": "library:core/documentation@1",
+          "component.id": "library:core/documentation@1",
+          "component.kind": "library:core/documentation@1",
+          "component.title": "library:core/documentation@1",
+          "component.version": "library:core/documentation@1",
+          "execution.model_profile": "library:core/documentation@1",
+          "exits.failure.result": "library:core/documentation@1",
+          "exits.no_change.result": "library:core/documentation@1",
+          "exits.success.result": "library:core/documentation@1",
+          "inputs.project_profile": "workflow-library/workflows/testing-and-documentation.toml",
+          "inputs.task": "workflow-library/workflows/testing-and-documentation.toml",
+          "inputs.testing_result": "workflow-library/workflows/testing-and-documentation.toml",
+          "nodes.impact.inputs.project_profile": "library:core/documentation@1",
+          "nodes.impact.inputs.task": "library:core/documentation@1",
+          "nodes.impact.inputs.testing_result": "library:core/documentation@1",
+          "nodes.impact.ref": "library:core/documentation@1",
+          "nodes.impact.transitions.assessed": "library:core/documentation@1",
+          "nodes.update.inputs.impact": "library:core/documentation@1",
+          "nodes.update.inputs.testing_result": "library:core/documentation@1",
+          "nodes.update.ref": "library:core/documentation@1",
+          "nodes.update.transitions.failure": "library:core/documentation@1",
+          "nodes.update.transitions.no_change": "library:core/documentation@1",
+          "nodes.update.transitions.success": "library:core/documentation@1",
+          "outcomes.failure": "library:core/documentation@1",
+          "outcomes.no_change": "library:core/documentation@1",
+          "outcomes.success": "library:core/documentation@1",
+          "outputs.result": "library:core/documentation@1",
+          "ref": "workflow-library/workflows/testing-and-documentation.toml",
+          "schema_version": "library:core/documentation@1",
+          "transitions.failure": "workflow-library/workflows/testing-and-documentation.toml",
+          "transitions.no_change": "workflow-library/workflows/testing-and-documentation.toml",
+          "transitions.success": "workflow-library/workflows/testing-and-documentation.toml"
+        },
+        "ref": "core/documentation@1",
+        "transitions": {
+          "failure": "exit:failure",
+          "no_change": "exit:success",
+          "success": "exit:success"
+        }
+      },
+      "testing": {
+        "children": {
+          "run": {
+            "config": {
+              "max_transient_retries": 0
+            },
+            "definition": {
+              "component": {
+                "description": "Получить фактический результат проверок через capability проекта.",
+                "id": "core/test-runner",
+                "kind": "node",
+                "title": "Запуск проверок",
+                "version": 1
+              },
+              "config": {
+                "max_transient_retries": 0
+              },
+              "config_schema": {
+                "max_transient_retries": {
+                  "default": 1,
+                  "schema": {
+                    "maximum": 3,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                }
+              },
+              "effects": {
+                "external_actions": false,
+                "writes_repository": true,
+                "writes_task_manager": false
+              },
+              "execution": {
+                "capability": "project-test-runner",
+                "kind": "tool"
+              },
+              "inputs": {
+                "project_profile": "project-profile/v1",
+                "scope": "test-scope/v1"
+              },
+              "outcomes": {
+                "failure": [
+                  "execution_record"
+                ],
+                "finished": [
+                  "execution_record"
+                ]
+              },
+              "outputs": {
+                "execution_record": "test-execution-record/v1"
+              },
+              "schema_version": 1
+            },
+            "effects": {
+              "external_actions": false,
+              "writes_repository": true,
+              "writes_task_manager": false
+            },
+            "execution": {
+              "capability": "project-test-runner",
+              "kind": "tool"
+            },
+            "id": "testing.run",
+            "inputs": {
+              "project_profile": "input:project_profile",
+              "scope": "scope.scope"
+            },
+            "provenance": {
+              "component.description": "library:core/test-runner@1",
+              "component.id": "library:core/test-runner@1",
+              "component.kind": "library:core/test-runner@1",
+              "component.title": "library:core/test-runner@1",
+              "component.version": "library:core/test-runner@1",
+              "config.max_transient_retries": "workflow-library/examples/project-overlay.toml",
+              "config_schema.max_transient_retries.default": "library:core/test-runner@1",
+              "config_schema.max_transient_retries.schema.maximum": "library:core/test-runner@1",
+              "config_schema.max_transient_retries.schema.minimum": "library:core/test-runner@1",
+              "config_schema.max_transient_retries.schema.type": "library:core/test-runner@1",
+              "effects.external_actions": "library:core/test-runner@1",
+              "effects.writes_repository": "library:core/test-runner@1",
+              "effects.writes_task_manager": "library:core/test-runner@1",
+              "execution.capability": "library:core/test-runner@1",
+              "execution.kind": "library:core/test-runner@1",
+              "inputs.project_profile": "workflow-library/workflows/testing-and-documentation.toml",
+              "inputs.scope": "workflow-library/workflows/testing-and-documentation.toml",
+              "outcomes.failure": "library:core/test-runner@1",
+              "outcomes.finished": "library:core/test-runner@1",
+              "outputs.execution_record": "library:core/test-runner@1",
+              "ref": "workflow-library/workflows/testing-and-documentation.toml",
+              "schema_version": "library:core/test-runner@1",
+              "transitions.failure": "workflow-library/workflows/testing-and-documentation.toml",
+              "transitions.finished": "workflow-library/workflows/testing-and-documentation.toml"
+            },
+            "ref": "core/test-runner@1",
+            "transitions": {
+              "failure": "summary",
+              "finished": "summary"
+            }
+          },
+          "scope": {
+            "config": {},
+            "definition": {
+              "component": {
+                "description": "Выбрать проверки по цели задачи и возможностям проекта.",
+                "id": "core/test-scope",
+                "kind": "node",
+                "title": "Область тестирования",
+                "version": 1
+              },
+              "effects": {
+                "external_actions": false,
+                "writes_repository": false,
+                "writes_task_manager": false
+              },
+              "execution": {
+                "instruction": "Определи предметные проверки по objective и test_capability проекта. Не запускай проверки и не изменяй исходники. Верни scope с непустым checks.",
+                "kind": "agent"
+              },
+              "inputs": {
+                "project_profile": "project-profile/v1",
+                "task": "task-request/v1"
+              },
+              "outcomes": {
+                "success": [
+                  "scope"
+                ]
+              },
+              "outputs": {
+                "scope": "test-scope/v1"
+              },
+              "schema_version": 1
+            },
+            "effects": {
+              "external_actions": false,
+              "writes_repository": false,
+              "writes_task_manager": false
+            },
+            "execution": {
+              "instruction": "Определи предметные проверки по objective и test_capability проекта. Не запускай проверки и не изменяй исходники. Верни scope с непустым checks.",
+              "kind": "agent",
+              "model_profile": "standard"
+            },
+            "id": "testing.scope",
+            "inputs": {
+              "project_profile": "input:project_profile",
+              "task": "input:task"
+            },
+            "provenance": {
+              "component.description": "library:core/test-scope@1",
+              "component.id": "library:core/test-scope@1",
+              "component.kind": "library:core/test-scope@1",
+              "component.title": "library:core/test-scope@1",
+              "component.version": "library:core/test-scope@1",
+              "effects.external_actions": "library:core/test-scope@1",
+              "effects.writes_repository": "library:core/test-scope@1",
+              "effects.writes_task_manager": "library:core/test-scope@1",
+              "execution.instruction": "library:core/test-scope@1",
+              "execution.kind": "library:core/test-scope@1",
+              "execution.model_profile": "library:core/testing@1",
+              "inputs.project_profile": "workflow-library/workflows/testing-and-documentation.toml",
+              "inputs.task": "workflow-library/workflows/testing-and-documentation.toml",
+              "outcomes.success": "library:core/test-scope@1",
+              "outputs.scope": "library:core/test-scope@1",
+              "ref": "workflow-library/workflows/testing-and-documentation.toml",
+              "schema_version": "library:core/test-scope@1",
+              "transitions.success": "workflow-library/workflows/testing-and-documentation.toml"
+            },
+            "ref": "core/test-scope@1",
+            "transitions": {
+              "success": "run"
+            }
+          },
+          "summary": {
+            "config": {},
+            "definition": {
+              "component": {
+                "description": "Сформировать итог тестирования по фактическому execution record.",
+                "id": "core/testing-summary",
+                "kind": "node",
+                "title": "Разбор результатов",
+                "version": 1
+              },
+              "effects": {
+                "external_actions": false,
+                "writes_repository": false,
+                "writes_task_manager": false
+              },
+              "execution": {
+                "instruction": "Сопоставь execution_record с objective. Не объявляй passed при failed checks или отсутствии подтверждений. Верни result со status passed/failed, summary и фактическими evidence_refs. Дальнейший маршрут выбирает caller.",
+                "kind": "agent",
+                "model_profile": "expert"
+              },
+              "inputs": {
+                "execution_record": "test-execution-record/v1",
+                "task": "task-request/v1"
+              },
+              "outcomes": {
+                "failed": [
+                  "result"
+                ],
+                "passed": [
+                  "result"
+                ]
+              },
+              "outputs": {
+                "result": "testing-summary/v1"
+              },
+              "schema_version": 1
+            },
+            "effects": {
+              "external_actions": false,
+              "writes_repository": false,
+              "writes_task_manager": false
+            },
+            "execution": {
+              "instruction": "Сопоставь execution_record с objective. Не объявляй passed при failed checks или отсутствии подтверждений. Верни result со status passed/failed, summary и фактическими evidence_refs. Дальнейший маршрут выбирает caller.",
+              "kind": "agent",
+              "model_profile": "expert"
+            },
+            "id": "testing.summary",
+            "inputs": {
+              "execution_record": "run.execution_record",
+              "task": "input:task"
+            },
+            "provenance": {
+              "component.description": "library:core/testing-summary@1",
+              "component.id": "library:core/testing-summary@1",
+              "component.kind": "library:core/testing-summary@1",
+              "component.title": "library:core/testing-summary@1",
+              "component.version": "library:core/testing-summary@1",
+              "effects.external_actions": "library:core/testing-summary@1",
+              "effects.writes_repository": "library:core/testing-summary@1",
+              "effects.writes_task_manager": "library:core/testing-summary@1",
+              "execution.instruction": "library:core/testing-summary@1",
+              "execution.kind": "library:core/testing-summary@1",
+              "execution.model_profile": "workflow-library/examples/project-overlay.toml",
+              "inputs.execution_record": "workflow-library/workflows/testing-and-documentation.toml",
+              "inputs.task": "workflow-library/workflows/testing-and-documentation.toml",
+              "outcomes.failed": "library:core/testing-summary@1",
+              "outcomes.passed": "library:core/testing-summary@1",
+              "outputs.result": "library:core/testing-summary@1",
+              "ref": "workflow-library/workflows/testing-and-documentation.toml",
+              "schema_version": "library:core/testing-summary@1",
+              "transitions.failed": "workflow-library/workflows/testing-and-documentation.toml",
+              "transitions.passed": "workflow-library/workflows/testing-and-documentation.toml"
+            },
+            "ref": "core/testing-summary@1",
+            "transitions": {
+              "failed": "exit:failed",
+              "passed": "exit:passed"
+            }
+          }
+        },
+        "config": {},
+        "definition": {
+          "component": {
+            "description": "Учебный срез: область → проверки → разбор; возвращает результат caller.",
+            "entry": "scope",
+            "id": "core/testing",
+            "kind": "subgraph",
+            "title": "Тестирование",
+            "version": 1
+          },
+          "effects": {
+            "external_actions": false,
+            "writes_repository": true,
+            "writes_task_manager": false
+          },
+          "execution": {
+            "model_profile": "standard"
+          },
+          "exits": {
+            "failed": {
+              "result": "summary.result"
+            },
+            "passed": {
+              "result": "summary.result"
+            }
+          },
+          "inputs": {
+            "project_profile": "project-profile/v1",
+            "task": "task-request/v1"
+          },
+          "nodes": {
+            "run": {
+              "inputs": {
+                "project_profile": "input:project_profile",
+                "scope": "scope.scope"
+              },
+              "ref": "core/test-runner@1",
+              "transitions": {
+                "failure": "summary",
+                "finished": "summary"
+              }
+            },
+            "scope": {
+              "inputs": {
+                "project_profile": "input:project_profile",
+                "task": "input:task"
+              },
+              "ref": "core/test-scope@1",
+              "transitions": {
+                "success": "run"
+              }
+            },
+            "summary": {
+              "inputs": {
+                "execution_record": "run.execution_record",
+                "task": "input:task"
+              },
+              "ref": "core/testing-summary@1",
+              "transitions": {
+                "failed": "exit:failed",
+                "passed": "exit:passed"
+              }
+            }
+          },
+          "outcomes": {
+            "failed": [
+              "result"
+            ],
+            "passed": [
+              "result"
+            ]
+          },
+          "outputs": {
+            "result": "testing-summary/v1"
+          },
+          "schema_version": 1
+        },
+        "effects": {
+          "external_actions": false,
+          "writes_repository": true,
+          "writes_task_manager": false
+        },
+        "execution": {
+          "model_profile": "standard"
+        },
+        "id": "testing",
+        "inputs": {
+          "project_profile": "input:project_profile",
+          "task": "input:task"
+        },
+        "provenance": {
+          "component.description": "library:core/testing@1",
+          "component.entry": "library:core/testing@1",
+          "component.id": "library:core/testing@1",
+          "component.kind": "library:core/testing@1",
+          "component.title": "library:core/testing@1",
+          "component.version": "library:core/testing@1",
+          "execution.model_profile": "library:core/testing@1",
+          "exits.failed.result": "library:core/testing@1",
+          "exits.passed.result": "library:core/testing@1",
+          "inputs.project_profile": "workflow-library/workflows/testing-and-documentation.toml",
+          "inputs.task": "workflow-library/workflows/testing-and-documentation.toml",
+          "nodes.run.inputs.project_profile": "library:core/testing@1",
+          "nodes.run.inputs.scope": "library:core/testing@1",
+          "nodes.run.ref": "library:core/testing@1",
+          "nodes.run.transitions.failure": "library:core/testing@1",
+          "nodes.run.transitions.finished": "library:core/testing@1",
+          "nodes.scope.inputs.project_profile": "library:core/testing@1",
+          "nodes.scope.inputs.task": "library:core/testing@1",
+          "nodes.scope.ref": "library:core/testing@1",
+          "nodes.scope.transitions.success": "library:core/testing@1",
+          "nodes.summary.inputs.execution_record": "library:core/testing@1",
+          "nodes.summary.inputs.task": "library:core/testing@1",
+          "nodes.summary.ref": "library:core/testing@1",
+          "nodes.summary.transitions.failed": "library:core/testing@1",
+          "nodes.summary.transitions.passed": "library:core/testing@1",
+          "outcomes.failed": "library:core/testing@1",
+          "outcomes.passed": "library:core/testing@1",
+          "outputs.result": "library:core/testing@1",
+          "ref": "workflow-library/workflows/testing-and-documentation.toml",
+          "schema_version": "library:core/testing@1",
+          "transitions.failed": "workflow-library/workflows/testing-and-documentation.toml",
+          "transitions.passed": "workflow-library/workflows/testing-and-documentation.toml"
+        },
+        "ref": "core/testing@1",
+        "transitions": {
+          "failed": "exit:failure",
+          "passed": "documentation"
+        }
+      }
+    },
+    "config": {},
+    "definition": {
+      "component": {
+        "description": "Пример композиции двух подграфов; определение не запускает действия.",
+        "entry": "testing",
+        "id": "examples/testing-and-documentation",
+        "kind": "workflow",
+        "title": "Тестирование и документация",
+        "version": 1
+      },
+      "effects": {
+        "external_actions": false,
+        "writes_repository": true,
+        "writes_task_manager": false
+      },
+      "exits": {
+        "failure": {
+          "testing_result": "testing.result"
+        },
+        "success": {
+          "documentation_result": "documentation.result",
+          "testing_result": "testing.result"
+        }
+      },
+      "inputs": {
+        "project_profile": "project-profile/v1",
+        "task": "task-request/v1"
+      },
+      "model_profiles": {
+        "expert": {
+          "model": "project-expert-model",
+          "provider": "host"
+        },
+        "standard": {
+          "model": "current-host-model",
+          "provider": "host"
+        }
+      },
+      "nodes": {
+        "documentation": {
+          "inputs": {
+            "project_profile": "input:project_profile",
+            "task": "input:task",
+            "testing_result": "testing.result"
+          },
+          "ref": "core/documentation@1",
+          "transitions": {
+            "failure": "exit:failure",
+            "no_change": "exit:success",
+            "success": "exit:success"
+          }
+        },
+        "testing": {
+          "inputs": {
+            "project_profile": "input:project_profile",
+            "task": "input:task"
+          },
+          "ref": "core/testing@1",
+          "transitions": {
+            "failed": "exit:failure",
+            "passed": "documentation"
+          }
+        }
+      },
+      "outcomes": {
+        "failure": [
+          "testing_result"
+        ],
+        "success": [
+          "testing_result",
+          "documentation_result"
+        ]
+      },
+      "outputs": {
+        "documentation_result": "documentation-summary/v1",
+        "testing_result": "testing-summary/v1"
+      },
+      "runtime": {
+        "max_results": 50
+      },
+      "schema_version": 1,
+      "terminal_states": {
+        "failure": "failed",
+        "success": "succeeded"
+      }
+    },
+    "effects": {
+      "external_actions": false,
+      "writes_repository": true,
+      "writes_task_manager": false
+    },
+    "execution": {},
+    "id": "examples/testing-and-documentation",
+    "inputs": {},
+    "provenance": {
+      "component.description": "library:examples/testing-and-documentation@1",
+      "component.entry": "library:examples/testing-and-documentation@1",
+      "component.id": "library:examples/testing-and-documentation@1",
+      "component.kind": "library:examples/testing-and-documentation@1",
+      "component.title": "library:examples/testing-and-documentation@1",
+      "component.version": "library:examples/testing-and-documentation@1",
+      "exits.failure.testing_result": "library:examples/testing-and-documentation@1",
+      "exits.success.documentation_result": "library:examples/testing-and-documentation@1",
+      "exits.success.testing_result": "library:examples/testing-and-documentation@1",
+      "inputs.project_profile": "library:examples/testing-and-documentation@1",
+      "inputs.task": "library:examples/testing-and-documentation@1",
+      "model_profiles.expert.model": "library:examples/testing-and-documentation@1",
+      "model_profiles.expert.provider": "library:examples/testing-and-documentation@1",
+      "model_profiles.standard.model": "library:examples/testing-and-documentation@1",
+      "model_profiles.standard.provider": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.inputs.project_profile": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.inputs.task": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.inputs.testing_result": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.ref": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.transitions.failure": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.transitions.no_change": "library:examples/testing-and-documentation@1",
+      "nodes.documentation.transitions.success": "library:examples/testing-and-documentation@1",
+      "nodes.testing.inputs.project_profile": "library:examples/testing-and-documentation@1",
+      "nodes.testing.inputs.task": "library:examples/testing-and-documentation@1",
+      "nodes.testing.ref": "library:examples/testing-and-documentation@1",
+      "nodes.testing.transitions.failed": "library:examples/testing-and-documentation@1",
+      "nodes.testing.transitions.passed": "library:examples/testing-and-documentation@1",
+      "outcomes.failure": "library:examples/testing-and-documentation@1",
+      "outcomes.success": "library:examples/testing-and-documentation@1",
+      "outputs.documentation_result": "library:examples/testing-and-documentation@1",
+      "outputs.testing_result": "library:examples/testing-and-documentation@1",
+      "runtime.max_results": "library:examples/testing-and-documentation@1",
+      "schema_version": "library:examples/testing-and-documentation@1",
+      "terminal_states.failure": "library:examples/testing-and-documentation@1",
+      "terminal_states.success": "library:examples/testing-and-documentation@1"
+    },
+    "ref": "examples/testing-and-documentation@1",
+    "transitions": {}
+  }
+}

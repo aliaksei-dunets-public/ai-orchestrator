@@ -1,0 +1,14 @@
+schema_version = 1
+[nodes."testing.run"]
+operation = "patch"
+[nodes."testing.run".config]
+max_transient_retries = 0
+[nodes."testing.summary"]
+operation = "patch"
+[nodes."testing.summary".execution]
+model_profile = "expert"
+[model_profiles.expert]
+provider = "host"
+model = "project-selected-model"
+[runtime.node_limits]
+"testing.summary" = 3

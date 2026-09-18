@@ -1,0 +1,22 @@
+schema_version = 1
+[component]
+id = "project/testing-summary"
+version = 1
+kind = "node"
+title = "Проектный разбор результатов"
+description = "Совместимая замена библиотечного узла с собственной инструкцией."
+[inputs]
+execution_record = "test-execution-record/v1"
+task = "task-request/v1"
+[outputs]
+result = "testing-summary/v1"
+[outcomes]
+passed = ["result"]
+failed = ["result"]
+[execution]
+kind = "agent"
+instruction = "Разбери execution_record по objective. В summary отдельно укажи результат обязательных проверок. Failed checks или отсутствие evidence запрещают passed. Верни result со status и фактическими evidence_refs. Не меняй код и не маршрутизируй родительский workflow."
+[effects]
+writes_repository = false
+writes_task_manager = false
+external_actions = false

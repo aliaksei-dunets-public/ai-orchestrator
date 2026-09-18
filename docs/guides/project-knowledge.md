@@ -58,7 +58,28 @@ result = node.execute(KnowledgeRefreshRequest(
 assert result.data["result"]["commit_allowed"] in {True, False}
 ```
 
-`full + authorization=required` возвращает `awaiting_confirmation` и `WaitState`; после Graph Runtime `resume_wait` вызывающий агент передаёт подтверждение и `explicit_decision_ref`. `full + authorization=automatic` допустим только для trusted node, объявленной в graph configuration. Runtime-agent не меняет authorization во время выполнения.
+`full + authorization=required` возвращает runtime outcome `needs_input`, `WaitState` и доменный `data.result.status="awaiting_confirmation"`. Подайте результат в `AgentGraphRuntime`, получите реальный ответ пользователя, вызовите `resume_wait` с явным decision, затем повторно `execute` с тем же request и сохранённым ответом. Одобрение требует `approved=True` и непустого decision ref (в decision.ref или исходном request.explicit_decision_ref); отказ или отсутствие ref не запускает full refresh. При отказе агент может отменить запуск. Runtime не удостоверяет автора ответа.
+
+```python
+from orchestrator import AgentGraphRuntime, KnowledgeRefreshNode, KnowledgeRefreshPolicy, KnowledgeRefreshRequest
+
+node = KnowledgeRefreshNode(knowledge_service)
+request = KnowledgeRefreshRequest(policy=KnowledgeRefreshPolicy(mode="full", authorization="required"))
+runtime = AgentGraphRuntime()
+run = runtime.create_run(node.graph, {})
+run = runtime.submit_result(run.run_id, node.execute(request), expected_revision=run.revision)
+assert run.state == "waiting_input"
+assert run.last_result.data["result"]["status"] == "awaiting_confirmation"
+# После фактического одобрения подставьте его ref; здесь демонстрационный ответ.
+decision = {"approved": True, "ref": "user-decision:full-refresh"}
+run = runtime.resume_wait(run.run_id, expected_revision=run.revision,
+                          wait_id=run.wait.wait_id, node_id=run.wait.node_id, answer=decision)
+run = runtime.submit_result(run.run_id, node.execute(request, decision=run.resumed_wait["answer"]),
+                            expected_revision=run.revision)
+assert run.last_result.data["result"]["status"] != "awaiting_confirmation"
+```
+
+`knowledge_service` в примерах — заранее созданный ProjectKnowledgeService. Full refresh меняет knowledge pointer только после успешного provider result. `full + authorization=automatic` допустим только для trusted node, объявленной в graph configuration. Runtime-agent не меняет authorization во время активного подтверждения. При работе через [execution gates](execution-gates.md) сохранение request и продолжение паузы выполняет фасад.
 
 Используйте Python, умеющий импортировать корневой orchestrator; provider interpreter выбирается отдельно. Во внешнем проекте замените оба пути и include_roots. Граф/index хранятся в `.orchestrator/artifacts/`, pointer/lock/staging — в `.orchestrator/knowledge/`; это локальные данные, не Git-материалы.
 
@@ -70,7 +91,7 @@ assert result.data["result"]["commit_allowed"] in {True, False}
 4. После изменений/review/tests выполните refresh и повторный status для текущего кандидата. Source change после refresh делает graph stale.
 5. Для AgentPreparation передайте проверенные выводы/evidence в явный context result. Service не подаёт semantic results, не делает ready/claim и не управляет workflow вместо агента.
 
-`service.query("AgentPreparation", allow_stale=True)` читает старый graph лишь явно; result остаётся degraded со freshness=stale. Required-knowledge final-validation gate пока не реализована.
+`service.query("AgentPreparation", allow_stale=True)` читает старый graph лишь явно; result остаётся degraded со freshness=stale. [Final-validation gate](../architecture/execution-gates.md) реализована: при knowledge_required degraded/missing knowledge не допускает readiness.
 
 ## Отказы и проверка
 

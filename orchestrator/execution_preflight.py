@@ -25,13 +25,14 @@ def revision(snapshot):
 class ExecutionPreflight:
     max_artifact_bytes = 2 * 1024 * 1024
 
-    def __init__(self, project_root: Path, *, policy: CorpusPolicy | None = None):
+    def __init__(self, project_root: Path, *, policy: CorpusPolicy | None = None, workflow_source=None):
         root = Path(project_root).absolute()
         checked_path(Path(root.anchor),root)
         self.repository = ArtifactRepository(root)
         self.root = self.repository.project_root
         self.service = TaskManagerService(self.root)
         self.policy = policy or CorpusPolicy()
+        self.workflow_source = workflow_source
 
     def source_snapshot(self):
         return snapshot_sources(self.root,self.policy)
@@ -98,8 +99,18 @@ class ExecutionPreflight:
                 raise ExecutionError("unsupported_plan","Нужен structured plan/v1 от preparation")
             payload=json.loads(document[len(prefix):-len(suffix)])
             approved=json.loads(self._stored(value["plan_review"],"plan_review"))
+            workflow_binding=value.get("workflow_binding")
+            expected_review={"plan_sha256":plan["sha256"],"definition_version":task["definition_version"]}
+            if workflow_binding is not None:
+                from .workflow_binding import read_binding
+                read_binding(self.repository,workflow_binding)
+                if payload.get("workflow_binding") != workflow_binding:
+                    raise ExecutionError("stale_workflow","Plan/Package workflow bindings различаются")
+                expected_review["workflow_digest"]=workflow_binding["digest"]
+            elif "workflow_binding" in payload:
+                raise ExecutionError("stale_workflow","Package потерял workflow binding")
             if (not isinstance(approved,dict) or approved.get("approved_binding") !=
-                    {"plan_sha256":plan["sha256"],"definition_version":task["definition_version"]}
+                    expected_review
                     or approved.get("zero_context_executable") is not True
                     or set(_strings(approved.get("criterion_ids"),"criterion_ids",nonempty=True)) !=
                        {entry["id"] for entry in task["acceptance_criteria"]}):
@@ -134,8 +145,11 @@ class ExecutionPreflight:
                 if not ready:
                     raise ExecutionError("unsupported_plan","Цикл/неизвестная зависимость work units")
                 done.update(ready); remaining={uid:deps for uid,deps in remaining.items() if uid not in ready}
-            return {"package":stored.record.to_dict(),"plan":value["plan"],"plan_review":value["plan_review"],
+            result={"package":stored.record.to_dict(),"plan":value["plan"],"plan_review":value["plan_review"],
                     "prepared_source_revision":value["prepared_source_revision"],"work_units":units}
+            if workflow_binding is not None:
+                result["workflow_binding"]=workflow_binding
+            return result
         except (KeyError,TypeError,ValueError,UnicodeError) as exc:
             raise ExecutionError("stale_package","Невалидный immutable preparation package") from exc
 
@@ -146,6 +160,13 @@ class ExecutionPreflight:
                 or any(b["blocking"] and b["status"]=="open" for b in task["blockers"])):
             raise ExecutionError("task_not_ready","Нужна ready без claim/run/blockers")
         binding=self.bindings(task)
+        workflow_binding=binding.get("workflow_binding")
+        if workflow_binding is not None or self.workflow_source is not None:
+            if workflow_binding is None or self.workflow_source is None:
+                raise ExecutionError("workflow_required","Config-bound package требует доверенный WorkflowSource")
+            if (self.workflow_source.to_dict()!=workflow_binding["source"]
+                    or self.workflow_source.load().digest!=workflow_binding["digest"]):
+                raise ExecutionError("stale_workflow","Workflow config изменился после preparation")
         if re.fullmatch(r"code-corpus/v1:[0-9a-f]{64}",binding["prepared_source_revision"]) is None:
             raise ExecutionError("unsupported_source_revision","Opaque source revision требует reprepare с fingerprint")
         snapshot=self.source_snapshot()
@@ -154,4 +175,4 @@ class ExecutionPreflight:
         self.task_guard(self.service.get_task(task_id),expected_task_version)
         return {"contract":"execution-preflight/v1","status":"fresh","task":task,"binding":binding,
                 "source_snapshot":json.loads(canonical_json(snapshot.to_dict())),
-                "source_revision":revision(snapshot),"limitations":["code-only fingerprint; docs/config/dependencies не покрыты"]}
+                "source_revision":revision(snapshot),"limitations":["code-only fingerprint; workflow config покрыт отдельно при binding; прочие docs/config/dependencies не покрыты"]}

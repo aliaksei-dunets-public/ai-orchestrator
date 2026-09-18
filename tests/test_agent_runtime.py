@@ -236,6 +236,38 @@ class AgentRuntimeTests(unittest.TestCase):
         self.run = self.submit(NodeResult("work", "success", data={"proof": "test"}))
         self.assertEqual(self.run.current_node, "finish")
 
+    def test_outcome_requirements_support_waits_and_domain_terminal_results(self) -> None:
+        transitions = {"approved": "succeeded", "needs_input": "work", "blocked": "work", "failed": "failed"}
+        node = Node("work", "in/v1", "out/v1", tuple(transitions), transitions, ("plan",),
+                    {"needs_input": (), "blocked": (), "failed": ("diagnostics",)})
+        for wait_outcome in ("needs_input", "blocked"):
+            for terminal in ("approved", "failed"):
+                with self.subTest(wait=wait_outcome, terminal=terminal):
+                    self.runtime = AgentGraphRuntime()
+                    self.run = self.runtime.create_run(Graph("g", 1, "work", {"work": node}), {})
+                    actions = self.runtime.available_actions(self.run.run_id)
+                    actions["node"]["required_outputs_by_outcome"]["failed"].clear()
+                    self.assertEqual(self.runtime.available_actions(self.run.run_id)["node"]["required_outputs_by_outcome"]["failed"], ["diagnostics"])
+                    self.run = self.wait(blocker=wait_outcome == "blocked")
+                    response = {"answer": "Да"} if wait_outcome == "needs_input" else {"resolution": "Доступ восстановлен"}
+                    self.run = self.runtime.resume_wait(self.run.run_id, expected_revision=2, wait_id="WAIT-1", node_id="work", **response)
+                    self.reject("contract_violation", lambda: self.submit(NodeResult("work", terminal)))
+                    data = {"plan": "Готово"} if terminal == "approved" else {"diagnostics": {"reason": "Ошибка"}}
+                    self.run = self.submit(NodeResult("work", terminal, data=data))
+                    self.assertEqual(self.run.state, "succeeded" if terminal == "approved" else "failed")
+
+    def test_empty_outcome_requirements_do_not_bypass_result_guards(self) -> None:
+        node = Node("work", "in", "out", ("needs_input",), {"needs_input": "work"}, ("plan",), {"needs_input": ()})
+        self.runtime = AgentGraphRuntime()
+        self.run = self.runtime.create_run(Graph("g", 1, "work", {"work": node}), {})
+        wait = WaitState("WAIT-1", "work", "user_input", question="Вопрос?")
+        for result in (NodeResult("work", "needs_input"),
+                       NodeResult("work", "needs_input", wait=wait, artifacts={"bad": {}}),
+                       NodeResult("work", "needs_input", wait=wait, data={"bad": float("nan")})):
+            self.reject("contract_violation", lambda: self.submit(result))
+        self.reject("run_revision_conflict", lambda: self.runtime.submit_result(
+            self.run.run_id, NodeResult("work", "needs_input", wait=wait), expected_revision=2))
+
     def test_failure_cancel_and_missing_run(self) -> None:
         second = self.runtime.create_run(graph(), {}, run_id="SECOND")
         self.run = self.submit(NodeResult("work", "failure", error={"reason": "Test failure"}))

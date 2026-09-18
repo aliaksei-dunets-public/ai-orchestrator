@@ -8,8 +8,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from orchestrator import (AgentPreparation, AgentExecution, ExecutionPreflight, PreparationError,
-                          ArtifactError, GraphStatus, KnowledgeRefreshResult)
+                          ArtifactError, GraphStatus, KnowledgeRefreshResult, RuntimeError as ProcessError)
+from orchestrator.knowledge_contracts import KnowledgeError
 from orchestrator_task_manager import TaskManagerService
+from tests.test_knowledge_refresh_node import FakeKnowledgeService
 
 
 class AgentExecutionTests(unittest.TestCase):
@@ -148,6 +150,220 @@ class AgentExecutionTests(unittest.TestCase):
                                           expected_task_version=state["task"]["version"])
         self.assertEqual(result["status"], "stale")
         self.assertFalse(result["commit_allowed"])
+
+    def _gate_success_payloads(self, state, *, docs_adjacent=False):
+        source = state["source_revision"]
+        candidate = state["candidate_revision"]
+        return {
+            "code_review": {"outcome": "approved", "payload": {
+                "summary": "Review completed", "implementation_revision": source,
+                "findings": [], "evidence_refs": ["review-output"], "candidate_revision": candidate}},
+            "testing": {"outcome": "passed", "payload": {
+                "summary": "Tests passed", "implementation_revision": source,
+                "totals": {"checks": 3, "passed": 3, "failed": 0, "skipped": 0},
+                "evidence_refs": ["test-output"], "candidate_revision": candidate}},
+            "documentation": {"outcome": "success", "payload": {
+                "summary": "Documentation checked", "implementation_revision": source,
+                "impacted": True, "source_adjacent_changed": docs_adjacent,
+                "targets": ["docs/guides/agent-execution.md"], "evidence_refs": ["docs-output"],
+                "candidate_revision": candidate}},
+        }
+
+    def _finish_work_units_for_gates(self):
+        self.start()
+        self.submit(self.success())
+        self.submit(self.success("WU-2"))
+        self.submit({"outcome": "handoff"})
+        state = self.snapshot()
+        return self.flow.start_gates(self.rid, expected_revision=state["run"]["revision"],
+                                     expected_task_version=state["task"]["version"])
+
+    def _submit_gate_payload(self, gate_id, payload):
+        state = self.flow.gate_inspect(gate_id)
+        return self.flow.submit_gate(gate_id, payload, expected_revision=state["run"]["revision"],
+                                     expected_task_version=state["task"]["version"])
+
+    def test_execution_gates_publish_evidence_and_enter_acceptance(self):
+        class Knowledge:
+            def precommit_refresh(self):
+                return KnowledgeRefreshResult("indexed", {"digest": "a"}, {"version": "v1"},
+                                              1, 0, mode="incremental", details={"changed": []})
+
+            def status(self):
+                return GraphStatus("fresh", {"digest": "a"}, {"digest": "a"},
+                                   {"version": "v1"}, {"package": "graphifyy"})
+
+        self.flow.knowledge_service = Knowledge()
+        gate = self._finish_work_units_for_gates()
+        gid = gate["run"]["run_id"]
+        payloads = self._gate_success_payloads(gate)
+        for node in ("code_review", "testing", "documentation"):
+            self._submit_gate_payload(gid, payloads[node])
+        state = self.flow.gate_inspect(gid)
+        self.flow.refresh_knowledge(gid, expected_revision=state["run"]["revision"],
+                                    expected_task_version=state["task"]["version"])
+        state = self.flow.gate_inspect(gid)
+        candidate = state["candidate_revision"]
+        source = state["source_revision"]
+        final = {"outcome": "ready", "payload": {
+            "summary": "All gates passed", "candidate_revision": candidate,
+            "implementation_revision": source, "reviewed_revision": source,
+            "tested_revision": source, "documented_revision": source,
+            "knowledge_required": False, "knowledge_status": "success",
+            "criteria": [{"id": "AC-01", "status": "satisfied", "evidence_refs": ["test-output"]}],
+            "blocking_findings": [], "evidence_refs": ["review-output", "test-output"],
+            "acceptance_package": {"summary": "Проверить gates", "scenarios": [{
+                "id": "UAT-01", "title": "Пройти gates", "action": "Запустить сценарий",
+                "expected": "Все gates проходят"}], "automated_evidence": ["test-output"],
+                "known_warnings": [], "known_limitations": []}}}
+        self._submit_gate_payload(gid, final)
+        task = self.flow.service.get_task(self.task["id"])
+        self.assertEqual(task["status"], "awaiting_acceptance")
+        self.assertIsNone(task["active_claim"])
+        self.assertIsNone(task["active_run_ref"])
+        self.assertEqual(task["artifacts"]["readiness"]["metadata"]["status"], "ready")
+        self.assertIn("acceptance_package", task["artifacts"])
+        finished = self.flow.gate_inspect(gid)
+        self.assertIsNotNone(self.flow.repository.verify(finished["artifacts"]["code_review"]["ref"], "code_review", "v1"))
+        accepted = self.flow.service.accept_task(self.task["id"], task["version"],
+            candidate_revision=candidate, completion_decision_ref="completion:TASK-0017",
+            artifact_ref=task["artifacts"]["acceptance_package"]["ref"])
+        self.assertEqual(accepted["status"], "completed")
+
+    def _full_knowledge_gate(self):
+        self.flow.knowledge_service = FakeKnowledgeService(KnowledgeRefreshResult(
+            "indexed", {"digest": "a" * 64}, {"version": "v2"}, 1, 0, mode="full-rebuild"))
+        gate = self._finish_work_units_for_gates()
+        gid = gate["run"]["run_id"]
+        for payload in self._gate_success_payloads(gate).values():
+            self._submit_gate_payload(gid, payload)
+        return gid
+
+    def _refresh_gate(self, gid, **kwargs):
+        state = self.flow.gate_inspect(gid)
+        return self.flow.refresh_knowledge(gid, expected_revision=state["run"]["revision"],
+                                           expected_task_version=state["task"]["version"], **kwargs)
+
+    def test_knowledge_gate_confirmation_preserves_policy_and_versions(self):
+        gid = self._full_knowledge_gate()
+        request = {"policy": {"mode": "full", "authorization": "required"}}
+        run = self._refresh_gate(gid, request=request)
+        self.assertEqual(run.state, "waiting_input")
+        first = self.flow.gate_inspect(gid)["artifacts"]["knowledge_refresh"]
+        before = self.flow.gate_inspect(gid)
+        with self.assertRaises(PreparationError) as caught:
+            self._refresh_gate(gid, request={"policy": {"mode": "auto"}}, decision={"approved": True, "ref": "user:1"})
+        self.assertEqual(caught.exception.code, "stale_request")
+        self.assertEqual(self.flow.gate_inspect(gid), before)
+        for kwargs, error in (({"request": {"policy": {"mode": "invalid"}}}, KnowledgeError),
+                              ({"decision": {"approved": True, "ref": ("bad",)}}, ProcessError),
+                              ({}, PreparationError)):
+            with self.subTest(kwargs=kwargs), self.assertRaises(error):
+                self._refresh_gate(gid, **kwargs)
+            self.assertEqual(self.flow.gate_inspect(gid), before)
+            self.assertEqual(self.flow.knowledge_service.full_calls, 0)
+        records = [first]
+        for decision in ({"approved": False, "ref": "user:denial"}, {"approved": True}):
+            run = self._refresh_gate(gid, decision=decision)
+            self.assertEqual(run.state, "waiting_input")
+            self.assertEqual(self.flow.knowledge_service.full_calls, 0)
+            records.append(self.flow.gate_inspect(gid)["artifacts"]["knowledge_refresh"])
+        run = self._refresh_gate(gid, decision={"approved": True, "ref": "user:approval"})
+        self.assertEqual(run.state, "running")
+        self.assertEqual(run.current_node, "final_validation")
+        self.assertEqual(self.flow.knowledge_service.full_calls, 1)
+        state = self.flow.gate_inspect(gid)
+        self.assertEqual(state["knowledge"]["request"]["policy"]["mode"], "full")
+        self.assertEqual(state["knowledge"]["status"], "success")
+        records.append(state["artifacts"]["knowledge_refresh"])
+        self.assertEqual(len({r["version"] for r in records}), 4)
+        for record in records:
+            self.flow.repository.verify(record["ref"], record["role"], record["version"])
+        candidate, source = state["candidate_revision"], state["source_revision"]
+        self._submit_gate_payload(gid, {"outcome": "ready", "payload": {
+            "summary": "Full refresh подтверждён, gates проверены", "candidate_revision": candidate,
+            "implementation_revision": source, "reviewed_revision": source,
+            "tested_revision": source, "documented_revision": source,
+            "knowledge_required": False, "knowledge_status": "success",
+            "criteria": [{"id": "AC-01", "status": "satisfied", "evidence_refs": ["test:confirmation"]}],
+            "blocking_findings": [], "evidence_refs": ["test:confirmation"],
+            "acceptance_package": {"summary": "Проверить confirmation", "scenarios": [{
+                "id": "UAT-01", "title": "Подтверждение", "action": "Одобрить full refresh",
+                "expected": "Readiness после refresh"}], "automated_evidence": ["test:confirmation"],
+                "known_warnings": [], "known_limitations": []}}})
+        task = self.service.get_task(self.task["id"])
+        self.assertEqual(task["status"], "awaiting_acceptance")
+        self.assertIsNone(task["active_claim"])
+
+    def test_knowledge_gate_exhausted_wait_does_not_resume_or_refresh(self):
+        gid = self._full_knowledge_gate()
+        self._refresh_gate(gid, request={"policy": {"mode": "full", "authorization": "required"}})
+        for _ in range(6):
+            self._refresh_gate(gid, decision={"approved": False, "ref": "user:denial"})
+        before = self.flow.gate_inspect(gid)
+        self.assertEqual(self.flow.runtime.available_actions(gid)["remaining_results"], 0)
+        with self.assertRaises(PreparationError) as caught:
+            self._refresh_gate(gid, decision={"approved": True, "ref": "user:approval"})
+        self.assertEqual(caught.exception.code, "result_limit_exceeded")
+        self.assertEqual(self.flow.gate_inspect(gid), before)
+        self.assertEqual(self.flow.knowledge_service.full_calls, 0)
+
+    def test_execution_gates_changes_required_never_becomes_ready(self):
+        gate = self._finish_work_units_for_gates()
+        gid = gate["run"]["run_id"]
+        state = self.flow.gate_inspect(gid)
+        raw = {"outcome": "changes_required", "payload": {
+            "summary": "Fix required", "implementation_revision": state["source_revision"],
+            "findings": [{"id": "CR-01", "summary": "Defect", "severity": "major",
+                          "status": "open", "evidence_refs": ["review-output"]}],
+            "evidence_refs": ["review-output"], "candidate_revision": state["candidate_revision"]}}
+        self._submit_gate_payload(gid, raw)
+        self.assertEqual(self.flow.gate_inspect(gid)["run"]["state"], "failed")
+        task = self.flow.gate_inspect(gid)["task"]
+        self.assertEqual(task["status"], "active")
+        with self.assertRaises(PreparationError):
+            self.flow.submit_gate(gid, raw, expected_revision=self.flow.gate_inspect(gid)["run"]["revision"],
+                                  expected_task_version=task["version"])
+        released = self.flow.release_gates(gid, expected_task_version=task["version"],
+                                           reason="Review changes required")
+        self.assertEqual(released["status"], "preparing")
+
+    def test_execution_gates_required_knowledge_rejects_degraded(self):
+        class Knowledge:
+            def precommit_refresh(self):
+                return KnowledgeRefreshResult("indexed", {"digest": "a"}, {"version": "v1"},
+                                              1, 0, mode="full-rebuild-fallback", details={"fallback": True})
+
+            def status(self):
+                return GraphStatus("fresh", {"digest": "a"}, {"digest": "a"},
+                                   {"version": "v1"}, {"package": "graphifyy"})
+
+        self.flow.knowledge_service = Knowledge()
+        self.start(); self.submit(self.success()); self.submit(self.success("WU-2")); self.submit({"outcome": "handoff"})
+        state = self.snapshot()
+        gate = self.flow.start_gates(self.rid, expected_revision=state["run"]["revision"],
+                                     expected_task_version=state["task"]["version"], knowledge_required=True)
+        gid = gate["run"]["run_id"]
+        for node, payload in self._gate_success_payloads(gate).items():
+            self._submit_gate_payload(gid, payload)
+        state = self.flow.gate_inspect(gid)
+        self.flow.refresh_knowledge(gid, expected_revision=state["run"]["revision"],
+                                    expected_task_version=state["task"]["version"])
+        state = self.flow.gate_inspect(gid)
+        source, candidate = state["source_revision"], state["candidate_revision"]
+        final = {"outcome": "ready", "payload": {
+            "summary": "Should be rejected", "candidate_revision": candidate,
+            "implementation_revision": source, "reviewed_revision": source,
+            "tested_revision": source, "documented_revision": source,
+            "knowledge_required": True, "knowledge_status": "degraded",
+            "criteria": [{"id": "AC-01", "status": "satisfied", "evidence_refs": ["test-output"]}],
+            "blocking_findings": [], "evidence_refs": ["test-output"],
+            "acceptance_package": {"summary": "Package", "scenarios": [{"id": "UAT-01", "title": "Check",
+                "action": "Run", "expected": "Pass"}], "automated_evidence": ["test-output"]}}}
+        with self.assertRaises(PreparationError) as error:
+            self._submit_gate_payload(gid, final)
+        self.assertEqual(error.exception.code, "not_ready")
+        self.assertNotEqual(self.flow.gate_inspect(gid)["task"]["status"], "awaiting_acceptance")
 
     def test_stale_code_before_claim(self):
         self.code.write_text("VALUE = 8\n", encoding="utf-8")

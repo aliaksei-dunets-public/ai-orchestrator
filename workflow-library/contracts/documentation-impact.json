@@ -1,0 +1,1 @@
+{"id":"documentation-impact/v1","schema":{"type":"object","properties":{"impacted":{"type":"boolean"},"targets":{"type":"array","items":{"type":"string"}}},"required":["impacted","targets"],"additionalProperties":false}}

@@ -13,6 +13,7 @@ from .execution_preflight import ExecutionPreflight, ExecutionError
 from .graphify_provider import GraphifyProvider
 from .knowledge_service import ProjectKnowledgeService
 from .knowledge_refresh_node import KnowledgeRefreshNode, KnowledgeRefreshPolicy, KnowledgeRefreshRequest, knowledge_refresh_graph
+from .execution_gates import candidate_fingerprint, execution_gates_graph
 from .knowledge_contracts import CorpusPolicy, SourceSnapshot, ProviderIdentity, ProviderCapabilities, GraphStatus, KnowledgeQueryResult, KnowledgeRefreshResult, KnowledgeError
 from .runtime_contracts import validate_node_result
 
@@ -46,6 +47,8 @@ __all__ = [
     "KnowledgeRefreshPolicy",
     "KnowledgeRefreshRequest",
     "knowledge_refresh_graph",
+    "candidate_fingerprint",
+    "execution_gates_graph",
     "CorpusPolicy",
     "SourceSnapshot",
     "ProviderIdentity",

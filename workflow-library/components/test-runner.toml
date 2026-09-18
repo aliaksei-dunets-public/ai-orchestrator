@@ -1,0 +1,28 @@
+schema_version = 1
+[component]
+id = "core/test-runner"
+version = 1
+kind = "node"
+title = "Запуск проверок"
+description = "Получить фактический результат проверок через capability проекта."
+[inputs]
+scope = "test-scope/v1"
+project_profile = "project-profile/v1"
+[outputs]
+execution_record = "test-execution-record/v1"
+[outcomes]
+finished = ["execution_record"]
+failure = ["execution_record"]
+[execution]
+kind = "tool"
+capability = "project-test-runner"
+[config_schema.max_transient_retries]
+default = 1
+[config_schema.max_transient_retries.schema]
+type = "integer"
+minimum = 0
+maximum = 3
+[effects]
+writes_repository = true
+writes_task_manager = false
+external_actions = false

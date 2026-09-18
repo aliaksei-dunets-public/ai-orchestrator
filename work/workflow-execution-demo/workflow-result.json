@@ -1,0 +1,791 @@
+{
+  "run": {
+    "run_id": "RUN-5678b7aa33b547fd9b1d911207ccca6a",
+    "task_ref": null,
+    "graph_ref": "examples/testing-and-documentation",
+    "graph_version": 1,
+    "phase": "execution",
+    "state": "succeeded",
+    "current_node": null,
+    "inputs": {
+      "workflow_digest": "workflow/v1:2b6eb67df5a8399c6f66ea458c10b22c91c858a57cfb3876997a6e244a6224c9"
+    },
+    "results": {
+      "testing.scope": {
+        "node_id": "testing.scope",
+        "outcome": "success",
+        "artifacts": {
+          "scope": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "output-2e543a502d97d308",
+            "version": "v2-1",
+            "record": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-2e543a502d97d308",
+              "version": "v2-1",
+              "contract": "test-scope/v1",
+              "media_type": "application/json",
+              "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+              "size": 25,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-2e543a502d97d308/v2-1/payload.bin"
+            },
+            "field": null,
+            "port": "scope",
+            "contract": "test-scope/v1",
+            "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+            "value": {
+              "checks": [
+                "arithmetic"
+              ]
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "agent",
+            "executor_ref": "local-fixture-process",
+            "requested_profile": "standard",
+            "executed_profile": "standard",
+            "provider": "local-fixture",
+            "model": "fixture-v1",
+            "reasoning": null,
+            "fallback_reason": null,
+            "policy": "single_agent"
+          },
+          "evidence": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "node_evidence",
+            "version": "v2-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "e11ed7eb5b6ffcfd5ea57a7c241338bdd958725c84db12d7caeb026b0bb05d93",
+            "size": 2337,
+            "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v2-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      },
+      "testing.run": {
+        "node_id": "testing.run",
+        "outcome": "finished",
+        "artifacts": {
+          "execution_record": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "output-f40e7ae423660036",
+            "version": "v3-1",
+            "record": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-f40e7ae423660036",
+              "version": "v3-1",
+              "contract": "test-execution-record/v1",
+              "media_type": "application/json",
+              "sha256": "0b924aceaa0f5a320ec0f5f6a621c3b748e645aeb0bcc80e392b17bc9c9cb435",
+              "size": 153,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-f40e7ae423660036/v3-1/payload.bin"
+            },
+            "field": null,
+            "port": "execution_record",
+            "contract": "test-execution-record/v1",
+            "sha256": "0b924aceaa0f5a320ec0f5f6a621c3b748e645aeb0bcc80e392b17bc9c9cb435",
+            "value": {
+              "evidence_refs": [
+                "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\unittest-result.txt"
+              ],
+              "failed": 0,
+              "passed": 1
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "tool",
+            "executor_ref": "stdlib-unittest",
+            "capability": "project-test-runner"
+          },
+          "evidence": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "node_evidence",
+            "version": "v3-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "f5a318db8ed5099bac39fc5326e56728d01fc2e012d9154f8c5007dbb2133797",
+            "size": 2274,
+            "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v3-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      },
+      "testing.summary": {
+        "node_id": "testing.summary",
+        "outcome": "passed",
+        "artifacts": {
+          "result": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "output-d9fd9a3d81d750e6",
+            "version": "v4-1",
+            "record": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-d9fd9a3d81d750e6",
+              "version": "v4-1",
+              "contract": "testing-summary/v1",
+              "media_type": "application/json",
+              "sha256": "508867666a71f8d993c9f594123034724fa0844a3fdc29912968c2190cb4a3ed",
+              "size": 229,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+            },
+            "field": null,
+            "port": "result",
+            "contract": "testing-summary/v1",
+            "sha256": "508867666a71f8d993c9f594123034724fa0844a3fdc29912968c2190cb4a3ed",
+            "value": {
+              "evidence_refs": [
+                "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\unittest-result.txt"
+              ],
+              "status": "passed",
+              "summary": "Результат реального локального unittest"
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "agent",
+            "executor_ref": "local-fixture-process",
+            "requested_profile": "standard",
+            "executed_profile": "standard",
+            "provider": "local-fixture",
+            "model": "fixture-v1",
+            "reasoning": null,
+            "fallback_reason": null,
+            "policy": "single_agent"
+          },
+          "evidence": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "node_evidence",
+            "version": "v4-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "63d064b96f428fa4108b2fc81fc9e95f799e670bf9d22574abdff63cf3a34aeb",
+            "size": 2655,
+            "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v4-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      },
+      "documentation.impact": {
+        "node_id": "documentation.impact",
+        "outcome": "assessed",
+        "artifacts": {
+          "impact": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "output-96f34c94f7cf7eb0",
+            "version": "v5-1",
+            "record": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-96f34c94f7cf7eb0",
+              "version": "v5-1",
+              "contract": "documentation-impact/v1",
+              "media_type": "application/json",
+              "sha256": "b929bd8a6c8c8aaf8b452f2750c17d43eaf2b7429f615b539bdacb984b8e7112",
+              "size": 44,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-96f34c94f7cf7eb0/v5-1/payload.bin"
+            },
+            "field": null,
+            "port": "impact",
+            "contract": "documentation-impact/v1",
+            "sha256": "b929bd8a6c8c8aaf8b452f2750c17d43eaf2b7429f615b539bdacb984b8e7112",
+            "value": {
+              "impacted": true,
+              "targets": [
+                "docs/demo.md"
+              ]
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "agent",
+            "executor_ref": "local-fixture-process",
+            "requested_profile": "standard",
+            "executed_profile": "standard",
+            "provider": "local-fixture",
+            "model": "fixture-v1",
+            "reasoning": null,
+            "fallback_reason": null,
+            "policy": "single_agent"
+          },
+          "evidence": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "node_evidence",
+            "version": "v5-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "9189c92a9d2254a490b103ab8d03fcde0800604310c7d8556ea649c5cf376969",
+            "size": 3240,
+            "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v5-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      },
+      "documentation.update": {
+        "node_id": "documentation.update",
+        "outcome": "success",
+        "artifacts": {
+          "result": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "output-d9fd9a3d81d750e6",
+            "version": "v6-1",
+            "record": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-d9fd9a3d81d750e6",
+              "version": "v6-1",
+              "contract": "documentation-summary/v1",
+              "media_type": "application/json",
+              "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+              "size": 233,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v6-1/payload.bin"
+            },
+            "field": null,
+            "port": "result",
+            "contract": "documentation-summary/v1",
+            "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+            "value": {
+              "evidence_refs": [
+                "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\docs\\demo.md"
+              ],
+              "status": "success",
+              "summary": "Демонстрационная документация обновлена"
+            }
+          }
+        },
+        "data": {
+          "receipt": {
+            "kind": "agent",
+            "executor_ref": "local-fixture-process",
+            "requested_profile": "standard",
+            "executed_profile": "standard",
+            "provider": "local-fixture",
+            "model": "fixture-v1",
+            "reasoning": null,
+            "fallback_reason": null,
+            "policy": "single_agent"
+          },
+          "evidence": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "node_evidence",
+            "version": "v6-1",
+            "contract": "workflow-node-evidence/v1",
+            "media_type": "application/json",
+            "sha256": "66afcd2634b46a0d85cfc2ade932c69fdee5597ff9a25634f2f2d851b77be640",
+            "size": 2689,
+            "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v6-1/payload.bin"
+          }
+        },
+        "error": null,
+        "wait": null
+      }
+    },
+    "wait": null,
+    "last_result": {
+      "node_id": "documentation.update",
+      "outcome": "success",
+      "artifacts": {
+        "result": {
+          "ref": "WF-840df4092ae2497b9691411d0f463717",
+          "role": "output-d9fd9a3d81d750e6",
+          "version": "v6-1",
+          "record": {
+            "ref": "WF-840df4092ae2497b9691411d0f463717",
+            "role": "output-d9fd9a3d81d750e6",
+            "version": "v6-1",
+            "contract": "documentation-summary/v1",
+            "media_type": "application/json",
+            "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+            "size": 233,
+            "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v6-1/payload.bin"
+          },
+          "field": null,
+          "port": "result",
+          "contract": "documentation-summary/v1",
+          "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+          "value": {
+            "evidence_refs": [
+              "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\docs\\demo.md"
+            ],
+            "status": "success",
+            "summary": "Демонстрационная документация обновлена"
+          }
+        }
+      },
+      "data": {
+        "receipt": {
+          "kind": "agent",
+          "executor_ref": "local-fixture-process",
+          "requested_profile": "standard",
+          "executed_profile": "standard",
+          "provider": "local-fixture",
+          "model": "fixture-v1",
+          "reasoning": null,
+          "fallback_reason": null,
+          "policy": "single_agent"
+        },
+        "evidence": {
+          "ref": "WF-840df4092ae2497b9691411d0f463717",
+          "role": "node_evidence",
+          "version": "v6-1",
+          "contract": "workflow-node-evidence/v1",
+          "media_type": "application/json",
+          "sha256": "66afcd2634b46a0d85cfc2ade932c69fdee5597ff9a25634f2f2d851b77be640",
+          "size": 2689,
+          "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v6-1/payload.bin"
+        }
+      },
+      "error": null,
+      "wait": null
+    },
+    "revision": 6,
+    "task_definition_version": null,
+    "max_results": 50,
+    "node_limits": {},
+    "result_counts": {
+      "testing.scope": 1,
+      "testing.run": 1,
+      "testing.summary": 1,
+      "documentation.impact": 1,
+      "documentation.update": 1
+    },
+    "history": [
+      {
+        "revision": 2,
+        "action": "submit_result",
+        "result": {
+          "node_id": "testing.scope",
+          "outcome": "success",
+          "artifacts": {
+            "scope": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-2e543a502d97d308",
+              "version": "v2-1",
+              "record": {
+                "ref": "WF-840df4092ae2497b9691411d0f463717",
+                "role": "output-2e543a502d97d308",
+                "version": "v2-1",
+                "contract": "test-scope/v1",
+                "media_type": "application/json",
+                "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+                "size": 25,
+                "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-2e543a502d97d308/v2-1/payload.bin"
+              },
+              "field": null,
+              "port": "scope",
+              "contract": "test-scope/v1",
+              "sha256": "39bd5cf3eb8ba0fbefe3e70ab9ddc6bbab311ece6cd34fdc785c04c25af20890",
+              "value": {
+                "checks": [
+                  "arithmetic"
+                ]
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "agent",
+              "executor_ref": "local-fixture-process",
+              "requested_profile": "standard",
+              "executed_profile": "standard",
+              "provider": "local-fixture",
+              "model": "fixture-v1",
+              "reasoning": null,
+              "fallback_reason": null,
+              "policy": "single_agent"
+            },
+            "evidence": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "node_evidence",
+              "version": "v2-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "e11ed7eb5b6ffcfd5ea57a7c241338bdd958725c84db12d7caeb026b0bb05d93",
+              "size": 2337,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v2-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      },
+      {
+        "revision": 3,
+        "action": "submit_result",
+        "result": {
+          "node_id": "testing.run",
+          "outcome": "finished",
+          "artifacts": {
+            "execution_record": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-f40e7ae423660036",
+              "version": "v3-1",
+              "record": {
+                "ref": "WF-840df4092ae2497b9691411d0f463717",
+                "role": "output-f40e7ae423660036",
+                "version": "v3-1",
+                "contract": "test-execution-record/v1",
+                "media_type": "application/json",
+                "sha256": "0b924aceaa0f5a320ec0f5f6a621c3b748e645aeb0bcc80e392b17bc9c9cb435",
+                "size": 153,
+                "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-f40e7ae423660036/v3-1/payload.bin"
+              },
+              "field": null,
+              "port": "execution_record",
+              "contract": "test-execution-record/v1",
+              "sha256": "0b924aceaa0f5a320ec0f5f6a621c3b748e645aeb0bcc80e392b17bc9c9cb435",
+              "value": {
+                "evidence_refs": [
+                  "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\unittest-result.txt"
+                ],
+                "failed": 0,
+                "passed": 1
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "tool",
+              "executor_ref": "stdlib-unittest",
+              "capability": "project-test-runner"
+            },
+            "evidence": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "node_evidence",
+              "version": "v3-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "f5a318db8ed5099bac39fc5326e56728d01fc2e012d9154f8c5007dbb2133797",
+              "size": 2274,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v3-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      },
+      {
+        "revision": 4,
+        "action": "submit_result",
+        "result": {
+          "node_id": "testing.summary",
+          "outcome": "passed",
+          "artifacts": {
+            "result": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-d9fd9a3d81d750e6",
+              "version": "v4-1",
+              "record": {
+                "ref": "WF-840df4092ae2497b9691411d0f463717",
+                "role": "output-d9fd9a3d81d750e6",
+                "version": "v4-1",
+                "contract": "testing-summary/v1",
+                "media_type": "application/json",
+                "sha256": "508867666a71f8d993c9f594123034724fa0844a3fdc29912968c2190cb4a3ed",
+                "size": 229,
+                "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+              },
+              "field": null,
+              "port": "result",
+              "contract": "testing-summary/v1",
+              "sha256": "508867666a71f8d993c9f594123034724fa0844a3fdc29912968c2190cb4a3ed",
+              "value": {
+                "evidence_refs": [
+                  "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\unittest-result.txt"
+                ],
+                "status": "passed",
+                "summary": "Результат реального локального unittest"
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "agent",
+              "executor_ref": "local-fixture-process",
+              "requested_profile": "standard",
+              "executed_profile": "standard",
+              "provider": "local-fixture",
+              "model": "fixture-v1",
+              "reasoning": null,
+              "fallback_reason": null,
+              "policy": "single_agent"
+            },
+            "evidence": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "node_evidence",
+              "version": "v4-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "63d064b96f428fa4108b2fc81fc9e95f799e670bf9d22574abdff63cf3a34aeb",
+              "size": 2655,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v4-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      },
+      {
+        "revision": 5,
+        "action": "submit_result",
+        "result": {
+          "node_id": "documentation.impact",
+          "outcome": "assessed",
+          "artifacts": {
+            "impact": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-96f34c94f7cf7eb0",
+              "version": "v5-1",
+              "record": {
+                "ref": "WF-840df4092ae2497b9691411d0f463717",
+                "role": "output-96f34c94f7cf7eb0",
+                "version": "v5-1",
+                "contract": "documentation-impact/v1",
+                "media_type": "application/json",
+                "sha256": "b929bd8a6c8c8aaf8b452f2750c17d43eaf2b7429f615b539bdacb984b8e7112",
+                "size": 44,
+                "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-96f34c94f7cf7eb0/v5-1/payload.bin"
+              },
+              "field": null,
+              "port": "impact",
+              "contract": "documentation-impact/v1",
+              "sha256": "b929bd8a6c8c8aaf8b452f2750c17d43eaf2b7429f615b539bdacb984b8e7112",
+              "value": {
+                "impacted": true,
+                "targets": [
+                  "docs/demo.md"
+                ]
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "agent",
+              "executor_ref": "local-fixture-process",
+              "requested_profile": "standard",
+              "executed_profile": "standard",
+              "provider": "local-fixture",
+              "model": "fixture-v1",
+              "reasoning": null,
+              "fallback_reason": null,
+              "policy": "single_agent"
+            },
+            "evidence": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "node_evidence",
+              "version": "v5-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "9189c92a9d2254a490b103ab8d03fcde0800604310c7d8556ea649c5cf376969",
+              "size": 3240,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v5-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      },
+      {
+        "revision": 6,
+        "action": "submit_result",
+        "result": {
+          "node_id": "documentation.update",
+          "outcome": "success",
+          "artifacts": {
+            "result": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "output-d9fd9a3d81d750e6",
+              "version": "v6-1",
+              "record": {
+                "ref": "WF-840df4092ae2497b9691411d0f463717",
+                "role": "output-d9fd9a3d81d750e6",
+                "version": "v6-1",
+                "contract": "documentation-summary/v1",
+                "media_type": "application/json",
+                "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+                "size": 233,
+                "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v6-1/payload.bin"
+              },
+              "field": null,
+              "port": "result",
+              "contract": "documentation-summary/v1",
+              "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+              "value": {
+                "evidence_refs": [
+                  "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\docs\\demo.md"
+                ],
+                "status": "success",
+                "summary": "Демонстрационная документация обновлена"
+              }
+            }
+          },
+          "data": {
+            "receipt": {
+              "kind": "agent",
+              "executor_ref": "local-fixture-process",
+              "requested_profile": "standard",
+              "executed_profile": "standard",
+              "provider": "local-fixture",
+              "model": "fixture-v1",
+              "reasoning": null,
+              "fallback_reason": null,
+              "policy": "single_agent"
+            },
+            "evidence": {
+              "ref": "WF-840df4092ae2497b9691411d0f463717",
+              "role": "node_evidence",
+              "version": "v6-1",
+              "contract": "workflow-node-evidence/v1",
+              "media_type": "application/json",
+              "sha256": "66afcd2634b46a0d85cfc2ade932c69fdee5597ff9a25634f2f2d851b77be640",
+              "size": 2689,
+              "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v6-1/payload.bin"
+            }
+          },
+          "error": null,
+          "wait": null
+        }
+      }
+    ],
+    "resumed_wait": null
+  },
+  "workflow_digest": "workflow/v1:2b6eb67df5a8399c6f66ea458c10b22c91c858a57cfb3876997a6e244a6224c9",
+  "pending_effect": null,
+  "execution_policy": {
+    "mode": "single_agent",
+    "fallbacks": {}
+  },
+  "evidence": [
+    {
+      "ref": "WF-840df4092ae2497b9691411d0f463717",
+      "role": "node_evidence",
+      "version": "v2-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "e11ed7eb5b6ffcfd5ea57a7c241338bdd958725c84db12d7caeb026b0bb05d93",
+      "size": 2337,
+      "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v2-1/payload.bin"
+    },
+    {
+      "ref": "WF-840df4092ae2497b9691411d0f463717",
+      "role": "node_evidence",
+      "version": "v3-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "f5a318db8ed5099bac39fc5326e56728d01fc2e012d9154f8c5007dbb2133797",
+      "size": 2274,
+      "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v3-1/payload.bin"
+    },
+    {
+      "ref": "WF-840df4092ae2497b9691411d0f463717",
+      "role": "node_evidence",
+      "version": "v4-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "63d064b96f428fa4108b2fc81fc9e95f799e670bf9d22574abdff63cf3a34aeb",
+      "size": 2655,
+      "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v4-1/payload.bin"
+    },
+    {
+      "ref": "WF-840df4092ae2497b9691411d0f463717",
+      "role": "node_evidence",
+      "version": "v5-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "9189c92a9d2254a490b103ab8d03fcde0800604310c7d8556ea649c5cf376969",
+      "size": 3240,
+      "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v5-1/payload.bin"
+    },
+    {
+      "ref": "WF-840df4092ae2497b9691411d0f463717",
+      "role": "node_evidence",
+      "version": "v6-1",
+      "contract": "workflow-node-evidence/v1",
+      "media_type": "application/json",
+      "sha256": "66afcd2634b46a0d85cfc2ade932c69fdee5597ff9a25634f2f2d851b77be640",
+      "size": 2689,
+      "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/node_evidence/v6-1/payload.bin"
+    }
+  ],
+  "result": {
+    "outcome": "success",
+    "outputs": {
+      "documentation_result": {
+        "evidence_refs": [
+          "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\docs\\demo.md"
+        ],
+        "status": "success",
+        "summary": "Демонстрационная документация обновлена"
+      },
+      "testing_result": {
+        "evidence_refs": [
+          "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\unittest-result.txt"
+        ],
+        "status": "passed",
+        "summary": "Результат реального локального unittest"
+      }
+    },
+    "artifacts": {
+      "documentation_result": {
+        "ref": "WF-840df4092ae2497b9691411d0f463717",
+        "role": "output-d9fd9a3d81d750e6",
+        "version": "v6-1",
+        "record": {
+          "ref": "WF-840df4092ae2497b9691411d0f463717",
+          "role": "output-d9fd9a3d81d750e6",
+          "version": "v6-1",
+          "contract": "documentation-summary/v1",
+          "media_type": "application/json",
+          "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+          "size": 233,
+          "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v6-1/payload.bin"
+        },
+        "field": null,
+        "port": "result",
+        "contract": "documentation-summary/v1",
+        "sha256": "c2ae2c5167f12431c63e14810cdc4e3b71e9f350f53031fb01cb768e3d865885",
+        "value": {
+          "evidence_refs": [
+            "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\docs\\demo.md"
+          ],
+          "status": "success",
+          "summary": "Демонстрационная документация обновлена"
+        }
+      },
+      "testing_result": {
+        "ref": "WF-840df4092ae2497b9691411d0f463717",
+        "role": "output-d9fd9a3d81d750e6",
+        "version": "v4-1",
+        "record": {
+          "ref": "WF-840df4092ae2497b9691411d0f463717",
+          "role": "output-d9fd9a3d81d750e6",
+          "version": "v4-1",
+          "contract": "testing-summary/v1",
+          "media_type": "application/json",
+          "sha256": "508867666a71f8d993c9f594123034724fa0844a3fdc29912968c2190cb4a3ed",
+          "size": 229,
+          "path": ".orchestrator/artifacts/WF-840df4092ae2497b9691411d0f463717/output-d9fd9a3d81d750e6/v4-1/payload.bin"
+        },
+        "field": null,
+        "port": "result",
+        "contract": "testing-summary/v1",
+        "sha256": "508867666a71f8d993c9f594123034724fa0844a3fdc29912968c2190cb4a3ed",
+        "value": {
+          "evidence_refs": [
+            "C:\\Users\\aliak\\Documents\\development\\ai-orchestrator\\work\\workflow-execution-demo\\unittest-result.txt"
+          ],
+          "status": "passed",
+          "summary": "Результат реального локального unittest"
+        }
+      }
+    }
+  }
+}

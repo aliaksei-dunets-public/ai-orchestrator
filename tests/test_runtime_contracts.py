@@ -70,6 +70,37 @@ class RuntimeContractsTests(unittest.TestCase):
             self.assertEqual(error.exception.code, code)
             self.assertEqual(error.exception.as_dict()["code"], code)
 
+    def test_outcome_requirements_override_defaults_and_preserve_legacy_rules(self):
+        transitions = {"approved": "succeeded", "needs_input": "work", "failed": "failed"}
+        node = Node("work", "in", "out", tuple(transitions), transitions, ("plan",),
+                    {"needs_input": [], "failed": ["diagnostics"]})
+        validate_node_result(node, NodeResult("work", "needs_input"))
+        validate_node_result(node, NodeResult("work", "failed", data={"diagnostics": {"reason": "Нет доступа"}}))
+        validate_node_result(node, NodeResult("work", "approved", data={"plan": "Готово"}))
+        for outcome, missing in (("approved", "plan"), ("failed", "diagnostics")):
+            with self.subTest(outcome=outcome), self.assertRaises(RuntimeError) as caught:
+                validate_node_result(node, NodeResult("work", outcome))
+            self.assertEqual(caught.exception.details["missing"], [missing])
+        legacy = Node("work", "in", "out", tuple(transitions), transitions, ("plan",))
+        with self.assertRaises(RuntimeError):
+            validate_node_result(legacy, NodeResult("work", "needs_input"))
+
+    def test_outcome_requirements_loader_validation_and_immutable_ownership(self):
+        raw = {"success": ["proof"]}
+        node = self.node(required_outputs_by_outcome=raw)
+        raw["success"].clear()
+        self.assertEqual(node.required_outputs_by_outcome["success"], ("proof",))
+        with self.assertRaises(TypeError):
+            node.required_outputs_by_outcome["success"] = ()
+        loaded = Graph.from_dict({"graph_id": "g", "version": 1, "entry_node": "work", "nodes": {
+            "work": {"input_contract": "in", "output_contract": "out", "outcomes": ["success"],
+                     "transitions": {"success": "succeeded"}, "required_outputs_by_outcome": {"success": ["proof"]}}}})
+        with self.assertRaises(RuntimeError):
+            validate_node_result(loaded.nodes["work"], NodeResult("work", "success"))
+        for bad in (None, [], {"unknown": []}, {"success": "proof"}, {"success": [None]}, {"success": [" "]}):
+            with self.subTest(bad=bad), self.assertRaises(RuntimeError):
+                self.node(required_outputs_by_outcome=bad)
+
     def test_artifact_shape_checks_preserve_repository_boundary(self):
         artifact = {"ref": "A", "contract": "result/v1", "role": "proof", "sha256": "a" * 64, "uri": "repository:A"}
         validate_node_result(self.node(), NodeResult("work", "success", artifacts={"proof": artifact}))

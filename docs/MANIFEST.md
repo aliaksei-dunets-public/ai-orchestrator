@@ -6,6 +6,19 @@
 - [Уточнённый объём TASK-0034: удаление callback GraphRuntime](plans/2026-09-18-remove-callback-runtime-scope.md).
 - [TASK-0034: выполненное удаление и результаты проверок](reports/2026-09-18-task-0034-callback-removal.md).
 - [TASK-0034: данные измерений AgentGraphRuntime](reports/2026-09-18-task-0034-runtime-measurements.json).
+- [Повторный аудит Agent Runtime: оценка замечаний](reports/2026-09-18-agent-runtime-audit-followup-triage.md).
+- [Повторный аудит Agent Runtime: результаты воспроизведений](reports/2026-09-18-agent-runtime-audit-followup-evidence.json).
+- [TASK-0035: дизайн исправлений повторного аудита](plans/2026-09-18-agent-runtime-audit-fixes-design.md).
+- [TASK-0035: реализация, проверки и критерии](reports/2026-09-18-task-0035-agent-runtime-audit-fixes.md).
+- [Обзорный граф Orchestrator](architecture/orchestrator-graph-overview.md).
+- [Предложение: конфигурация workflow, подграфы и модели узлов](plans/2026-09-18-workflow-config-subgraphs-model-policy-design.md).
+- [Конструктор workflow v1 — реализованный контракт](architecture/workflow-builder.md).
+- [Guide: сборка процессов с агентом](guides/workflow-builder.md).
+- [TASK-0036: результат и проверки конструктора](reports/2026-09-18-task-0036-workflow-builder-v1.md).
+- [TASK-0037: дизайн explicit исполнения](plans/2026-09-18-workflow-execution-design.md).
+- [Исполнение workflow — контракт](architecture/workflow-execution.md).
+- [Guide: модели, артефакты и роли](guides/workflow-execution.md).
+- [TASK-0037: результаты и границы](reports/2026-09-18-task-0037-workflow-execution.md).
 
 - [Агент-центричная оркестрация](architecture/agent-centric-orchestration.md).
 - [Project Knowledge Service](architecture/project-knowledge-service.md).

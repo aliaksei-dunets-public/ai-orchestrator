@@ -1,6 +1,6 @@
 # Агентское исполнение: preflight и work units
 
-**Статус:** реализованный Python-контракт TASK-0016, 2026-09-18; отдельная приёмка кандидата требуется. [Guide](../guides/agent-execution.md), [отчёт](../reports/2026-09-18-agent-execution-v1.md). Full review/test/documentation/knowledge/final-validation gates относятся к TASK-0017.
+**Статус:** реализованный Python-контракт TASK-0016, 2026-09-18; отдельная приёмка кандидата требуется. [Guide](../guides/agent-execution.md), [отчёт](../reports/2026-09-18-agent-execution-v1.md). Full review/test/documentation/knowledge/final-validation gates реализованы в [TASK-0017](execution-gates.md).
 
 ## Граница ответственности
 
@@ -8,7 +8,7 @@
 
 `ExecutionPreflight.check(task_id, expected_task_version=...)` не изменяет карточку и не делает claim. Он требует ready без run/claim/open blocking blockers, проверяет bounded immutable Plan/Review/Execution Package и SHA-256, соответствие plan projection, task/definition/criterion coverage и approved binding. Структурированный Plan должен содержать 1–100 work units с уникальными IDs, безопасными project-relative scopes и ациклическими dependencies. `obsolete/`, hidden/runtime paths, `.` и parent traversal недопустимы.
 
-Baseline — `code-corpus/v1:<snapshot SHA-256>` с политикой и байтами выбранного code corpus, включая dirty/untracked/rename/delete. До подготовки получите `ExecutionPreflight(root).source_revision()`. Старые непрозрачные revisions и произвольные Markdown планы не мигрируют автоматически: требуется повторная подготовка через AgentPreparation. Config/docs/dependencies и смысловая актуальность этим fingerprint **не покрыты**. Между snapshot и физическим действием остаётся TOCTOU; файлового lock/sandbox нет.
+Baseline — `code-corpus/v1:<snapshot SHA-256>` с политикой и байтами выбранного code corpus, включая dirty/untracked/rename/delete. До подготовки получите `ExecutionPreflight(root).source_revision()`. Старые непрозрачные revisions и произвольные Markdown планы не мигрируют автоматически: требуется повторная подготовка через AgentPreparation. Config/docs/dependencies и смысловая актуальность этим fingerprint **не покрыты**. TASK-0037 добавляет отдельный optional [workflow_source snapshot binding](workflow-execution.md) для выбранного workflow/overlay/library; остальные config/dependencies остаются вне проверки. Между snapshot и физическим действием остаётся TOCTOU; файлового lock/sandbox нет.
 
 ## Явный API
 

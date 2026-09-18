@@ -1,0 +1,22 @@
+schema_version = 1
+[component]
+id = "core/testing-summary"
+version = 1
+kind = "node"
+title = "Разбор результатов"
+description = "Сформировать итог тестирования по фактическому execution record."
+[inputs]
+execution_record = "test-execution-record/v1"
+task = "task-request/v1"
+[outputs]
+result = "testing-summary/v1"
+[outcomes]
+passed = ["result"]
+failed = ["result"]
+[execution]
+kind = "agent"
+instruction = "Сопоставь execution_record с objective. Не объявляй passed при failed checks или отсутствии подтверждений. Верни result со status passed/failed, summary и фактическими evidence_refs. Дальнейший маршрут выбирает caller."
+[effects]
+writes_repository = false
+writes_task_manager = false
+external_actions = false

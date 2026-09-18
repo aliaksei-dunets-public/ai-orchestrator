@@ -47,7 +47,7 @@ Graph соответствует [существующим моделям](graph
 
 ## Submit и границы проверки
 
-Разрешён только в created/running. expected_revision положителен и равен текущему revision; task_definition_version равна закреплённой. Чужой node_id, не объявленный outcome, неправильные mappings, отсутствующие required_outputs и структурно неправильный artifact отклоняются. Agent API дополнительно требует JSON-представимые значения без NaN/Infinity, cycles, tuples или преобразования нестроковых ключей. Result копируется перед проверкой.
+Разрешён только в created/running. expected_revision положителен и равен текущему revision; task_definition_version равна закреплённой. Чужой node_id, не объявленный outcome, неправильные mappings, отсутствующие обязательные outputs выбранного исхода и структурно неправильный artifact отклоняются. Требования определяются `required_outputs_by_outcome[outcome]`, если запись есть, иначе базовым `required_outputs`; пустой override освобождает только от outputs. Agent API дополнительно требует JSON-представимые значения без NaN/Infinity, cycles, tuples или преобразования нестроковых ключей. Result копируется перед проверкой.
 
 Весь result и counters проверяются до публикации. При обычном outcome target берётся исключительно из graph transitions. Терминальный target завершает процесс и обнуляет current_node. Успех workflow не выставляет задаче completed.
 
@@ -61,7 +61,7 @@ needs_input требует WaitState kind=user_input с непустым questio
 
 ## Actions, budgets и отмена
 
-available_actions возвращает revision/state/definition, actions, remaining_results, описание текущего node с contracts/required_outputs/outcomes/transitions и wait. inspect/available_actions доступны всегда. Submit доступен только при активном узле и remaining budget; resume — в ожидании; cancel — в любом нетерминальном состоянии. Терминальный run не имеет actions.
+available_actions возвращает revision/state/definition, actions, remaining_results, описание текущего node с contracts/required_outputs/required_outputs_by_outcome/outcomes/transitions и wait. Overrides выдаются как отделённый JSON mapping списков; изменение ответа не меняет граф. inspect/available_actions доступны всегда. Submit доступен только при активном узле и remaining budget; resume — в ожидании; cancel — в любом нетерминальном состоянии. Терминальный run не имеет actions.
 
 remaining_results — минимум общего и текущего per-node budget. Все accepted results расходуют budget, resume/cancel — нет. На exhausted budget новый result отклоняется без автоматической блокировки/сброса counters; агент отменяет процесс или явно подготавливает дальнейшее решение, не крутит тот же цикл бесконечно. Wait, израсходовавший последний slot, всё ещё может принять ответ, но не следующий result. Budget должен предусматривать и вопросы, и итоговые outputs.
 

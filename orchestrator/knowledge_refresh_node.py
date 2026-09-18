@@ -15,7 +15,7 @@ from .runtime_contracts import Graph, Node, NodeResult, WaitState
 _MODES = {"auto", "incremental", "full"}
 _AUTHORIZATION = {"required", "automatic"}
 _PURPOSES = {"pre_commit", "maintenance", "recovery"}
-_OUTCOMES = ("not_required", "success", "degraded", "stale", "failed", "fallback_required", "awaiting_confirmation")
+_OUTCOMES = ("not_required", "success", "degraded", "stale", "failed", "fallback_required", "needs_input")
 
 
 @dataclass(frozen=True)
@@ -68,7 +68,7 @@ def knowledge_refresh_graph(*, next_node: str = "succeeded") -> Graph:
     if not isinstance(next_node, str) or not next_node.strip():
         raise KnowledgeError("validation_failed", "next_node должен быть непустой строкой")
     transitions = {outcome: next_node for outcome in _OUTCOMES}
-    transitions["awaiting_confirmation"] = "knowledge_refresh"
+    transitions["needs_input"] = "knowledge_refresh"
     nodes = {
         "knowledge_refresh": Node("knowledge_refresh", "knowledge-refresh-request/v1",
                                    "knowledge-refresh-node/v1", _OUTCOMES, transitions,
@@ -164,7 +164,7 @@ class KnowledgeRefreshNode:
                 result = {"status": "awaiting_confirmation", "effective_mode": "full",
                           "commit_allowed": False, "decision_ref": decision_ref,
                           "request": request.to_dict(), "graph_status": status.to_dict()}
-                return NodeResult("knowledge_refresh", "awaiting_confirmation", data={"result": result}, wait=wait)
+                return NodeResult("knowledge_refresh", "needs_input", data={"result": result}, wait=wait)
         if policy.mode == "full":
             refreshed = self.service.refresh(_mode="full-rebuild")
         else:

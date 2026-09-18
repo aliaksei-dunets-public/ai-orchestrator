@@ -1,0 +1,22 @@
+schema_version = 1
+[component]
+id = "core/documentation-impact"
+version = 1
+kind = "node"
+title = "Влияние на документацию"
+description = "Определить связанные документные цели в пределах выполненной задачи."
+[inputs]
+task = "task-request/v1"
+testing_result = "testing-summary/v1"
+project_profile = "project-profile/v1"
+[outputs]
+impact = "documentation-impact/v1"
+[outcomes]
+assessed = ["impact"]
+[execution]
+kind = "agent"
+instruction = "Проверь необходимость изменения документации по objective, фактическим изменениям и документационным целям профиля. Верни impact; отсутствие влияния допустимо. Не исправляй несвязанную документацию."
+[effects]
+writes_repository = false
+writes_task_manager = false
+external_actions = false

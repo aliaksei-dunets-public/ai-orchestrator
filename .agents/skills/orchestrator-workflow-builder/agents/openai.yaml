@@ -1,0 +1,4 @@
+interface:
+  display_name: "Конструктор процессов Orchestrator"
+  short_description: "Сборка графов из библиотеки и интерактивный просмотр"
+  default_prompt: "Используй $orchestrator-workflow-builder, чтобы спроектировать процесс, проверить его и сохранить интерактивную схему."

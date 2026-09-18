@@ -4,7 +4,7 @@ import unittest
 from types import SimpleNamespace
 
 from orchestrator import (GraphStatus, KnowledgeRefreshNode, KnowledgeRefreshPolicy,
-                          KnowledgeRefreshRequest, KnowledgeRefreshResult)
+                          KnowledgeRefreshRequest, KnowledgeRefreshResult, AgentGraphRuntime)
 from orchestrator.knowledge_contracts import KnowledgeError
 
 
@@ -47,7 +47,8 @@ class KnowledgeRefreshNodeTests(unittest.TestCase):
         self.assertEqual(node.graph.nodes["knowledge_refresh"].output_contract, "knowledge-refresh-node/v1")
         result = node.execute(KnowledgeRefreshRequest(
             policy=KnowledgeRefreshPolicy(mode="full", authorization="required")))
-        self.assertEqual(result.outcome, "awaiting_confirmation")
+        self.assertEqual(result.outcome, "needs_input")
+        self.assertEqual(result.data["result"]["status"], "awaiting_confirmation")
         self.assertFalse(result.data["result"]["commit_allowed"])
         self.assertIsNotNone(result.wait)
 
@@ -59,6 +60,33 @@ class KnowledgeRefreshNodeTests(unittest.TestCase):
         self.assertFalse(result.data["result"]["commit_allowed"])
         self.assertEqual(service.incremental_calls, [False])
         self.assertEqual(service.full_calls, 0)
+
+    def test_confirmation_round_trip_through_real_runtime(self):
+        service = FakeKnowledgeService(self.result(mode="full-rebuild"))
+        node = KnowledgeRefreshNode(service)
+        request = KnowledgeRefreshRequest(policy=KnowledgeRefreshPolicy(mode="full", authorization="required"))
+        runtime = AgentGraphRuntime()
+        run = runtime.create_run(node.graph, {})
+        run = runtime.submit_result(run.run_id, node.execute(request), expected_revision=1)
+        self.assertEqual(run.state, "waiting_input")
+        self.assertEqual(service.full_calls, 0)
+        decision = {"approved": True, "ref": "user:confirmation-1"}
+        run = runtime.resume_wait(run.run_id, expected_revision=run.revision,
+                                  wait_id=run.wait.wait_id, node_id=run.wait.node_id, answer=decision)
+        run = runtime.submit_result(run.run_id, node.execute(request, decision=run.resumed_wait["answer"]), expected_revision=run.revision)
+        self.assertEqual(run.state, "succeeded")
+        self.assertEqual(service.full_calls, 1)
+        self.assertTrue(run.last_result.data["result"]["commit_allowed"])
+
+    def test_denial_or_missing_decision_ref_does_not_refresh(self):
+        for decision in ({"approved": False, "ref": "user:denial"}, {"approved": True}, {"approved": 1, "ref": "user:wrong-type"}):
+            with self.subTest(decision=decision):
+                service = FakeKnowledgeService(self.result(mode="full-rebuild"))
+                result = KnowledgeRefreshNode(service).execute(KnowledgeRefreshRequest(
+                    policy=KnowledgeRefreshPolicy(mode="full", authorization="required")), decision=decision)
+                self.assertEqual(result.outcome, "needs_input")
+                self.assertFalse(result.data["result"]["commit_allowed"])
+                self.assertEqual(service.full_calls, 0)
 
     def test_incremental_success_allows_fresh_candidate(self):
         service = FakeKnowledgeService(self.result())

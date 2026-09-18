@@ -47,6 +47,7 @@ class Node:
     outcomes: tuple[str, ...]
     transitions: Mapping[str, str]
     required_outputs: tuple[str, ...] = ()
+    required_outputs_by_outcome: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         node_id = _required_text(self.node_id, "node_id")
@@ -71,12 +72,24 @@ class Node:
         required_outputs = tuple(self.required_outputs)
         if any(not isinstance(item, str) or not item for item in required_outputs):
             raise RuntimeError("contract_violation", "required_outputs должны быть строками", node_id=node_id)
+        if not isinstance(self.required_outputs_by_outcome, Mapping):
+            raise RuntimeError("contract_violation", "required_outputs_by_outcome должен быть объектом", node_id=node_id)
+        by_outcome = {}
+        for outcome, keys in self.required_outputs_by_outcome.items():
+            if not isinstance(outcome, str) or outcome not in outcomes:
+                raise RuntimeError("contract_violation", "Требования к выходам заданы для неизвестного outcome",
+                                   node_id=node_id, outcome=outcome)
+            if not isinstance(keys, (tuple, list)) or any(not isinstance(key, str) or not key.strip() for key in keys):
+                raise RuntimeError("contract_violation", "Требования к выходам исхода должны быть списком непустых строк",
+                                   node_id=node_id, outcome=outcome)
+            by_outcome[outcome] = tuple(keys)
         object.__setattr__(self, "node_id", node_id)
         object.__setattr__(self, "input_contract", input_contract)
         object.__setattr__(self, "output_contract", output_contract)
         object.__setattr__(self, "outcomes", outcomes)
         object.__setattr__(self, "transitions", MappingProxyType(transitions))
         object.__setattr__(self, "required_outputs", required_outputs)
+        object.__setattr__(self, "required_outputs_by_outcome", MappingProxyType(by_outcome))
 
 
 @dataclass(frozen=True)
@@ -137,6 +150,7 @@ class Graph:
                 node_id=node_data.get("node_id", key), input_contract=node_data.get("input_contract"),
                 output_contract=node_data.get("output_contract"), outcomes=node_data.get("outcomes", ()),
                 transitions=node_data.get("transitions", {}), required_outputs=node_data.get("required_outputs", ()),
+                required_outputs_by_outcome=node_data.get("required_outputs_by_outcome", {}),
             )
         return cls(raw.get("graph_id"), raw.get("version"), raw.get("entry_node"), nodes)
 
@@ -191,7 +205,8 @@ def validate_node_result(node: Node, result: NodeResult) -> None:
     if not isinstance(result.data, Mapping) or not isinstance(result.artifacts, Mapping):
         raise RuntimeError("contract_violation", "data и artifacts результата должны быть объектами", node_id=node.node_id)
     _validate_result_artifacts(result.artifacts, node.node_id)
-    missing = [key for key in node.required_outputs if key not in result.data and key not in result.artifacts]
+    required = node.required_outputs_by_outcome.get(result.outcome, node.required_outputs)
+    missing = [key for key in required if key not in result.data and key not in result.artifacts]
     if missing:
         raise RuntimeError("contract_violation", "В результате отсутствуют обязательные выходы", node_id=node.node_id, missing=missing)
 

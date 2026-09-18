@@ -40,7 +40,7 @@ class AgentPreparation(TaskEffectSync, PreparationPrimitives):
     """
 
     def __init__(self, project_root: Path, *, max_review_cycles: int = 2,
-                 max_context_expansions: int = 2, max_results: int = 100) -> None:
+                 max_context_expansions: int = 2, max_results: int = 100, workflow_source=None) -> None:
         for name, value in (("max_review_cycles", max_review_cycles),
                             ("max_context_expansions", max_context_expansions), ("max_results", max_results)):
             if type(value) is not int or value < 1:
@@ -53,6 +53,8 @@ class AgentPreparation(TaskEffectSync, PreparationPrimitives):
         self.max_results = max_results
         self._sessions: dict[str, _AgentSession] = {}
         self._lock = threading.RLock()
+        self.workflow_source = workflow_source
+        self._components = {}
 
     @_locked
     def start(self, task_id: str, *, expected_task_version: int, prepared_source_revision: str,
@@ -70,6 +72,9 @@ class AgentPreparation(TaskEffectSync, PreparationPrimitives):
         run = self.runtime.create_run(graph, {}, task_ref=task_id,
             task_definition_version=task["definition_version"], phase="preparation", max_results=self.max_results)
         session = _AgentSession(task, profile, revision, "PREP-" + uuid.uuid4().hex)
+        if self.workflow_source is not None:
+            from .workflow_binding import publish_binding
+            session.workflow_binding = publish_binding(self.repository, session.ref, self.workflow_source)
         method = "start_preparation" if task["status"] == "created" else "link_workflow_run"
         options = {"run_ref": run.run_id}
         if method == "link_workflow_run":
@@ -115,6 +120,7 @@ class AgentPreparation(TaskEffectSync, PreparationPrimitives):
         return {"contract": actions["node"]["input_contract"] if actions["node"] else None,
                 "actions": actions, "task": self.service.get_task(session.task["id"]),
                 "project_profile": copy.deepcopy(session.profile),
+                "workflow_binding": copy.deepcopy(session.workflow_binding),
                 "previous": copy.deepcopy(run.results), "resumed_wait": copy.deepcopy(run.resumed_wait),
                 "artifacts": {role: record.to_dict() for role, record in session.records.items()}}
 
@@ -203,12 +209,52 @@ class AgentPreparation(TaskEffectSync, PreparationPrimitives):
 
     def _verify_ready_artifacts(self, session: _AgentSession) -> None:
         try:
+            if session.workflow_binding is not None:
+                from .workflow_binding import read_binding
+                read_binding(self.repository, session.workflow_binding)
+                if (self.workflow_source is None or self.workflow_source.to_dict() != session.workflow_binding["source"]
+                        or self.workflow_source.load().digest != session.workflow_binding["digest"]):
+                    raise PreparationError("stale_workflow", "Config изменился после подготовки")
             for role in ("plan", "plan_review", "execution_package"):
                 record = session.records[role]
                 self.repository.verify(record.ref, record.role, record.version)
             self.service.get_document(session.task["id"], "plan")
         except (ArtifactError, TaskError) as exc:
             raise PreparationError(exc.code, str(exc), **exc.details) from exc
+
+    @_locked
+    def start_component(self, run_id, *, roles, executors, inputs, expected_revision,
+                        expected_task_version, fallbacks=None):
+        session, run = self._action_guard(run_id, expected_revision, expected_task_version)
+        if session.task["status"] != "preparing" or session.task["active_run_ref"] != run_id:
+            raise PreparationError("invalid_state", "Нужна owned preparation")
+        if "submit_result" not in self.runtime.available_actions(run_id)["actions"]:
+            raise PreparationError("invalid_state", "Компонент сейчас недоступен")
+        if run.current_node not in {"context", "analysis", "planning", "plan_review"}:
+            raise PreparationError("invalid_state", "Package/ready остаются детерминированными guards")
+        if session.workflow_binding is None:
+            raise PreparationError("workflow_required", "Нужен workflow binding при start")
+        if any(c.owner == run_id and c.role.role == run.current_node
+               and c.request["actions"]["revision"] == run.revision for c in self._components.values()):
+            raise PreparationError("component_exists", "Для этапа уже создан компонент; продолжите или сверьте его")
+        from .workflow_roles import start_role
+        def guard():
+            with self._lock:
+                self._action_guard(run_id, expected_revision, expected_task_version)
+        component = start_role(self.repository, session.workflow_binding, roles, run.current_node,
+                               "preparation", executors, inputs, guard, fallbacks,
+                               self.request(run_id), run_id)
+        self._components[id(component)] = component
+        return component
+
+    @_locked
+    def submit_component(self, run_id, component, *, expected_revision, expected_task_version):
+        session, run = self._action_guard(run_id, expected_revision, expected_task_version)
+        from .workflow_roles import role_envelope
+        envelope = role_envelope(component, self._components, run_id, run.current_node,
+                                 "preparation", session.workflow_binding)
+        return self.submit(run_id, envelope, expected_revision=expected_revision,
+                           expected_task_version=expected_task_version)
 
     def _action_guard(self, run_id, expected_revision, expected_task_version):
         session = self._session(run_id)

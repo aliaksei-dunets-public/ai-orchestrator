@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: runTest (__main__.test_tool.<locals>.Arithmetic.runTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\aliak\Documents\development\ai-orchestrator\workflow-library\examples\run-local-workflow.py", line 32, in runTest
+    self.assertEqual(2 + 2, 5 if args.fail_test else 4)
+AssertionError: 4 != 5
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)

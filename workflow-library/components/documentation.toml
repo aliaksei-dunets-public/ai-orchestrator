@@ -1,0 +1,43 @@
+schema_version = 1
+[component]
+id = "core/documentation"
+version = 1
+kind = "subgraph"
+title = "Документация"
+description = "Учебный срез проверки влияния и условного обновления документов."
+entry = "impact"
+[inputs]
+task = "task-request/v1"
+testing_result = "testing-summary/v1"
+project_profile = "project-profile/v1"
+[outputs]
+result = "documentation-summary/v1"
+[outcomes]
+success = ["result"]
+no_change = ["result"]
+failure = ["result"]
+[execution]
+model_profile = "standard"
+[nodes.impact]
+ref = "core/documentation-impact@1"
+[nodes.impact.inputs]
+task = "input:task"
+testing_result = "input:testing_result"
+project_profile = "input:project_profile"
+[nodes.impact.transitions]
+assessed = "update"
+[nodes.update]
+ref = "core/documentation-update@1"
+[nodes.update.inputs]
+impact = "impact.impact"
+testing_result = "input:testing_result"
+[nodes.update.transitions]
+success = "exit:success"
+no_change = "exit:no_change"
+failure = "exit:failure"
+[exits.success]
+result = "update.result"
+[exits.no_change]
+result = "update.result"
+[exits.failure]
+result = "update.result"
