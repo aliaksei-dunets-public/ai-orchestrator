@@ -183,7 +183,9 @@ class ArtifactRepository:
         return self.put(ref, role, version, content, contract=contract, media_type="application/json")
 
     @_filesystem_errors
-    def get(self, ref: str, role: str, version: str) -> StoredArtifact:
+    def get(self, ref: str, role: str, version: str, *, max_bytes: int | None = None) -> StoredArtifact:
+        if max_bytes is not None and (type(max_bytes) is not int or max_bytes < 1):
+            raise ArtifactError("validation_failed", "max_bytes должен быть положительным целым")
         ref = _identifier(ref, "ref")
         role = _identifier(role, "role")
         version = _identifier(version, "version")
@@ -196,11 +198,11 @@ class ArtifactRepository:
             if not entry_dir.exists():
                 raise ArtifactError("artifact_not_found", "Версия артефакта не найдена", ref=ref, version=version)
             record = self._read_record(manifest_path, ref=ref, role=role, version=version)
-            content = self._read_verified_payload(record, payload_path)
+            content = self._read_verified_payload(record, payload_path, max_bytes=max_bytes)
         return StoredArtifact(record=record, content=content)
 
-    def verify(self, ref: str, role: str, version: str) -> ArtifactRecord:
-        return self.get(ref, role, version).record
+    def verify(self, ref: str, role: str, version: str, *, max_bytes: int | None = None) -> ArtifactRecord:
+        return self.get(ref, role, version, max_bytes=max_bytes).record
 
     @_filesystem_errors
     def list(self, *, ref: str | None = None, role: str | None = None) -> tuple[ArtifactRecord, ...]:
@@ -318,7 +320,13 @@ class ArtifactRepository:
     def _read_record(self, manifest_path: Path, *, ref: str, role: str, version: str) -> ArtifactRecord:
         self._safe_path(manifest_path)
         try:
-            raw = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not stat.S_ISREG(manifest_path.stat().st_mode):
+                raise ArtifactError("integrity_error", "Манифест не является обычным файлом")
+            with manifest_path.open("rb") as stream:
+                content = stream.read(65537)
+            if len(content) > 65536:
+                raise ArtifactError("integrity_error", "Манифест превышает 64 KiB")
+            raw = json.loads(content)
         except (FileNotFoundError, IsADirectoryError, UnicodeError, json.JSONDecodeError) as exc:
             raise ArtifactError("integrity_error", "Манифест артефакта повреждён", path=str(manifest_path)) from exc
         if (not isinstance(raw, dict) or type(raw.get("format_version")) is not int
@@ -343,10 +351,17 @@ class ArtifactRepository:
         return ArtifactRecord(ref, role, version, contract, media_type, digest, size,
                               self._relative(manifest_path.parent / "payload.bin"))
 
-    def _read_verified_payload(self, record: ArtifactRecord, payload_path: Path) -> bytes:
+    def _read_verified_payload(self, record: ArtifactRecord, payload_path: Path, *, max_bytes: int | None = None) -> bytes:
         self._safe_path(payload_path)
         try:
-            content = payload_path.read_bytes()
+            if max_bytes is not None and record.size > max_bytes:
+                raise ArtifactError("artifact_size_limit", "Payload превышает заданный byte budget")
+            if not stat.S_ISREG(payload_path.stat().st_mode):
+                raise ArtifactError("integrity_error", "Payload не является обычным файлом")
+            with payload_path.open("rb") as stream:
+                content = stream.read((max_bytes if max_bytes is not None else record.size) + 1)
+            if max_bytes is not None and len(content) > max_bytes:
+                raise ArtifactError("artifact_size_limit", "Payload превышает заданный byte budget")
         except (FileNotFoundError, IsADirectoryError) as exc:
             raise ArtifactError("integrity_error", "Payload артефакта отсутствует или недоступен", path=str(payload_path)) from exc
         digest = hashlib.sha256(content).hexdigest()

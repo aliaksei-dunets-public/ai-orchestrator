@@ -5,7 +5,9 @@
 build/
 *.egg-info/
 .orchestrator/state/
+.orchestrator/tasks/
 .orchestrator/artifacts/
+.orchestrator/knowledge/
 .agents/*
 !.agents/skills/
 __pycache__/

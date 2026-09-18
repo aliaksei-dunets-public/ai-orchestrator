@@ -1,5 +1,7 @@
 # Пользовательский гайд Workflow Runtime v1
 
+> **Совместимость от 2026-09-17:** это гайд сохранённого callback runtime. Для нового явного Python пути используйте [guide AgentGraphRuntime](agent-runtime.md): submit_result и отдельный resume_wait без executor. Приведённый ниже код остаётся legacy API, не рекомендуемым новым Python controller; агентская сквозная подготовка и persistence ещё не реализованы.
+
 **Статус:** действующий guide минимального in-memory runtime, 2026-09-17.
 
 ## Назначение

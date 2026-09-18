@@ -1,5 +1,7 @@
 # Project Knowledge Map — Master Specification
 
+> **Приоритет направления изменён 2026-09-17:** собственный универсальный PKM engine/store/extractors не разрабатываются для v1. Действует [Project Knowledge Service с Graphify](../architecture/project-knowledge-service.md). Этот draft остаётся исходником для provenance, freshness, fallback и memory invariants; его ontology/storage/subgraph design не является текущим планом реализации. [Оценка и миграция](../reports/2026-09-17-agent-centric-graphify-assessment.md).
+
 **Status:** Consolidated draft v0.3  
 **Scope:** Project Knowledge Map lifecycle for the AI Orchestrator
 

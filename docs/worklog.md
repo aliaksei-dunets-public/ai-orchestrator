@@ -1,5 +1,67 @@
 # Журнал работ
 
+## 2026-09-18 — TASK-0016 принята; создана TASK-0031
+
+- Пользователь явно принял AgentExecution candidate. Через публичный `accept_task` TASK-0016 завершена атомарно: `completed v19`, candidate revision `agent-execution-v1:625b6d2c66ef06541fe732d247ea14f3370e23ed16ad9bdeb5447989ccbdf3d0`, completion decision `user-acceptance:2026-09-18:TASK-0016`; active run/claim отсутствуют, `health_check=[]`.
+- По отдельному запросу создана TASK-0031 `HIGH: единый Project Knowledge Graph на базе Graphify`, статус `created v1`. Задача не запускалась: нет plan, claim, run или подготовки. В карточке закреплены требования одного графа для кода и долговечной документации, исключения временного Task Context и запрета отдельного documentation graph. Отдельного поля priority в текущем публичном Task Manager нет, поэтому высокий приоритет зафиксирован в title/constraints.
+- Новая задача не меняет код, граф, Task Manager schema/API или `obsolete/`; дальнейшее выполнение начнётся только отдельным явным запуском TASK-0031.
+
+## 2026-09-18 — TASK-0030 принята; TASK-0016 AgentExecution
+
+- Пользователь принял Knowledge Service и разрешил продолжить миграцию. Исторический immutable acceptance package и 10 file hashes сверены до новых code changes; публичный accept_task завершил TASK-0030, completed v18, task_completed подтверждён, health_check=[].
+- Через публичный API уточнены TASK-0016–0017 и TASK-0019–0022 под agent-centric migration, original_request сохранён. TASK-0016 прошла действительные plan/self-review/package/ready/claim до реализации, active v10. Task Manager code/schema/API/resources/guards, Onboarding и obsolete не менялись.
+- Добавлены AgentExecution и read-only ExecutionPreflight: immutable/source guards до claim, explicit work units/dependencies, фактическая code delta, claim/lease, pauses/reclaim, terminal failure, handoff к будущим gates и cleanup без rollback файлов. Общий TaskEffectSync выделен из AgentPreparation; 23 preparation tests сохранены. Смысловую работу выполняет агент, не callbacks.
+- Проверки обнаружили преждевременный checkpoint guard на собственных изменениях и handoff lost-response state; guards исправлены с регрессиями. Known pending допускает явный abandon/cancel; unknown требует exact public-history reconciliation без replay.
+- Полный набор 241 tests: 239 passed/2 Windows skips/0 failures, реальный Graphify integration выполнен. AgentExecution — 33 tests. Новый guide исполнен в temp project; compileall/diff check успешны. Independent audit не проводился.
+- Выполнен manual Graphify full rebuild после final code: 51 files, 989 raw nodes/3324 edges, AgentExecution query ok/fresh; obsolete исключён. Созданы русский контракт, guide, подробный отчёт; status/roadmap/navigation и исторические source banners обновлены.
+- Публичная регистрация кандидата: TASK-0016 awaiting_acceptance v18, без active run/claim; TASK-0027 preparing v13, health_check=[]. Финальная сверка: TASK-0017/0019/0021 created definition v2, TASK-0020/0022 created definition v4. Проверен 461 local Markdown target, missing=0 (без проверки anchors). Full gates, knowledge workflow integration, portable delivery/E2E, durable checkpoints и memory не объявлены реализованными.
+- Brainstorming использован для ограничения следующего slice утверждённым дизайном, Task Manager skill — для lifecycle без SQL. Новая приёмка за пользователя не зарегистрирована. Commit/PR не создавались; чужие изменения сохранены.
+
+## 2026-09-18 — TASK-0029 принята; TASK-0030 Knowledge Service
+
+- Пользователь принял AgentPreparation сообщением «принято. продолжай дальше». Исторические candidate hashes сверены до новых exports; публичный accept_task завершил TASK-0029, completed v18, без active run/claim, health_check=[].
+- Следующий срез прошёл plan/self-review/package/ready/claim до реализации. Добавлены ProjectKnowledgeService, closed corpus policy/SHA-256 snapshot, explicit full-rebuild refresh, immutable graph/index, atomic current pointer и query_graph-only Graphify MCP adapter. Task Manager, Onboarding и obsolete не менялись; нового global install/hooks/config или semantic passes нет.
+- Реальные Graphify tests выявили .json path requirement, text errors, AST placeholders/external imports; adapter/validation актуализированы. В core Artifact Repository добавлены bounded get/verify и manifest reads с регрессией, public old calls сохранены.
+- Final initial-load/refresh текущего проекта: 47 files, 882 raw nodes/2890 edges; query ok/fresh. Python/TSX/Vue/Unicode/rename/delete/restart проверены реальным graphifyy 0.9.63 из отдельной .tmp среды. Полный набор 208 tests, 206 passed/2 Windows skips, 0 failures; реальный provider test не skipped. Guide и compileall успешны.
+- Созданы [контракт](architecture/project-knowledge-service.md), [guide](guides/project-knowledge.md), [подробный отчёт/оценка/миграция](reports/2026-09-18-project-knowledge-service-v1.md); исправлены status/roadmap/навигация и устаревшее отсутствие Graphify в agent guides. Brainstorming помог сохранить одобренные границы semantic/deterministic и code/memory; self-review не независимый аудит.
+- TASK-0030 передаётся на отдельную пользовательскую приёмку, общая TASK-0027 остаётся preparing. Installed Agent skill, agent execution, host facade, checkpoints и portable delivery не заявляются реализованными. Code commit/PR не создавался; unrelated dirty changes сохранены.
+- Фактическая регистрация завершена: TASK-0030 awaiting_acceptance v17, active run/claim отсутствуют, immutable acceptance package v1 опубликован; TASK-0027 preparing v12. Health_check=[], knowledge status=fresh. Проверены 430 local Markdown targets, missing=0, anchors отдельно нет.
+
+## 2026-09-18 — TASK-0027: реальный Graphify upstream probe
+
+- Проверены официальные PyPI metadata и upstream source; graphifyy[mcp]==0.9.63 установлен only-binary в отдельную .tmp среду после разрешённого сетевого доступа. Основная .venv/Task Manager не менялись; global install/hooks/config, модели и semantic pass не запускались.
+- [Воспроизводимый probe](../scripts/graphify_probe.py) прошёл на Windows: 10 nodes/12 edges, Python/TSX/Vue/Unicode sources, code-only skip документа, real MCP handshake/query/stats, rename/delete очищают прежние sources. Credentials отсутствуют в дочерней среде, query logging отключён. Synthetic fixtures удалены самим probe, среда сохранена.
+- Зафиксированы реальные SDK 2.x, nested output layout, чтение home locations при CLI version check и опасная для wrapper поверхность project_path/PR tools. [Отчёт](reports/2026-09-18-graphify-upstream-probe.md) и [dependency snapshot](../requirements/graphify-probe-windows-py312.txt) отличают upstream evidence от ещё отсутствующих production adapter/service/freshness/initial load.
+- Реальный probe payload опубликован ArtifactRepository и зарегистрирован через публичный Task Manager как evidence общей миграции: TASK-0027 preparing v11, health_check=[].
+- Финальный root regression повторно 94 tests (93 pass/1 skip); compileall включает probe. Проверены 307 local Markdown targets, missing=0 (без проверки anchors), git diff --check успешен.
+
+## 2026-09-18 — TASK-0029: агентная подготовка, TASK-0028 принята
+
+- Пользователь принял предъявленный runtime-срез и разрешил продолжение. Хеши кандидата TASK-0028 проверены до следующего изменения; accept_task завершил её v18, проверены task_completed и health_check=[]. Приёмка не распространяется на новые результаты.
+- TASK-0029 прошла реальный план, self-review, Execution Package, ready и claim до кодовых изменений. Реализован AgentPreparation без reasoning callbacks; validation/publication/projection/sync вынесены в общие primitives для нового и legacy пути.
+- Добавлены guards версий, отдельный resume с сохранением ответа, фиксированный root, pending barrier и conservative unknown outcome reconciliation через публичную историю. Immutable Plan/Review/Package и проекция проверяются перед ready и повторно во время sync. Task Manager и Onboarding не менялись.
+- 23 новых tests, 18 прежних preparation сохранены. Полный набор: root 94 (93 pass/1 skip), onboarding 19 (18 pass/1 skip), Task Manager 73/73; всего 186/184/2, без ошибок. Новый Python guide исполнен, compileall и diff check успешны.
+- [Контракт](architecture/agent-preparation.md), [guide](guides/agent-preparation.md), [подробный отчёт/матрица миграции](reports/2026-09-18-agent-preparation-v1.md) актуализированы. Self-review не является независимым аудитом. Checkpoints, installed Agent skill, Graphify и execution не заявляются реализованными.
+- Реальные implementation/testing/review/documentation/readiness и immutable acceptance package зарегистрированы через публичный API. TASK-0029 awaiting_acceptance v17, без active run/claim; TASK-0027 preparing v10, общая миграция не completed. Health_check=[].
+
+## 2026-09-17 — TASK-0028: первый agent-facing process API
+
+- Пользователь подтвердил поэтапный дизайн TASK-0027. Уточнение записано публичным API, ожидание снято; общий дизайн зафиксирован отдельным коммитом f881dda без остальных изменений. Связанные worktree/writing-plans skills недоступны; составлены локальный предметный plan, реальный самостоятельный review и Execution Package, TASK-0028 прошла ready и claim перед изменением кода.
+- Добавлен AgentGraphRuntime без callback dispatcher: explicit results, allowed actions, process revision, task-definition binding, wait response/resolution, budgets и in-memory history. Общая structural validation переиспользована legacy runtime. Старые подписи/сериализация/подготовка сохранены; Task Manager и onboarding не изменены.
+- Написаны [контракт](architecture/agent-runtime-contract.md), [runnable guide](guides/agent-runtime.md), [отчёт с ревизией](reports/2026-09-17-agent-runtime-v1.md), актуализированы README/roadmap/project status и прежние миграционные предупреждения. Исходная оценка сохранена как исторический baseline, не переписана задним числом.
+- Проверки: root 71 (70 passed, 1 Windows skip), onboarding 19 (18 passed, 1 Windows skip), Task Manager 73 passed; всего 163, 161 passed, 2 skipped, 0 failures. Новый runtime 19/19, simultaneous submit barrier test и публичная Task Manager isolation/definition/guard integration проходят. Guide исполнен, compileall успешен.
+- Persistence, agent skills, новый preparation sync, knowledge service/Graphify и сквозное исполнение не реализованы в этом срезе. Самостоятельный code review не выдается за независимый аудит; подтверждение дизайна не используется как приёмка результата.
+- Пакет приёмки опубликован существующим ArtifactRepository, свидетельства зарегистрированы публичным Task Manager API. TASK-0028 awaiting_acceptance v17, без active run/claim; TASK-0027 preparing v9. Live validate и health_check без нарушений. Проверены 255 local Markdown targets (anchors отдельно нет), отсутствующих файлов нет; diff check успешен с LF/CRLF предупреждениями.
+
+## 2026-09-17 — TASK-0027: агент-центричное направление и оценка Graphify
+
+- Изучены два новых пользовательских решения, действующие контракты, roadmap/backlog и корневой код. Зафиксировано уточнение пользователя: текущий Task Manager с SQLite не изменяется; файловая карточка/TaskML и обязательная specification не возвращаются.
+- Созданы [русское распределение ответственности](architecture/agent-centric-orchestration.md), [направление Project Knowledge Service](architecture/project-knowledge-service.md), [оценка состояния и нюансов](reports/2026-09-17-agent-centric-graphify-assessment.md) и [предложенный поэтапный дизайн](plans/2026-09-17-agent-centric-graphify-migration-design.md). Обновлены roadmap, навигация, project status и миграционные границы старых контрактов/гайдов. Старый backlog и PKM master-spec помечены как исходники прежнего направления.
+- Brainstorming использован для альтернатив и проверки дизайна перед behavioral implementation. Принятое направление отделено от конкретных предложенных API; новый процессный путь, skills и Graphify пока не реализованы. Пользовательские исходники, production Python-код, ресурсы/схема/API Task Manager и historical artifacts не переписывались.
+- Baseline: root 52 tests (51 passed, 1 Windows skip), onboarding 19 (18 passed, 1 Windows skip), Task Manager 73 passed; всего 144, 142 passed, 2 skipped, 0 failures. Публичный validate после создания TASK-0027: ok, без нарушений. Upstream Graphify проверен по первичной документации; не установлен, индекс не строился.
+- Состояние работы ведётся через публичный Task Manager API, не прямой SQL. TASK-0027 ожидает подтверждения дизайна: awaiting_input v6, без active run/claim, health_check без нарушений. TASK-0016–0022 не уточнялись и не закрывались; новой пользовательской приёмки не зарегистрировано. Перед кодовой миграцией требуется подтверждение предложенного дизайна и конкретного Graphify upstream/корпуса.
+- Проверены 217 локальных Markdown-ссылок затронутых файлов, отсутствующих целей нет; anchors отдельно не проверялись. Git diff check успешен с предупреждениями LF/CRLF. Production-код трёх областей (`orchestrator`, `packages/onboarding`, `packages/task-manager`) не изменён.
+
 ## 2026-09-17 — TASK-0015: пользовательская приёмка
 
 - Пользователь подтвердил показанный отчёт TASK-0015 сообщением «Подтверждаю». SHA-256 workflow, Graph Runtime и integration tests повторно сверены с показанной ревизией; изменений кандидата нет.

@@ -1,10 +1,30 @@
-# Manifest
+# Реестр проектных материалов
 
-Generated snapshot of latest discussion artifacts.
+**Статус:** навигационный реестр, не доказательство реализации. С 2026-09-17 приоритет направления задают агент-центричная оркестрация и Project Knowledge Service с Graphify.
+
+- [Агент-центричная оркестрация](architecture/agent-centric-orchestration.md).
+- [Project Knowledge Service](architecture/project-knowledge-service.md).
+- [Проект миграции](plans/2026-09-17-agent-centric-graphify-migration-design.md).
+- [Архитектурная оценка и baseline](reports/2026-09-17-agent-centric-graphify-assessment.md).
+- [Реализованный AgentGraphRuntime](architecture/agent-runtime-contract.md).
+- [Гайд Agent Runtime](guides/agent-runtime.md).
+- [Отчёт TASK-0028](reports/2026-09-17-agent-runtime-v1.md).
+- [Агентная подготовка — контракт](architecture/agent-preparation.md).
+- [Агентная подготовка — guide](guides/agent-preparation.md).
+- [Отчёт TASK-0029](reports/2026-09-18-agent-preparation-v1.md).
+- [Self-review плана TASK-0029](plans/2026-09-18-agent-preparation-plan-review.md).
+- [Реальный upstream Graphify probe](reports/2026-09-18-graphify-upstream-probe.md).
+- [Guide знаний проекта](guides/project-knowledge.md).
+- [Реализованный Knowledge Service: отчёт TASK-0030](reports/2026-09-18-project-knowledge-service-v1.md).
+- [Self-review плана TASK-0030](plans/2026-09-18-knowledge-service-plan-review.md).
+- [Агентское исполнение — контракт](architecture/agent-execution.md).
+- [Агентское исполнение — guide](guides/agent-execution.md).
+- [Отчёт TASK-0016](reports/2026-09-18-agent-execution-v1.md).
+- [Self-review плана TASK-0016](plans/2026-09-18-agent-execution-plan-review.md).
 
 Backlog развития v1 добавлен 2026-09-16 в `plans/2026-09-16-orchestrator-roadmap-backlog-design.md`.
 
-## Files
+## Сохранённые исходные материалы
 
 - `plans/2026-09-16-orchestrator-roadmap-backlog-design.md`
 

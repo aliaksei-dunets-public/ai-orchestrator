@@ -1,5 +1,7 @@
 # Контракт Preparation Workflow v1
 
+> **Совместимость от 2026-09-17:** это реализованный прежний callback workflow, не целевой главный оркестратор. В [новой архитектуре](agent-centric-orchestration.md) агент ведёт подготовку, а validation/publication/sync становятся primitives. Новый явный [AgentPreparation](agent-preparation.md) реализован отдельно в TASK-0029; общие deterministic primitives вынесены из controller. Этот legacy API сохраняется; Task Manager, SQLite, ready guards и необязательность specification не меняются.
+
 **Статус:** действующий минимальный контракт реализации TASK-0015; TASK-0015 принята пользователем и завершена (version 18).
 
 ## Владельцы состояния

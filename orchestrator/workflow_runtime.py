@@ -182,6 +182,44 @@ class NodeResult:
                 "error": copy.deepcopy(self.error), "wait": self.wait.to_dict() if self.wait else None}
 
 
+def validate_node_result(node: Node, result: NodeResult) -> None:
+    """Общая структурная проверка; не проверяет семантику или тела в repository."""
+    if not isinstance(result, NodeResult):
+        raise RuntimeError("contract_violation", "Результат должен быть NodeResult", node_id=node.node_id)
+    if result.node_id != node.node_id:
+        raise RuntimeError("node_mismatch", "Результат относится к другому узлу", expected=node.node_id, actual=result.node_id)
+    if not isinstance(result.outcome, str) or result.outcome not in node.outcomes:
+        raise RuntimeError("unknown_outcome", "Исход не объявлен узлом", node_id=node.node_id, outcome=result.outcome)
+    if not isinstance(result.data, Mapping) or not isinstance(result.artifacts, Mapping):
+        raise RuntimeError("contract_violation", "data и artifacts результата должны быть объектами", node_id=node.node_id)
+    _validate_result_artifacts(result.artifacts, node.node_id)
+    missing = [key for key in node.required_outputs if key not in result.data and key not in result.artifacts]
+    if missing:
+        raise RuntimeError("contract_violation", "В результате отсутствуют обязательные выходы", node_id=node.node_id, missing=missing)
+
+
+def _validate_result_artifacts(artifacts: Mapping[str, Any], node_id: str) -> None:
+    for artifact_key, artifact in artifacts.items():
+        if not isinstance(artifact_key, str) or not artifact_key.strip():
+            raise RuntimeError("contract_violation", "Ключ артефакта должен быть непустой строкой", node_id=node_id)
+        if not isinstance(artifact, Mapping):
+            raise RuntimeError("contract_violation", "Артефакт должен быть объектом", node_id=node_id, artifact=artifact_key)
+        payload = dict(artifact)
+        for field_name in ("ref", "contract", "role", "sha256"):
+            if not isinstance(payload.get(field_name), str) or not payload[field_name].strip():
+                raise RuntimeError("contract_violation", "Артефакт содержит некорректное поле", node_id=node_id,
+                                   artifact=artifact_key, field=field_name)
+        if re.fullmatch(r"[0-9a-fA-F]{64}", payload["sha256"]) is None:
+            raise RuntimeError("contract_violation", "sha256 артефакта должен быть 64-значной hex-строкой",
+                               node_id=node_id, artifact=artifact_key)
+        if "value" not in payload and "uri" not in payload:
+            raise RuntimeError("contract_violation", "Артефакт должен содержать value или uri",
+                               node_id=node_id, artifact=artifact_key)
+        if "uri" in payload and (not isinstance(payload["uri"], str) or not payload["uri"].strip()):
+            raise RuntimeError("contract_violation", "uri артефакта должен быть непустой строкой",
+                               node_id=node_id, artifact=artifact_key)
+
+
 @dataclass
 class WorkflowRun:
     run_id: str
@@ -333,38 +371,11 @@ class GraphRuntime:
         return copy.deepcopy(result)
 
     def _validate_result(self, node: Node, result: NodeResult) -> None:
-        if result.node_id != node.node_id:
-            raise RuntimeError("node_mismatch", "Результат относится к другому узлу", expected=node.node_id, actual=result.node_id)
-        if result.outcome not in node.outcomes:
-            raise RuntimeError("unknown_outcome", "Исход не объявлен узлом", node_id=node.node_id, outcome=result.outcome)
-        if not isinstance(result.data, Mapping) or not isinstance(result.artifacts, Mapping):
-            raise RuntimeError("contract_violation", "data и artifacts результата должны быть объектами", node_id=node.node_id)
-        self._validate_artifacts(result.artifacts, node.node_id)
-        missing = [key for key in node.required_outputs if key not in result.data and key not in result.artifacts]
-        if missing:
-            raise RuntimeError("contract_violation", "В результате отсутствуют обязательные выходы", node_id=node.node_id, missing=missing)
+        validate_node_result(node, result)
 
     @staticmethod
     def _validate_artifacts(artifacts: Mapping[str, Any], node_id: str) -> None:
-        for artifact_key, artifact in artifacts.items():
-            if not isinstance(artifact_key, str) or not artifact_key.strip():
-                raise RuntimeError("contract_violation", "Ключ артефакта должен быть непустой строкой", node_id=node_id)
-            if not isinstance(artifact, Mapping):
-                raise RuntimeError("contract_violation", "Артефакт должен быть объектом", node_id=node_id, artifact=artifact_key)
-            payload = dict(artifact)
-            for field_name in ("ref", "contract", "role", "sha256"):
-                if not isinstance(payload.get(field_name), str) or not payload[field_name].strip():
-                    raise RuntimeError("contract_violation", "Артефакт содержит некорректное поле", node_id=node_id,
-                                       artifact=artifact_key, field=field_name)
-            if re.fullmatch(r"[0-9a-fA-F]{64}", payload["sha256"]) is None:
-                raise RuntimeError("contract_violation", "sha256 артефакта должен быть 64-значной hex-строкой",
-                                   node_id=node_id, artifact=artifact_key)
-            if "value" not in payload and "uri" not in payload:
-                raise RuntimeError("contract_violation", "Артефакт должен содержать value или uri",
-                                   node_id=node_id, artifact=artifact_key)
-            if "uri" in payload and (not isinstance(payload["uri"], str) or not payload["uri"].strip()):
-                raise RuntimeError("contract_violation", "uri артефакта должен быть непустой строкой",
-                                   node_id=node_id, artifact=artifact_key)
+        _validate_result_artifacts(artifacts, node_id)
 
     def _normalize_wait(self, node: Node, wait: WaitState, kind: str) -> WaitState:
         if wait.node_id != node.node_id:
@@ -398,4 +409,4 @@ class GraphRuntime:
             raise RuntimeError("contract_violation", "executor должен быть вызываемым объектом")
 
 
-__all__ = ["Graph", "GraphRuntime", "Node", "NodeResult", "RuntimeError", "WaitState", "WorkflowRun"]
+__all__ = ["Graph", "GraphRuntime", "Node", "NodeResult", "RuntimeError", "WaitState", "WorkflowRun", "validate_node_result"]

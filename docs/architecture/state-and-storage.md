@@ -1,5 +1,7 @@
 # Состояние и хранение Orchestrator
 
+> **Новое распределение ответственности:** [Orchestrator Agent](agent-centric-orchestration.md) выбирает маршрут, Graph Runtime хранит process state. Task Manager с SQLite не изменяется. [Knowledge Service](project-knowledge-service.md) хранит immutable graph/index в Artifact Repository и current pointer отдельно; это не хранилище задач и не checkpoint. Durable process store пока не реализован.
+
 **Статус:** согласованная архитектурная граница, актуализирована 2026-09-17. Хранилище задач, core in-memory Graph Runtime и Artifact Repository v1 реализованы. Минимальный интеграционный [Preparation Workflow](preparation-workflow.md) принят пользователем в TASK-0015 (completed, version 18).
 
 ## Владельцы данных
@@ -10,8 +12,12 @@
 | Тело артефакта, роль, версия и SHA-256 | Artifact Repository v1 | `.orchestrator/artifacts/<ref>/<role>/<version>/` | Нет, локальное runtime-хранилище |
 | Plan и каноническое определение задачи | Task Manager + проектные документы | `.orchestrator/tasks/TASK-xxxx/plan.md` и ссылка/хеш в карточке | Документ можно версионировать |
 | Состояние запуска, текущий узел и маршрутизация | Graph Runtime v1 | В памяти текущей сессии одного агента | Не применимо |
+| Состояние явного агентского запуска, revision, response и history | AgentGraphRuntime v1 | В памяти отдельного выбранного agent-driven runtime; не второй снимок legacy run | Не применимо |
+| Execution checkpoint, completed units и pending/unknown effect cursor | AgentExecution | В памяти сессии; immutable preflight/results отдельно в Artifact Repository | Не применимо |
 | Будущие контрольные точки и рабочие материалы запуска | Будущий Graph Runtime | `.orchestrator/runs/` — пространство для расширения, не обязательное хранилище v1 | Политика будет определена при реализации сохранения |
 | Profile и Context проекта | Onboarding | `.orchestrator/project.json`, `project-context.md` | Да |
+| Code graph, indexed snapshot, provider identity/coverage | ProjectKnowledgeService + Artifact Repository | `.orchestrator/artifacts/project-knowledge/` | Нет |
+| Current knowledge pointer, writer lock, temporary build | ProjectKnowledgeService | `.orchestrator/knowledge/` | Нет |
 
 SQLite — единственный источник истины о состоянии задачи. `task.yaml` и `events.jsonl` не являются активным контрактом хранения. Git-версия документа не заменяет версию задачи и её событий. Внешние трекеры могут быть только проекциями.
 
@@ -31,9 +37,13 @@ Artifact Repository v1 хранит JSON-манифест и payload отдел�
 
 ## Граница процесса
 
+TASK-0030 добавляет optional max_bytes в repository get/verify без изменения старых вызовов; JSON manifest ограничен 64 KiB, payload читается bounded и проверяется по размеру/SHA-256. Knowledge Service задаёт свои budgets 2 MiB для index и 32 MiB для graph. Это изменение core repository, не пакета Task Manager.
+
 Task Manager отвечает на вопрос «в каком состоянии задача?». Graph Runtime отвечает «на каком шаге находится конкретный запуск?». `ready` остаётся устойчивой границей между подготовкой и исполнением; `active` достигается только атомарным claim.
 
 Первый runtime — простой движок переходов для одного агента в реальном времени, со состоянием запуска в памяти. Отдельная SQLite runtime и инфраструктура конкурирующих исполнителей не требуются. Запись ссылки через Task Manager не сохраняет текущий узел графа и не обеспечивает восстановление после потери сессии. Закрытие ссылки само по себе не доказывает завершение процесса. [Контракт запуска](workflow-run.md) и [пауза](workflow-pause-resume.md) определяют минимальный объём v1.
+
+TASK-0028 добавляет [AgentGraphRuntime](agent-runtime-contract.md) с explicit result submission, отдельным принятием response, revision/definition/wait guards и in-memory action history. История не помещается в Task Manager и не durable. Публичная task definition читается caller-ом; process revision не заменяет task.version. TASK-0029 добавляет [AgentPreparation](agent-preparation.md): явные results, immutable publication, защищённая plan projection, публичные ready guards и pending effects. Неизвестный task effect требует отдельной сверки истории; общей транзакции и restart recovery по-прежнему нет.
 
 ## Приоритет документов
 

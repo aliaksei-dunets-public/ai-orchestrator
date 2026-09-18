@@ -1,5 +1,7 @@
 # Пауза и возобновление в сессии агента
 
+> **Направление 2026-09-17:** ниже описаны legacy callbacks и in-memory waits. В новом [AgentGraphRuntime](agent-runtime-contract.md) явный resume_wait отдельно принимает ответ/разрешение blocker, оставляет работу текущего узла агенту и сохраняет response при rejected submit. Wait identity и Task Manager guards не отменяются; persistence/restart recovery пока отсутствуют.
+
 **Статус:** упрощённый принцип подтверждён пользователем; core runtime реализован в TASK-0003, 2026-09-17. TASK-0015 добавляет минимальную интеграцию подготовки с Task Manager; координация между сессиями остаётся будущей работой.
 
 ## Поведение графа

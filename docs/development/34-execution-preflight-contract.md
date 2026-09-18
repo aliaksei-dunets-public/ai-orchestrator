@@ -1,5 +1,7 @@
 # Execution Preflight — Architecture and Contract
 
+> **Актуализация 2026-09-18:** действующий реализованный русский контракт — [AgentExecution/preflight](../architecture/agent-execution.md), [guide](../guides/agent-execution.md). TASK-0016 проверяет immutable Plan/Review/Package и code-corpus fingerprint перед claim; отдельная specification не требуется. Английский исходник ниже — исторический дизайн, не точная схема нового API и не обещание реализованных full gates.
+
 > **Актуализация 2026-09-17:** это импортированный проектный исходник. Реализованный минимальный срез TASK-0015 определяет [русский контракт Preparation Workflow](../architecture/preparation-workflow.md): canonical definition в карточке Task Manager, specification.md не обязательна, Review → Package → Ready без автоматического исполнения. Полные схемы, модельная эскалация и PKM из этого документа не означают наличие реализации; смысловые адаптеры предоставляет caller.
 
 **Status:** Accepted design v0.2  

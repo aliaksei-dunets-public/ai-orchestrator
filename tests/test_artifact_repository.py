@@ -160,8 +160,7 @@ class ArtifactRepositoryTests(unittest.TestCase):
         cases = (
             ("exists", lambda: self.repository.put("OTHER", "testing", "v1", b"x")),
             ("iterdir", self.repository.list),
-            ("read_text", lambda: self.repository.get("IO", "testing", "v1")),
-            ("read_bytes", lambda: self.repository.get("IO", "testing", "v1")),
+            ("open", lambda: self.repository.get("IO", "testing", "v1")),
         )
         for method, action in cases:
             with self.subTest(method=method), patch.object(Path, method, side_effect=PermissionError("injected")):
@@ -177,6 +176,25 @@ class ArtifactRepositoryTests(unittest.TestCase):
                 with self.assertRaises(ArtifactError) as caught:
                     self.repository.get(name, "testing", "v1")
                 self.assertEqual(caught.exception.code, "integrity_error")
+
+    def test_bounded_payload_and_manifest_reads(self) -> None:
+        record = self.repository.put("BOUNDS","graph","v1",b"1234")
+        self.assertEqual(self.repository.get("BOUNDS","graph","v1",max_bytes=4).content,b"1234")
+        with self.assertRaises(ArtifactError) as caught:
+            self.repository.verify("BOUNDS","graph","v1",max_bytes=3)
+        self.assertEqual(caught.exception.code,"artifact_size_limit")
+        for invalid in (True,0,-1,"4"):
+            with self.assertRaises(ArtifactError):
+                self.repository.get("BOUNDS","graph","v1",max_bytes=invalid)
+        (self.root/record.path).write_bytes(b"123456")
+        with self.assertRaises(ArtifactError) as caught:
+            self.repository.get("BOUNDS","graph","v1",max_bytes=4)
+        self.assertEqual(caught.exception.code,"artifact_size_limit")
+        manifest=(self.root/record.path).with_name("manifest.json")
+        manifest.write_bytes(b" "*65537)
+        with self.assertRaises(ArtifactError) as caught:
+            self.repository.get("BOUNDS","graph","v1")
+        self.assertEqual(caught.exception.code,"integrity_error")
 
     def _directory_link(self, link: Path, target: Path) -> None:
         link.parent.mkdir(parents=True, exist_ok=True)

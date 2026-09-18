@@ -1,5 +1,7 @@
 # Материалы `docs/development/`
 
+С 2026-09-17 направление пересмотрено по [решению об Orchestrator Agent](01-agent-centric-orchestrator-architecture.md) и [Graphify](01-graphify-integration-ai-orchestrator.md). Русские актуальные границы: [агент-центричная оркестрация](../architecture/agent-centric-orchestration.md) и [Project Knowledge Service](../architecture/project-knowledge-service.md). Старые subgraph/controller схемы ниже — исходники предметных invariants, не команды для разработки нового Python orchestration engine. Task Manager с SQLite не меняется; task.yaml/TaskML и обязательная specification не возвращаются. [Оценка и карта миграции](../reports/2026-09-17-agent-centric-graphify-assessment.md).
+
 Каталог содержит импортированные англоязычные спецификации подграфов разработки: контекст, анализ, спецификацию, планирование, ревью, реализацию, тестирование и документацию.
 
 Эти документы — проектные исходники, а не реализованные модули. Их контракты становятся действующими только после переноса в русскоязычные документы `docs/architecture/` или `docs/guides/`, реализации и тестирования.
